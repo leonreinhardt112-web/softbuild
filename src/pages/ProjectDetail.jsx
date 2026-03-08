@@ -242,13 +242,33 @@ export default function ProjectDetail() {
         {/* Setup Tab */}
         <TabsContent value="setup" className="mt-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-2 space-y-4">
               <TradeSelector
                 selected={selectedTrades}
                 onChange={handleTradesChange}
               />
+              {/* LV-Analyse findings (shown here and on review tab) */}
+              {project.lv_analysis_findings?.length > 0 && (
+                <LVFindings
+                  findings={project.lv_analysis_findings}
+                  onToggle={(id) => {
+                    const updated = project.lv_analysis_findings.map((f) =>
+                      f.id === id ? { ...f, include_in_report: !f.include_in_report } : f
+                    );
+                    handleLVUpdate({ lv_analysis_findings: updated });
+                  }}
+                  onToggleAll={(val) => {
+                    const updated = project.lv_analysis_findings.map((f) => ({
+                      ...f,
+                      include_in_report: val,
+                    }));
+                    handleLVUpdate({ lv_analysis_findings: updated });
+                  }}
+                />
+              )}
             </div>
             <div className="space-y-4">
+              <LVUploader project={project} onUpdate={handleLVUpdate} />
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-semibold">Projektdaten</CardTitle>
