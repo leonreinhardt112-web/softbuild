@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/select";
 import { SEVERITY_COLORS, SEVERITY_LABELS } from "../checklistData";
 import { CheckCircle2, XCircle, CircleDot, MinusCircle } from "lucide-react";
+import LVPositionPicker from "../lv/LVPositionPicker";
 
 const STATUS_OPTIONS = [
   { value: "offen", label: "Offen", icon: CircleDot, color: "text-muted-foreground" },
@@ -18,7 +19,12 @@ const STATUS_OPTIONS = [
   { value: "nicht_relevant", label: "Nicht relevant", icon: MinusCircle, color: "text-muted-foreground" },
 ];
 
-export default function ChecklistSection({ category, items, onUpdateItem }) {
+// Questions that benefit from LV-position linking
+const LV_QUESTIONS = [
+  "Leistungsverzeichnis vollständig und schlüssig?",
+];
+
+export default function ChecklistSection({ category, items, onUpdateItem, lvPositions = [] }) {
   return (
     <div className="space-y-3">
       <h3 className="text-sm font-semibold text-foreground border-b border-border pb-2">
@@ -28,6 +34,11 @@ export default function ChecklistSection({ category, items, onUpdateItem }) {
         {items.map((item) => {
           const currentStatus = STATUS_OPTIONS.find((s) => s.value === item.status);
           const StatusIcon = currentStatus?.icon || CircleDot;
+          const isLvItem = LV_QUESTIONS.some((q) =>
+            item.question?.toLowerCase().includes(q.toLowerCase().slice(0, 20))
+          );
+          const hasLvPositions = lvPositions.length > 0;
+
           return (
             <div
               key={item.id}
@@ -86,8 +97,10 @@ export default function ChecklistSection({ category, items, onUpdateItem }) {
                   </Select>
                 </div>
               </div>
-              {(item.status === "nicht_erfuellt" || item.comment) && (
-                <div className="mt-2 ml-6">
+
+              {/* Comment + optional LV position picker */}
+              {(item.status === "nicht_erfuellt" || item.comment || item.lv_positions_ref?.length > 0) && (
+                <div className="mt-2 ml-6 space-y-2">
                   <Textarea
                     placeholder="Kommentar / Anmerkung..."
                     value={item.comment || ""}
@@ -96,8 +109,27 @@ export default function ChecklistSection({ category, items, onUpdateItem }) {
                     }
                     className="text-xs h-16 resize-none"
                   />
+                  {isLvItem && hasLvPositions && (
+                    <LVPositionPicker
+                      positions={lvPositions}
+                      selectedOZs={item.lv_positions_ref || []}
+                      onChange={(ozs) => onUpdateItem(item.id, { lv_positions_ref: ozs })}
+                    />
+                  )}
                 </div>
               )}
+
+              {/* Show LV picker button even when status is not 'nicht_erfuellt' */}
+              {!(item.status === "nicht_erfuellt" || item.comment || item.lv_positions_ref?.length > 0) &&
+                isLvItem && hasLvPositions && (
+                  <div className="mt-1 ml-6">
+                    <LVPositionPicker
+                      positions={lvPositions}
+                      selectedOZs={item.lv_positions_ref || []}
+                      onChange={(ozs) => onUpdateItem(item.id, { lv_positions_ref: ozs })}
+                    />
+                  </div>
+                )}
             </div>
           );
         })}
