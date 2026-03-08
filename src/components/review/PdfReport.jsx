@@ -90,13 +90,35 @@ function generateReportHtml(project, checklistItems, openPoints) {
 ${failedItems.length > 0 ? `
 <h2>Nicht erfüllte Prüfpunkte (${failedItems.length})</h2>
 <table>
-  <tr><th>Gewerk</th><th>Prüfpunkt</th><th>Schweregrad</th><th>Normverweis</th><th>Kommentar</th></tr>
-  ${failedItems.map((i) => `<tr>
+  <tr><th>Gewerk</th><th>Prüfpunkt</th><th>Schweregrad</th><th>Normverweis</th><th>Verknüpfte LV-Pos.</th><th>Kommentar</th></tr>
+  ${failedItems.map((i) => {
+    const ozRefs = (i.lv_positions_ref || []);
+    const ozDetails = ozRefs.map((oz) => {
+      const pos = lvPositions.find((p) => p.oz === oz);
+      return pos ? `OZ ${oz}: ${pos.short_text}` : `OZ ${oz}`;
+    });
+    return `<tr>
     <td>${TRADE_LABELS[i.trade] || i.trade}</td>
     <td>${i.question}</td>
     <td class="severity-${i.severity}">${SEVERITY_LABELS[i.severity]}</td>
     <td>${i.norm_reference || "–"}</td>
+    <td>${ozDetails.length > 0 ? ozDetails.join("<br>") : "–"}</td>
     <td>${i.comment || "–"}</td>
+  </tr>`;
+  }).join("")}
+</table>` : ""}
+
+${lvFindings.length > 0 ? `
+<h2>LV-Analyse: KI-Befunde (${lvFindings.length})${lvFileName ? ` – ${lvFileName}` : ""}</h2>
+<p style="font-size:10px;color:#6b7280;margin-bottom:8px;">
+  Automatische Analyse des Leistungsverzeichnisses auf Vollständigkeit und Schlüssigkeit nach VOB/A §7.
+</p>
+<table>
+  <tr><th>Befund</th><th>Kategorie</th><th>Schweregrad</th></tr>
+  ${lvFindings.map((f) => `<tr>
+    <td>${f.text}</td>
+    <td>${f.category || "–"}</td>
+    <td class="severity-${f.severity}">${SEVERITY_LABELS[f.severity] || f.severity}</td>
   </tr>`).join("")}
 </table>` : ""}
 
