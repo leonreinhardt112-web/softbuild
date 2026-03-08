@@ -351,6 +351,7 @@ export default function ProjectDetail() {
                       category={category}
                       items={items}
                       onUpdateItem={(id, data) => updateItemMutation.mutate({ id, data })}
+                      lvPositions={project?.lv_positions || []}
                     />
                   ))}
               </div>
