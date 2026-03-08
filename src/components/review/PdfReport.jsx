@@ -20,8 +20,10 @@ function generateReportHtml(project, checklistItems, openPoints) {
   const failedItems = checklistItems.filter((i) => i.status === "nicht_erfuellt");
   const activeOpenPoints = openPoints.filter((p) => p.status !== "erledigt");
   const lvFindings = (project.lv_analysis_findings || []).filter((f) => f.include_in_report);
+  const conflictFindings = (project.baulv_conflict_findings || []).filter((f) => f.include_in_report);
   const lvPositions = project.lv_positions || [];
   const lvFileName = project.lv_file_name || "";
+  const bauFileName = project.baubeschreibung_file_name || "";
 
   return `<!DOCTYPE html>
 <html><head><meta charset="UTF-8">
