@@ -67,6 +67,8 @@ export default function ProjectDetail() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["project", projectId] }),
   });
 
+  const handleLVUpdate = (data) => updateProjectMutation.mutateAsync(data);
+
   const createItemsMutation = useMutation({
     mutationFn: (items) => base44.entities.ChecklistItem.bulkCreate(items),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["checklist", projectId] }),
