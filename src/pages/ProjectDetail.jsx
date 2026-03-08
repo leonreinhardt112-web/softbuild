@@ -69,6 +69,13 @@ export default function ProjectDetail() {
 
   const handleLVUpdate = (data) => updateProjectMutation.mutateAsync(data);
 
+  const handleTradesDetected = (detectedTrades) => {
+    // Merge with existing selected trades, never remove what was already selected
+    const current = project?.selected_trades || ["allgemein"];
+    const merged = [...new Set([...current, ...detectedTrades])];
+    updateProjectMutation.mutate({ selected_trades: merged });
+  };
+
   const createItemsMutation = useMutation({
     mutationFn: (items) => base44.entities.ChecklistItem.bulkCreate(items),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["checklist", projectId] }),
