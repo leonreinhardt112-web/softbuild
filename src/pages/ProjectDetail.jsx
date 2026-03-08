@@ -13,6 +13,8 @@ import ChecklistSection from "@/components/review/ChecklistSection";
 import ReviewSummary from "@/components/review/ReviewSummary";
 import OpenPointsManager from "@/components/review/OpenPointsManager";
 import PdfReport from "@/components/review/PdfReport";
+import LVUploader from "@/components/lv/LVUploader";
+import LVFindings from "@/components/lv/LVFindings";
 import {
   CHECKLIST_TEMPLATES,
   TRADE_LABELS,
