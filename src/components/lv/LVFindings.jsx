@@ -4,21 +4,24 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { SEVERITY_COLORS, SEVERITY_LABELS } from "../checklistData";
-import { Sparkles, CheckSquare, Square } from "lucide-react";
+import { Sparkles, CheckSquare, Square, GitCompare } from "lucide-react";
 
-export default function LVFindings({ findings = [], onToggle, onToggleAll }) {
+export default function LVFindings({ findings = [], onToggle, onToggleAll, title, icon }) {
   if (!findings.length) return null;
 
   const included = findings.filter((f) => f.include_in_report).length;
   const allOn = included === findings.length;
+  const Icon = icon === "conflict" ? GitCompare : Sparkles;
+  const iconColor = icon === "conflict" ? "text-orange-500" : "text-amber-500";
+  const displayTitle = title || `KI-Befunde LV-Analyse (${findings.length})`;
 
   return (
     <Card>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-semibold flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-amber-500" />
-            KI-Befunde LV-Analyse ({findings.length})
+            <Icon className={`w-4 h-4 ${iconColor}`} />
+            {displayTitle}
           </CardTitle>
           <Button
             variant="ghost"
