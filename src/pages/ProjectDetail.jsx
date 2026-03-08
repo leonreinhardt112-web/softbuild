@@ -254,10 +254,10 @@ export default function ProjectDetail() {
                 selected={selectedTrades}
                 onChange={handleTradesChange}
               />
-              {/* LV-Analyse findings (shown here and on review tab) */}
               {project.lv_analysis_findings?.length > 0 && (
                 <LVFindings
                   findings={project.lv_analysis_findings}
+                  title={`KI-Befunde LV-Analyse (${project.lv_analysis_findings.length})`}
                   onToggle={(id) => {
                     const updated = project.lv_analysis_findings.map((f) =>
                       f.id === id ? { ...f, include_in_report: !f.include_in_report } : f
@@ -265,11 +265,25 @@ export default function ProjectDetail() {
                     handleLVUpdate({ lv_analysis_findings: updated });
                   }}
                   onToggleAll={(val) => {
-                    const updated = project.lv_analysis_findings.map((f) => ({
-                      ...f,
-                      include_in_report: val,
-                    }));
+                    const updated = project.lv_analysis_findings.map((f) => ({ ...f, include_in_report: val }));
                     handleLVUpdate({ lv_analysis_findings: updated });
+                  }}
+                />
+              )}
+              {project.baulv_conflict_findings?.length > 0 && (
+                <LVFindings
+                  findings={project.baulv_conflict_findings}
+                  title={`Widersprüche Baubeschreibung ↔ LV (${project.baulv_conflict_findings.length})`}
+                  icon="conflict"
+                  onToggle={(id) => {
+                    const updated = project.baulv_conflict_findings.map((f) =>
+                      f.id === id ? { ...f, include_in_report: !f.include_in_report } : f
+                    );
+                    handleLVUpdate({ baulv_conflict_findings: updated });
+                  }}
+                  onToggleAll={(val) => {
+                    const updated = project.baulv_conflict_findings.map((f) => ({ ...f, include_in_report: val }));
+                    handleLVUpdate({ baulv_conflict_findings: updated });
                   }}
                 />
               )}
