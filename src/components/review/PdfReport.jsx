@@ -110,6 +110,20 @@ ${failedItems.length > 0 ? `
   }).join("")}
 </table>` : ""}
 
+${conflictFindings.length > 0 ? `
+<h2>Widersprüche: Baubeschreibung ↔ LV (${conflictFindings.length})${bauFileName ? ` – ${bauFileName}` : ""}</h2>
+<p style="font-size:10px;color:#6b7280;margin-bottom:8px;">
+  KI-gestützte Analyse der Übereinstimmung zwischen Baubeschreibung und Leistungsverzeichnis.
+</p>
+<table>
+  <tr><th>Widerspruch</th><th>Kategorie</th><th>Schweregrad</th></tr>
+  ${conflictFindings.map((f) => `<tr>
+    <td>${f.text}</td>
+    <td>${f.category || "–"}</td>
+    <td class="severity-${f.severity}">${SEVERITY_LABELS[f.severity] || f.severity}</td>
+  </tr>`).join("")}
+</table>` : ""}
+
 ${lvFindings.length > 0 ? `
 <h2>LV-Analyse: KI-Befunde (${lvFindings.length})${lvFileName ? ` – ${lvFileName}` : ""}</h2>
 <p style="font-size:10px;color:#6b7280;margin-bottom:8px;">
