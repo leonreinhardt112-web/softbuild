@@ -275,7 +275,7 @@ export default function ProjectDetail() {
               )}
             </div>
             <div className="space-y-4">
-              <LVUploader project={project} onUpdate={handleLVUpdate} />
+              <LVUploader project={project} onUpdate={handleLVUpdate} onTradesDetected={handleTradesDetected} />
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-semibold">Projektdaten</CardTitle>
