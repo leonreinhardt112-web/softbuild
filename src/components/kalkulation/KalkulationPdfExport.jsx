@@ -228,20 +228,20 @@ export async function generateKalkulationPDF(project, kalkulation, options = {})
 
   doc.setFont(undefined, "normal");
   doc.setFontSize(10);
-  const labelX = MARGIN_LEFT;
-  const valueX = pageWidth - MARGIN_RIGHT - 5;
+  const labelX = MARGIN_LEFT + 80;
+  const valueX = labelX + 80;
   
   doc.text("Summe-Netto:", labelX, yPos);
-  doc.text(`${totalNetto.toLocaleString("de-DE", { minimumFractionDigits: 2 })} €`, valueX, yPos, { align: "right" });
+  doc.text(`${totalNetto.toLocaleString("de-DE", { minimumFractionDigits: 2 })} €`, valueX, yPos);
   yPos += 8;
   
   doc.text("19,00 % MwSt.:", labelX, yPos);
-  doc.text(`${mwst.toLocaleString("de-DE", { minimumFractionDigits: 2 })} €`, valueX, yPos, { align: "right" });
+  doc.text(`${mwst.toLocaleString("de-DE", { minimumFractionDigits: 2 })} €`, valueX, yPos);
   yPos += 8;
   
   doc.setFont(undefined, "bold");
   doc.text("Summe-Brutto:", labelX, yPos);
-  doc.text(`${totalBrutto.toLocaleString("de-DE", { minimumFractionDigits: 2 })} €`, valueX, yPos, { align: "right" });
+  doc.text(`${totalBrutto.toLocaleString("de-DE", { minimumFractionDigits: 2 })} €`, valueX, yPos);
   
   // Schlusstext hinzufügen
   if (schlusstext.trim()) {
