@@ -35,10 +35,11 @@ export default function ProjectForm({ open, onOpenChange, onSave, initialData })
     if (initialData) setForm(initialData);
   }, [initialData]);
 
-  const { data: auftraggeber = [] } = useQuery({
-    queryKey: ["stammdaten-auftraggeber"],
-    queryFn: () => base44.entities.Stammdatum.filter({ typ: "auftraggeber" }, "name", 200),
+  const { data: alleStammdaten = [] } = useQuery({
+    queryKey: ["stammdaten"],
+    queryFn: () => base44.entities.Stammdatum.list("name", 500),
   });
+  const auftraggeber = alleStammdaten.filter(s => s.typ === "auftraggeber");
 
   const createClientMut = useMutation({
     mutationFn: async (data) => {
