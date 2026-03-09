@@ -134,6 +134,7 @@ export default function Kalkulation() {
                   <th className="text-right text-xs font-medium text-muted-foreground px-4 py-3">DB %</th>
                   <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Status</th>
                   <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Erstellt</th>
+                  <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Zuschläge</th>
                   <th className="px-4 py-3" />
                 </tr>
               </thead>
