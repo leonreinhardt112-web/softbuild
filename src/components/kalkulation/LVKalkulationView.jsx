@@ -272,7 +272,7 @@ export default function LVKalkulationView({ project }) {
                 </div>
                 {(() => {
                   const htSum = getHauptTitelSum(ht.unterTitels);
-                  return htSum > 0 && (
+                  return (
                     <span className="text-base font-bold text-primary shrink-0">
                       {htSum.toLocaleString("de-DE", { style: "currency", currency: "EUR" })}
                     </span>
