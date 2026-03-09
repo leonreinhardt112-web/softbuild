@@ -323,8 +323,12 @@ function addHeaderSection(doc, company, project, client, topMargin, leftMargin, 
   if (client) {
     doc.text(client.name || "", leftMargin, addrY);
     addrY += 4;
-    if (client.adresse) {
-      doc.text(client.adresse, leftMargin, addrY);
+    if (client.briefkopf_strasse) {
+      doc.text(client.briefkopf_strasse, leftMargin, addrY);
+      addrY += 4;
+    }
+    if (client.briefkopf_plz || client.briefkopf_stadt) {
+      doc.text(`${client.briefkopf_plz || ""} ${client.briefkopf_stadt || ""}`, leftMargin, addrY);
       addrY += 4;
     }
   } else {
