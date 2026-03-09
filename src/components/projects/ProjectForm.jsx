@@ -148,19 +148,34 @@ export default function ProjectForm({ open, onOpenChange, onSave, initialData })
               <div className="border border-primary/20 rounded-lg p-3 space-y-3 bg-primary/5">
                 <p className="text-xs font-semibold text-primary">Neuen Auftraggeber anlegen</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {[
-                    { key: "name", label: "Firmenname *" },
-                    { key: "adresse", label: "Adresse *" },
-                    { key: "kontakt_name", label: "Ansprechpartner" },
-                    { key: "email", label: "E-Mail" },
-                    { key: "telefon", label: "Telefon" },
-                  ].map(({ key, label }) => (
-                    <div key={key} className="space-y-1">
-                      <Label className="text-xs">{label}</Label>
-                      <Input value={newClientForm[key]}
-                        onChange={e => setNewClientForm(f => ({ ...f, [key]: e.target.value }))} />
-                    </div>
-                  ))}
+                {[
+                  { key: "name", label: "Firmenname *" },
+                  { key: "kontakt_name", label: "Ansprechpartner" },
+                  { key: "email", label: "E-Mail" },
+                  { key: "telefon", label: "Telefon" },
+                ].map(({ key, label }) => (
+                  <div key={key} className="space-y-1">
+                    <Label className="text-xs">{label}</Label>
+                    <Input value={newClientForm[key]}
+                      onChange={e => setNewClientForm(f => ({ ...f, [key]: e.target.value }))} />
+                  </div>
+                ))}
+                <div className="sm:col-span-2 space-y-1">
+                  <Label className="text-xs">Straße & Hausnummer</Label>
+                  <Input value={newClientForm.strasse}
+                    onChange={e => setNewClientForm(f => ({ ...f, strasse: e.target.value }))} placeholder="z.B. Musterstraße 12" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">PLZ</Label>
+                  <Input value={newClientForm.plz} maxLength={5}
+                    onChange={e => handleNewClientPlz(e.target.value)} placeholder="z.B. 45127" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Ort</Label>
+                  <Input value={newClientForm.ort}
+                    onChange={e => setNewClientForm(f => ({ ...f, ort: e.target.value }))}
+                    placeholder={plzLoading ? "Wird ermittelt..." : "z.B. Essen"} />
+                </div>
                 </div>
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
                   <Info className="w-3 h-3" /> Kundennummer wird automatisch vergeben.
