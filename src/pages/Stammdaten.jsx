@@ -30,8 +30,8 @@ const TABS = [
   { key: "material", label: "Materialien" },
 ];
 
-function StammdatenForm({ typ, onSave, onCancel }) {
-  const [form, setForm] = useState({ typ, name: "", kuerzel: "", kontakt_name: "", email: "", telefon: "", strasse: "", plz: "", ort: "", adresse: "", kategorie: "", kostensatz: "", einheit: "", qualifikation: "", aktiv: true });
+function StammdatenForm({ typ, item, onSave, onCancel }) {
+  const [form, setForm] = useState(item || { typ, name: "", kuerzel: "", kontakt_name: "", email: "", telefon: "", strasse: "", plz: "", ort: "", adresse: "", kategorie: "", kostensatz: "", einheit: "", qualifikation: "", aktiv: true });
   const [plzLoading, setPlzLoading] = useState(false);
 
   const handlePlzChange = async (plz) => {
