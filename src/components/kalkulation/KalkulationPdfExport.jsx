@@ -40,6 +40,22 @@ export async function generateKalkulationPDF(project, kalkulation, options = {})
   let yPos = MARGIN_TOP + 60;
   const pageBottom = pageHeight - MARGIN_BOTTOM;
 
+  // Vortext hinzufügen
+  if (vortext.trim()) {
+    doc.setFont(undefined, "normal");
+    doc.setFontSize(9);
+    const vortextLines = doc.splitTextToSize(vortext, contentWidth);
+    vortextLines.forEach((line) => {
+      if (yPos > pageBottom - 15) {
+        doc.addPage();
+        yPos = MARGIN_TOP;
+      }
+      doc.text(line, MARGIN_LEFT, yPos);
+      yPos += 4;
+    });
+    yPos += 2;
+  }
+
   // Positionen mit Titel-Struktur
   const positionsByTitle = groupPositionsByTitle(project.lv_positions || [], kalkulation.positions || []);
   
