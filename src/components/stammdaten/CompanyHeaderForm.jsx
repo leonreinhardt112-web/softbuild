@@ -23,6 +23,7 @@ export default function CompanyHeaderForm() {
     pdf_footer_links: "",
     pdf_footer_mitte: "",
     pdf_footer_rechts: "",
+    pdf_footer_farbe: "#666666",
   });
 
   useEffect(() => {
@@ -47,6 +48,7 @@ export default function CompanyHeaderForm() {
           pdf_footer_links: companies[0].pdf_footer_links || "",
           pdf_footer_mitte: companies[0].pdf_footer_mitte || "",
           pdf_footer_rechts: companies[0].pdf_footer_rechts || "",
+          pdf_footer_farbe: companies[0].pdf_footer_farbe || "#666666",
         });
       }
     } catch (e) {
@@ -220,6 +222,28 @@ export default function CompanyHeaderForm() {
               rows={4}
               className="text-xs"
             />
+          </div>
+
+          <div className="sm:col-span-2">
+            <label className="text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-2">
+              <Palette className="w-3.5 h-3.5" />
+              PDF-Footer Hintergrundfarbe
+            </label>
+            <div className="flex gap-3 items-center">
+              <Input
+                type="color"
+                value={form.pdf_footer_farbe}
+                onChange={e => setForm(f => ({ ...f, pdf_footer_farbe: e.target.value }))}
+                className="h-10 w-16 cursor-pointer"
+              />
+              <Input
+                type="text"
+                value={form.pdf_footer_farbe}
+                onChange={e => setForm(f => ({ ...f, pdf_footer_farbe: e.target.value }))}
+                placeholder="#666666"
+                className="flex-1 font-mono text-xs"
+              />
+            </div>
           </div>
           </div>
 

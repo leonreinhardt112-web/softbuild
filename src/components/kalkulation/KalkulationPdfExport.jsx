@@ -353,14 +353,19 @@ function hexToRgb(hex) {
 function addFooter(doc, company, pageWidth, pageHeight, marginLeft, marginRight, totalPages, currentPage) {
   doc.setFont(undefined, "normal");
   doc.setFontSize(7);
-  doc.setTextColor(100, 100, 100);
   
   const footerY = pageHeight - 18;
   const footerLineY = pageHeight - 20;
+  const footerBgY = pageHeight - 24;
   
-  // Trennlinie
-  doc.setDrawColor(180, 180, 180);
-  doc.line(marginLeft, footerLineY, pageWidth - marginRight, footerLineY);
+  // Footer-Hintergrund
+  const footerColor = company?.pdf_footer_farbe || "#666666";
+  const rgb = hexToRgb(footerColor);
+  doc.setFillColor(...rgb);
+  doc.rect(marginLeft, footerBgY, pageWidth - marginLeft - marginRight, 4, "F");
+  
+  // Text-Farbe für Footer
+  doc.setTextColor(255, 255, 255);
   
   if (company) {
     const col1X = marginLeft;
