@@ -57,16 +57,23 @@ function parseX83(xmlText) {
         positions.push({ oz, short_text: shortText, long_text: "", quantity: "", unit: "", type: "title" });
       }
 
-      for (let i = 0; i < node.children.length; i++) {
-        const child = node.children[i];
-        if (child.tagName === "Item" || child.tagName === "item") {
-          processItem(child, oz);
-        } else if (child.tagName === "BoQCtgy") {
-          processNode(child, oz);
-        } else if (child.tagName === "DP") {
-          processDP(child, oz);
+      // Recurse into all children, not just known tags
+      const walkChildren = (el, parentOzLocal) => {
+        for (let i = 0; i < el.children.length; i++) {
+          const child = el.children[i];
+          const t = child.tagName?.toUpperCase();
+          if (t === "BOQCTGY") {
+            processNode(child, parentOzLocal);
+          } else if (t === "ITEM") {
+            processItem(child, parentOzLocal);
+          } else if (t === "DP") {
+            processDP(child, parentOzLocal);
+          } else {
+            walkChildren(child, parentOzLocal);
+          }
         }
-      }
+      };
+      walkChildren(node, oz);
     } else if (tag === "Item" || tag === "item") {
       processItem(node, parentOz);
     } else if (tag === "DP") {
