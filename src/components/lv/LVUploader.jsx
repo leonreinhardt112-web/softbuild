@@ -73,9 +73,21 @@ export default function LVUploader({ project, onUpdate, onTradesDetected }) {
   const hasConflicts = project?.baulv_conflict_findings?.length > 0;
 
   // ── LV Upload ──────────────────────────────────────────────────────────────
+  const handleLVDrop = (e) => {
+    e.preventDefault();
+    setDragOverLV(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) handleLVFile(file);
+  };
+
   const handleLVSelect = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    await handleLVFile(file);
+    e.target.value = "";
+  };
+
+  const handleLVFile = async (file) => {
     setError(null);
     setUploading(true);
     try {
