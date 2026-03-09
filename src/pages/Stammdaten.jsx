@@ -221,7 +221,11 @@ export default function Stammdaten() {
                         {["geraet", "material"].includes(t.key) && (
                           <td className="px-4 py-3 text-right text-xs">{s.kostensatz ? `${s.kostensatz} €/${s.einheit || "ME"}` : "–"}</td>
                         )}
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-3 flex gap-1">
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary"
+                            onClick={() => { setEditingItem(s); setShowForm(true); }}>
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </Button>
                           <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive"
                             onClick={() => deleteMut.mutate(s.id)}>
                             <Trash2 className="w-3.5 h-3.5" />
