@@ -303,8 +303,17 @@ export default function LVKalkulationView({ project }) {
     }
   };
 
+  const handleExportWithOptions = async (options) => {
+    await generateKalkulationPDF(project, kalk, options);
+  };
+
   return (
     <div className="space-y-4">
+      <KalkulationPdfExportDialog 
+        isOpen={exportDialogOpen} 
+        onClose={() => setExportDialogOpen(false)}
+        onExport={handleExportWithOptions}
+      />
       {/* Header */}
       <div className="flex items-center justify-between gap-4">
         <div>
