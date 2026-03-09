@@ -295,9 +295,11 @@ export default function LVKalkulationView({ project }) {
                   <div key={utIdx} className="space-y-2">
                     {/* Untertitel */}
                     {ut.title && (
-                      <div className="flex items-center justify-between px-1 py-1 border-b border-border">
+                      <div className="flex items-center justify-between px-1 py-2 border-b border-border bg-muted/10">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-mono font-bold text-foreground w-20">{ut.hierarchy}</span>
+                          <span className="w-4" />
+                          <span className="w-3.5" />
+                          <span className="text-xs font-mono font-bold text-foreground w-24">{ut.hierarchy}</span>
                           <span className="text-sm font-semibold text-foreground">{ut.title.short_text}</span>
                         </div>
                         {titleSum > 0 && (
