@@ -11,6 +11,8 @@ import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { Plus, Calculator, Trash2, ArrowRight, Euro, Percent } from "lucide-react";
 import { format } from "date-fns";
+import ZuschlaegeDialog from "@/components/kalkulation/ZuschlaegeDialog";
+import StammLVDialog from "@/components/kalkulation/StammLVDialog";
 
 const STATUS_LABELS = { entwurf: "Entwurf", eingereicht: "Eingereicht", beauftragt: "Beauftragt", abgelehnt: "Abgelehnt" };
 const STATUS_COLORS = { entwurf: "bg-secondary text-secondary-foreground", eingereicht: "bg-blue-100 text-blue-700", beauftragt: "bg-green-100 text-green-700", abgelehnt: "bg-red-100 text-red-700" };
