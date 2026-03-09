@@ -15,6 +15,7 @@ import OpenPointsManager from "@/components/review/OpenPointsManager";
 import PdfReport from "@/components/review/PdfReport";
 import LVUploader from "@/components/lv/LVUploader";
 import LVFindings from "@/components/lv/LVFindings";
+import LVKalkulationView from "@/components/kalkulation/LVKalkulationView";
 import {
   CHECKLIST_TEMPLATES,
   TRADE_LABELS,

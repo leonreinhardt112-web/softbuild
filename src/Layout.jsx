@@ -21,7 +21,6 @@ import { cn } from "@/lib/utils";
 const NAV_ITEMS = [
   { name: "Dashboard", page: "Dashboard", icon: LayoutDashboard },
   { name: "Projekte", page: "Projects", icon: FolderOpen },
-  { name: "Kalkulation", page: "Kalkulation", icon: Calculator },
   { name: "Vertrag & AVor", page: "Vertrag", icon: FileSignature },
   { name: "Baustelle", page: "Baustelle", icon: HardHat },
   { name: "Abrechnung", page: "Abrechnung", icon: Receipt },
