@@ -220,7 +220,7 @@ export async function generateKalkulationPDF(project, kalkulation, options = {})
   doc.setFont(undefined, "bold");
   doc.setFontSize(11);
   doc.text("Zusammenfassung", MARGIN_LEFT, yPos);
-  yPos += 8;
+  yPos += 10;
 
   const totalNetto = (kalkulation.positions || []).reduce((sum, p) => sum + (Number(p.gp) || 0), 0);
   const mwst = totalNetto * 0.19;
@@ -228,20 +228,20 @@ export async function generateKalkulationPDF(project, kalkulation, options = {})
 
   doc.setFont(undefined, "normal");
   doc.setFontSize(10);
-  const labelX = MARGIN_LEFT + 80;
-  const valueX = labelX + 80;
+  const summaryLabelX = MARGIN_LEFT;
+  const summaryValueX = pageWidth - MARGIN_RIGHT - 30;
   
-  doc.text("Summe-Netto:", labelX, yPos);
-  doc.text(`${totalNetto.toLocaleString("de-DE", { minimumFractionDigits: 2 })} €`, valueX, yPos);
-  yPos += 8;
+  doc.text("Summe-Netto:", summaryLabelX, yPos);
+  doc.text(`${totalNetto.toLocaleString("de-DE", { minimumFractionDigits: 2 })} €`, summaryValueX, yPos, { align: "right" });
+  yPos += 7;
   
-  doc.text("19,00 % MwSt.:", labelX, yPos);
-  doc.text(`${mwst.toLocaleString("de-DE", { minimumFractionDigits: 2 })} €`, valueX, yPos);
-  yPos += 8;
+  doc.text("19,00 % MwSt.:", summaryLabelX, yPos);
+  doc.text(`${mwst.toLocaleString("de-DE", { minimumFractionDigits: 2 })} €`, summaryValueX, yPos, { align: "right" });
+  yPos += 7;
   
   doc.setFont(undefined, "bold");
-  doc.text("Summe-Brutto:", labelX, yPos);
-  doc.text(`${totalBrutto.toLocaleString("de-DE", { minimumFractionDigits: 2 })} €`, valueX, yPos);
+  doc.text("Summe-Brutto:", summaryLabelX, yPos);
+  doc.text(`${totalBrutto.toLocaleString("de-DE", { minimumFractionDigits: 2 })} €`, summaryValueX, yPos, { align: "right" });
   
   // Schlusstext hinzufügen
   if (schlusstext.trim()) {
