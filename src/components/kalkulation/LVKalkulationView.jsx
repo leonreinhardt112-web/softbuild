@@ -93,24 +93,26 @@ export default function LVKalkulationView({ project }) {
     return lt.slice(0, 60);
   };
 
-  const handleRowsChange = (oz, rows) => {
-    setLocalPositions(prev => ({ ...prev, [oz]: rows }));
+  const handleRowsChange = (posIndex, rows) => {
+    const posKey = getPositionKey(posIndex);
+    setLocalPositions(prev => ({ ...prev, [posKey]: rows }));
 
-    // Debounced save
-    if (saveTimers.current[oz]) clearTimeout(saveTimers.current[oz]);
-    setSavingOz(oz);
-    saveTimers.current[oz] = setTimeout(async () => {
+    // Debounced save — use position index to find correct position
+    if (saveTimers.current[posKey]) clearTimeout(saveTimers.current[posKey]);
+    setSavingOz(posKey);
+    saveTimers.current[posKey] = setTimeout(async () => {
       if (!kalk) return;
+      const pos = positionItems[posIndex];
+      if (!pos) return;
       const ep = rows.reduce((sum, r) => sum + Number(r.kosten_einheit || 0) + Number(r.zuschlag || 0), 0);
-      const lvPos = lvPositions.find(p => p.oz === oz);
-      const menge = parseFloat(lvPos?.quantity) || 0;
+      const menge = parseFloat(pos.quantity) || 0;
       const existingPositions = kalk.positions || [];
-      const exists = existingPositions.some(p => p.oz === oz);
+      const exists = existingPositions.find(p => p.oz === pos.oz && p.short_text === pos.short_text);
       let updatedPositions;
       if (exists) {
-        updatedPositions = existingPositions.map(p => p.oz === oz ? { ...p, rows, ep, gp: ep * menge } : p);
+        updatedPositions = existingPositions.map(p => p.oz === pos.oz && p.short_text === pos.short_text ? { ...p, rows, ep, gp: ep * menge } : p);
       } else {
-        updatedPositions = [...existingPositions, { oz, short_text: lvPos?.short_text || "", menge, einheit: lvPos?.unit || "", ep, gp: ep * menge, rows }];
+        updatedPositions = [...existingPositions, { oz: pos.oz, short_text: pos.short_text || "", menge, einheit: pos.unit || "", ep, gp: ep * menge, rows }];
       }
       await updateKalkMutation.mutateAsync({ id: kalk.id, data: { positions: updatedPositions } });
       setSavingOz(null);
