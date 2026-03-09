@@ -145,20 +145,41 @@ export default function LVKalkulationView({ project }) {
     return hasNoQty && cleanOz.length <= 4;
   };
 
-  // Group positions by title, tracking absolute index in positionItems for each pos
+  // Group positions by title, tracking absolute index and hierarchical numbering
   const grouped = [];
   let currentGroup = null;
   let posItemIdx = 0;
+  let titleNum = 0;
   lvPositions.forEach((pos) => {
     if (isTitle(pos)) {
-      currentGroup = { title: pos, positions: [] };
+      titleNum++;
+      const titleHierarchy = String(titleNum).padStart(2, "0");
+      currentGroup = { 
+        title: pos, 
+        positions: [],
+        titleNum,
+        titleHierarchy,
+        subTitleNum: 0
+      };
       grouped.push(currentGroup);
     } else {
       if (!currentGroup) {
-        currentGroup = { title: null, positions: [] };
+        titleNum++;
+        const titleHierarchy = String(titleNum).padStart(2, "0");
+        currentGroup = { 
+          title: null, 
+          positions: [],
+          titleNum,
+          titleHierarchy,
+          subTitleNum: 0
+        };
         grouped.push(currentGroup);
       }
-      currentGroup.positions.push({ pos, posIndex: posItemIdx });
+      currentGroup.subTitleNum++;
+      const subNum = String(currentGroup.subTitleNum).padStart(2, "0");
+      const posNum = String(posItemIdx + 1).padStart(4, "0");
+      const hierarchy = `${currentGroup.titleHierarchy}.${subNum}.${posNum}`;
+      currentGroup.positions.push({ pos, posIndex: posItemIdx, hierarchy });
       posItemIdx++;
     }
   });
