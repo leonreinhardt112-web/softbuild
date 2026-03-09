@@ -170,6 +170,13 @@ export default function LVKalkulationView({ project }) {
 
       grouped.push(hauptTitel);
       i = j;
+    } else if (!isTitle(pos)) {
+      // Orphan position ohne Haupttitel
+      if (grouped.length === 0) {
+        grouped.push({ title: null, unterTitels: [{ title: null, positions: [] }] });
+      }
+      grouped[grouped.length - 1].unterTitels[0].positions.push(pos);
+      i++;
     } else {
       i++;
     }
