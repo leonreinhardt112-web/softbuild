@@ -162,6 +162,13 @@ export default function LVKalkulationView({ project }) {
     return !(p.type === "title" || (hasNoQty && level < 2));
   });
 
+  // Auto-generate complete OZ for positions under each Untertitel
+  const generateCompleteOZ = (utPrefix, positionCount) => {
+    // utPrefix is like "01.01", we need to generate "01.01.0001", "01.01.0002", etc.
+    const posNum = String(positionCount + 1).padStart(4, "0");
+    return `${utPrefix}.${posNum}`;
+  };
+
   // Group by Haupttitel prefix (first part of OZ)
   lvPositions.forEach((pos) => {
     const level = getLevel(pos.oz);
@@ -207,7 +214,11 @@ export default function LVKalkulationView({ project }) {
       }
 
       const posIndex = positionItems.findIndex(p => p === pos);
-      unterTitelMap[utPrefix].positions.push({ pos, posIndex });
+      // Generate complete OZ: utPrefix.posNumber (e.g., "01.01.0001")
+      const completeOZ = generateCompleteOZ(utPrefix, unterTitelMap[utPrefix].positions.length);
+      // Create enriched pos object with generated OZ
+      const enrichedPos = { ...pos, oz: completeOZ };
+      unterTitelMap[utPrefix].positions.push({ pos: enrichedPos, posIndex });
     }
   });
 
