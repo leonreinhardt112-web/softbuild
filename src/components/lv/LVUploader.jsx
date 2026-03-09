@@ -118,18 +118,17 @@ export default function LVUploader({ project, onUpdate, onTradesDetected }) {
     await onUpdate({ lv_file_url: null, lv_file_name: null, lv_positions: [], lv_analysis_findings: [], baulv_conflict_findings: [] });
   };
 
-  // ── Baubeschreibung Upload ─────────────────────────────────────────────────
+  // ── Unterlagen Upload (mehrere Dateien) ────────────────────────────────────
   const handleBauDrop = (e) => {
     e.preventDefault();
     setDragOverBau(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file) handleBauFile(file);
+    const files = Array.from(e.dataTransfer.files);
+    files.forEach(handleBauFile);
   };
 
   const handleBauSelect = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    await handleBauFile(file);
+    const files = Array.from(e.target.files || []);
+    for (const file of files) await handleBauFile(file);
     e.target.value = "";
   };
 
@@ -138,15 +137,17 @@ export default function LVUploader({ project, onUpdate, onTradesDetected }) {
     setUploadingBau(true);
     try {
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      await onUpdate({ baubeschreibung_file_url: file_url, baubeschreibung_file_name: file.name, baulv_conflict_findings: [] });
+      const existing = project?.projekt_unterlagen || [];
+      await onUpdate({ projekt_unterlagen: [...existing, { name: file.name, url: file_url }], baulv_conflict_findings: [] });
     } catch (err) {
-      setError("Fehler beim Hochladen der Baubeschreibung: " + err.message);
+      setError("Fehler beim Hochladen: " + err.message);
     }
     setUploadingBau(false);
   };
 
-  const handleRemoveBau = async () => {
-    await onUpdate({ baubeschreibung_file_url: null, baubeschreibung_file_name: null, baulv_conflict_findings: [] });
+  const handleRemoveUnterlage = async (index) => {
+    const updated = (project?.projekt_unterlagen || []).filter((_, i) => i !== index);
+    await onUpdate({ projekt_unterlagen: updated, baulv_conflict_findings: [] });
   };
 
   // ── KI-Analyse LV ─────────────────────────────────────────────────────────
