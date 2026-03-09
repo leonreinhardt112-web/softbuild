@@ -63,7 +63,8 @@ function StammdatenForm({ typ, item, onSave, onCancel }) {
 
   const handleSave = () => {
     const adresse = [form.strasse, `${form.plz} ${form.ort}`.trim()].filter(Boolean).join(", ");
-    onSave({ ...form, adresse });
+    const { strasse, plz, ort, ...rest } = form;
+    onSave({ ...rest, adresse });
   };
 
   return (
