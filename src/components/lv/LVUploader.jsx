@@ -30,40 +30,97 @@ function parseX83(xmlText) {
     return "";
   };
 
-  // GAEB X83: BoQCtgy = Titel, Item = Position
-  // Walk the tree in document order to preserve sequence
-  const allNodes = doc.querySelectorAll("BoQCtgy, Item, DP, item");
+  // Recursive processor respecting XML hierarchy
+  const processNode = (node, parentOz = "") => {
+    const tag = node.tagName;
 
-  if (allNodes.length > 0) {
-    allNodes.forEach((node) => {
-      const tag = node.tagName;
-      if (tag === "BoQCtgy") {
-        // Title node
-        const oz = getText(node, "CtgyNo", "OZ", "Pos") || node.getAttribute("RNoPart") || "";
-        const shortText = getText(node, "LblTx ShortText", "LblTx", "ShortText", "KurzText", "Description") || "";
-        if (oz || shortText) {
-          positions.push({ oz, short_text: shortText, long_text: "", quantity: "", unit: "", type: "title" });
-        }
-      } else if (tag === "Item" || tag === "item") {
-        const oz = getText(node, "ItemNo", "OZ", "Pos") || node.getAttribute("RNoPart") || "";
-        const shortText = getText(node, "Description ShortText", "ShortText", "KurzText") || "";
-        const longText = getText(node, "DetailTxt Text", "CompleteText DetailTxt Text", "LongText", "LangText") || "";
-        const qty = getText(node, "Qty", "Menge") || "";
-        const unit = getText(node, "QU", "QtyUnit", "Einheit") || "";
-        if (oz || shortText) {
-          positions.push({ oz, short_text: shortText, long_text: longText, quantity: qty, unit, type: "position" });
-        }
-      } else if (tag === "DP") {
-        const oz = getText(node, "OZ", "Pos") || "";
-        const shortText = getText(node, "Kurz", "KurzText", "Text") || "";
-        const qty = getText(node, "Menge", "Qty") || "";
-        const unit = getText(node, "ME", "QU") || "";
-        const isTitle = !qty || qty === "0";
-        if (oz || shortText) {
-          positions.push({ oz, short_text: shortText, long_text: "", quantity: qty, unit, type: isTitle ? "title" : "position" });
+    if (tag === "BoQCtgy") {
+      const rawOz = getText(node, "CtgyNo", "OZ", "Pos") || node.getAttribute("RNoPart") || "";
+      const shortText = getText(node, "LblTx ShortText", "LblTx", "ShortText", "KurzText", "Description") || "";
+      const dotCount = (rawOz.match(/\./g) || []).length;
+      let oz = rawOz;
+      
+      if (parentOz && dotCount === 0 && rawOz) {
+        oz = `${parentOz}.${rawOz}`;
+      }
+      
+      if (oz || shortText) {
+        positions.push({ oz, short_text: shortText, long_text: "", quantity: "", unit: "", type: "title" });
+      }
+
+      for (let i = 0; i < node.children.length; i++) {
+        const child = node.children[i];
+        if (child.tagName === "Item" || child.tagName === "item") {
+          processItem(child, oz);
+        } else if (child.tagName === "BoQCtgy") {
+          processNode(child, oz);
+        } else if (child.tagName === "DP") {
+          processDP(child, oz);
         }
       }
-    });
+    } else if (tag === "Item" || tag === "item") {
+      processItem(node, parentOz);
+    } else if (tag === "DP") {
+      processDP(node, parentOz);
+    }
+  };
+
+  const processItem = (node, parentOz) => {
+    let oz = getText(node, "ItemNo", "OZ", "Pos") || node.getAttribute("RNoPart") || "";
+    const shortText = getText(node, "Description ShortText", "ShortText", "KurzText") || "";
+    const longText = getText(node, "DetailTxt Text", "CompleteText DetailTxt Text", "LongText", "LangText") || "";
+    const qty = getText(node, "Qty", "Menge") || "";
+    const unit = getText(node, "QU", "QtyUnit", "Einheit") || "";
+
+    if (!oz || oz.length < 2) {
+      if (parentOz) oz = `${parentOz}.0001`;
+      else oz = "0001";
+    } else if (parentOz && !oz.includes(".")) {
+      oz = `${parentOz}.${oz}`;
+    }
+
+    if (oz || shortText) {
+      positions.push({ oz, short_text: shortText, long_text: longText, quantity: qty, unit, type: "position" });
+    }
+  };
+
+  const processDP = (node, parentOz) => {
+    let oz = getText(node, "OZ", "Pos") || "";
+    const shortText = getText(node, "Kurz", "KurzText", "Text") || "";
+    const qty = getText(node, "Menge", "Qty") || "";
+    const unit = getText(node, "ME", "QU") || "";
+    const isTitle = !qty || qty === "0";
+
+    if (parentOz && !oz.includes(".")) {
+      oz = `${parentOz}.${oz}`;
+    }
+
+    if (oz || shortText) {
+      positions.push({ oz, short_text: shortText, long_text: "", quantity: qty, unit, type: isTitle ? "title" : "position" });
+    }
+  };
+
+  // Process root elements
+  for (let i = 0; i < doc.children.length; i++) {
+    const el = doc.children[i];
+    if (el.tagName === "BoQCtgy") {
+      processNode(el);
+    } else if (el.tagName === "Item" || el.tagName === "item") {
+      processItem(el, "");
+    } else if (el.tagName === "DP") {
+      processDP(el, "");
+    } else {
+      for (let j = 0; j < el.children.length; j++) {
+        const child = el.children[j];
+        if (child.tagName === "BoQCtgy") {
+          processNode(child);
+        } else if (child.tagName === "Item" || child.tagName === "item") {
+          processItem(child, "");
+        } else if (child.tagName === "DP") {
+          processDP(child, "");
+        }
+      }
+    }
   }
 
   return positions;
