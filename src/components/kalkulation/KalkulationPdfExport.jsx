@@ -355,14 +355,6 @@ function addFooter(doc, company, pageWidth, pageHeight, marginLeft, marginRight,
   doc.setDrawColor(0);
   doc.setLineWidth(0.1);
   
-  // Lochmarke 1 (12 mm von oben)
-  doc.line(4, 12, 8, 12);
-  doc.line(6, 10, 6, 14);
-  
-  // Lochmarke 2 (88 mm von oben)
-  doc.line(4, 88, 8, 88);
-  doc.line(6, 86, 6, 90);
-  
   // Falzmarke 1 (105 mm)
   doc.line(6, 105, 10, 105);
   
