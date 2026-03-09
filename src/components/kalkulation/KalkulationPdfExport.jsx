@@ -231,6 +231,9 @@ function addTableHeader(doc, x, y, width) {
   doc.setFillColor(70, 130, 180);
   doc.setTextColor(255, 255, 255);
   
+  // Hintergrund-Rechteck
+  doc.rect(x, y - 2, width, 6, "F");
+  
   const headers = ["Pos.", "Bezeichnung", "Menge", "EP", "GP"];
   const colWidths = [15, 70, 22, 18, 20];
   
