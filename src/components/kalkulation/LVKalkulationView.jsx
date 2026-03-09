@@ -354,11 +354,24 @@ export default function LVKalkulationView({ project }) {
 
       {/* Grouped by Haupttitel > Untertitel > Positions */}
       <div className="space-y-8">
-        {grouped.map((ht, htIdx) => (
+        {grouped.map((ht, htIdx) => {
+          const isHtExpanded = expandedTitles.has(htIdx);
+          return (
           <div key={htIdx} className="space-y-4">
             {/* Haupttitel */}
             {ht.title && (
-              <div className="flex items-center justify-between px-1 py-2 border-b-2 border-foreground">
+              <div
+                className="flex items-center justify-between px-1 py-2 border-b-2 border-foreground cursor-pointer hover:bg-accent/20 rounded transition-colors"
+                onClick={() => {
+                  const newSet = new Set(expandedTitles);
+                  if (newSet.has(htIdx)) {
+                    newSet.delete(htIdx);
+                  } else {
+                    newSet.add(htIdx);
+                  }
+                  setExpandedTitles(newSet);
+                }}
+              >
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-mono font-bold text-foreground w-16">{ht.hierarchy}</span>
                   <span className="text-base font-bold text-foreground">{ht.title.short_text}</span>
@@ -375,8 +388,11 @@ export default function LVKalkulationView({ project }) {
             )}
 
             {/* Untertitel + Positionen */}
+            {isHtExpanded && (
             <div className="space-y-4 pl-0">
               {ht.unterTitels.map((ut, utIdx) => {
+                const utKey = `${htIdx}-${utIdx}`;
+                const isUtExpanded = expandedTitles.has(utKey);
                 const titleSum = getTitleSum(ut.positions.map(item => item.pos));
                 return (
                   <div key={utIdx} className="space-y-2">
