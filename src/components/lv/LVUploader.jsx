@@ -311,60 +311,60 @@ Gib eine strukturierte Liste der Widersprüche zurück.`,
           )}
         </div>
 
-        {/* ── Baubeschreibung ── */}
+        {/* ── Baubeschreibung & sonstige Unterlagen ── */}
         <div className="space-y-2">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Baubeschreibung</p>
-          {!hasBau ? (
-            <div>
-              <div
-                className={`border-2 border-dashed rounded-lg p-5 text-center cursor-pointer transition-all ${dragOverBau ? "border-primary bg-primary/5 scale-[1.01]" : "border-border hover:border-primary/40 hover:bg-accent/30"}`}
-                onClick={() => bauFileRef.current?.click()}
-                onDragOver={(e) => { e.preventDefault(); setDragOverBau(true); }}
-                onDragLeave={() => setDragOverBau(false)}
-                onDrop={handleBauDrop}
-              >
-                {uploadingBau ? <Loader2 className="w-5 h-5 text-primary mx-auto mb-1.5 animate-spin" /> : <Upload className="w-5 h-5 text-muted-foreground mx-auto mb-1.5" />}
-                <p className="text-sm font-medium">{uploadingBau ? "Wird hochgeladen..." : "Baubeschreibung hochladen"}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">PDF, Word oder sonstiges Dokument</p>
-              </div>
-              <input ref={bauFileRef} type="file" accept=".pdf,.doc,.docx,.txt" className="hidden" onChange={handleBauSelect} />
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between p-2.5 bg-blue-50 border border-blue-200 rounded-lg">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0" />
-                  <div>
-                    <p className="text-xs font-medium text-blue-800">{project.baubeschreibung_file_name}</p>
-                    <p className="text-[10px] text-blue-600">Baubeschreibung geladen</p>
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Baubeschreibung &amp; sonstige Unterlagen</p>
+
+          {/* Hochgeladene Dateien */}
+          {unterlagen.length > 0 && (
+            <div className="space-y-1.5">
+              {unterlagen.map((u, i) => (
+                <div key={i} className="flex items-center justify-between p-2.5 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0" />
+                    <p className="text-xs font-medium text-blue-800 truncate max-w-[200px]">{u.name}</p>
                   </div>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground shrink-0" onClick={() => handleRemoveUnterlage(i)}>
+                    <X className="w-3.5 h-3.5" />
+                  </Button>
                 </div>
-                <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground" onClick={handleRemoveBau}>
-                  <X className="w-3.5 h-3.5" />
+              ))}
+            </div>
+          )}
+
+          {/* Dropzone (immer sichtbar zum Hinzufügen weiterer Dateien) */}
+          <div
+            className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-all ${dragOverBau ? "border-primary bg-primary/5 scale-[1.01]" : "border-border hover:border-primary/40 hover:bg-accent/30"}`}
+            onClick={() => bauFileRef.current?.click()}
+            onDragOver={(e) => { e.preventDefault(); setDragOverBau(true); }}
+            onDragLeave={() => setDragOverBau(false)}
+            onDrop={handleBauDrop}
+          >
+            {uploadingBau ? <Loader2 className="w-5 h-5 text-primary mx-auto mb-1.5 animate-spin" /> : <Upload className="w-5 h-5 text-muted-foreground mx-auto mb-1.5" />}
+            <p className="text-sm font-medium">{uploadingBau ? "Wird hochgeladen..." : unterlagen.length > 0 ? "Weitere Dateien hinzufügen" : "Dateien hochladen"}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">PDF, Word, Pläne oder sonstige Dokumente · Mehrere möglich</p>
+          </div>
+          <input ref={bauFileRef} type="file" accept=".pdf,.doc,.docx,.txt,.dwg,.dxf,.jpg,.png" multiple className="hidden" onChange={handleBauSelect} />
+
+          {/* Widerspruchsanalyse */}
+          {hasLV && unterlagen.length > 0 && (
+            !hasConflicts ? (
+              <Button className="w-full gap-2" variant="outline" size="sm" onClick={handleAnalyzeConflicts} disabled={analyzingConflicts}>
+                {analyzingConflicts ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileSearch className="w-3.5 h-3.5" />}
+                {analyzingConflicts ? "Analysiere Widersprüche..." : "Widersprüche zwischen Unterlagen und LV prüfen"}
+              </Button>
+            ) : (
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">{project.baulv_conflict_findings.length} Widersprüche gefunden</span>
+                <Button size="sm" variant="ghost" className="text-xs h-7 gap-1" onClick={handleAnalyzeConflicts} disabled={analyzingConflicts}>
+                  {analyzingConflicts ? <Loader2 className="w-3 h-3 animate-spin" /> : <FileSearch className="w-3 h-3" />}
+                  Neu prüfen
                 </Button>
               </div>
-              {hasLV && (
-                !hasConflicts ? (
-                  <Button className="w-full gap-2" variant="outline" size="sm" onClick={handleAnalyzeConflicts} disabled={analyzingConflicts}>
-                    {analyzingConflicts ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileSearch className="w-3.5 h-3.5" />}
-                    {analyzingConflicts ? "Analysiere Widersprüche..." : "Baubeschreibung vs. LV prüfen"}
-                  </Button>
-                ) : (
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">{project.baulv_conflict_findings.length} Widersprüche</span>
-                    <Button size="sm" variant="ghost" className="text-xs h-7 gap-1" onClick={handleAnalyzeConflicts} disabled={analyzingConflicts}>
-                      {analyzingConflicts ? <Loader2 className="w-3 h-3 animate-spin" /> : <FileSearch className="w-3 h-3" />}
-                      Neu
-                    </Button>
-                  </div>
-                )
-              )}
-              {!hasLV && (
-                <p className="text-xs text-muted-foreground text-center py-1">
-                  LV hochladen um Widerspruchsanalyse zu starten
-                </p>
-              )}
-            </div>
+            )
+          )}
+          {!hasLV && unterlagen.length > 0 && (
+            <p className="text-xs text-muted-foreground text-center py-1">LV hochladen um Widerspruchsanalyse zu starten</p>
           )}
         </div>
 
