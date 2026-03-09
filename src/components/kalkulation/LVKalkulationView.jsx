@@ -15,6 +15,7 @@ export default function LVKalkulationView({ project }) {
   const [localPositions, setLocalPositions] = useState({});
   const [savingOz, setSavingOz] = useState(null);
   const [expandedTitles, setExpandedTitles] = useState(new Set());
+  const [expandedLongText, setExpandedLongText] = useState(new Set());
   const saveTimers = useRef({});
 
   const { data: kalkulationen = [], isLoading } = useQuery({
