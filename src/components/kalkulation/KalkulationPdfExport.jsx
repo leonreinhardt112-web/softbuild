@@ -41,7 +41,7 @@ export async function generateKalkulationPDF(project, kalkulation, options = {})
   }
 
   // Erste Seite
-  addHeaderSection(doc, company, project, client, MARGIN_TOP, MARGIN_LEFT, pageWidth);
+  addHeaderSection(doc, company, project, client, kalkulation, MARGIN_TOP, MARGIN_LEFT, pageWidth);
   
   let yPos = MARGIN_TOP + 60;
   const pageBottom = pageHeight - MARGIN_BOTTOM;
