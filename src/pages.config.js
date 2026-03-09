@@ -47,26 +47,28 @@
  *
  * The mainPage value must match a key in the PAGES object exactly.
  */
-import Dashboard from './pages/Dashboard';
-import ProjectDetail from './pages/ProjectDetail';
-import Kalkulation from './pages/Kalkulation';
-import Vertrag from './pages/Vertrag';
-import Baustelle from './pages/Baustelle';
 import Abrechnung from './pages/Abrechnung';
+import Baustelle from './pages/Baustelle';
 import Controlling from './pages/Controlling';
+import Dashboard from './pages/Dashboard';
+import Kalkulation from './pages/Kalkulation';
+import ProjectDetail from './pages/ProjectDetail';
 import Stammdaten from './pages/Stammdaten';
+import Vertrag from './pages/Vertrag';
+import Projects from './pages/Projects';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
-    "Dashboard": Dashboard,
-    "ProjectDetail": ProjectDetail,
-    "Kalkulation": Kalkulation,
-    "Vertrag": Vertrag,
-    "Baustelle": Baustelle,
     "Abrechnung": Abrechnung,
+    "Baustelle": Baustelle,
     "Controlling": Controlling,
+    "Dashboard": Dashboard,
+    "Kalkulation": Kalkulation,
+    "ProjectDetail": ProjectDetail,
     "Stammdaten": Stammdaten,
+    "Vertrag": Vertrag,
+    "Projects": Projects,
 }
 
 export const pagesConfig = {
