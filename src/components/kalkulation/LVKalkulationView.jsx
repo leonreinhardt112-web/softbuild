@@ -428,6 +428,7 @@ export default function LVKalkulationView({ project }) {
                       const gp = ep * (parseFloat(pos.quantity) || 0);
                       const isExpanded = expandedOz === posKey;
                       const isCalculated = rows.length > 0;
+                      return (
 
                       return (
                         <Card key={`${posIndex}-${pi}-${pos.oz}`} className={`transition-all ${isExpanded ? "border-primary/40 shadow-md" : "hover:border-border/80"}`}>
