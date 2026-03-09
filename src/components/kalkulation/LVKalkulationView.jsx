@@ -15,7 +15,6 @@ export default function LVKalkulationView({ project }) {
   const [localPositions, setLocalPositions] = useState({});
   const [savingOz, setSavingOz] = useState(null);
   const [expandedTitles, setExpandedTitles] = useState(new Set());
-  const [expandedLongText, setExpandedLongText] = useState(new Set());
   const saveTimers = useRef({});
 
   const { data: kalkulationen = [], isLoading } = useQuery({
@@ -511,41 +510,20 @@ export default function LVKalkulationView({ project }) {
 
                           {isExpanded &&
                             <CardContent className="pt-0 pb-4 border-t border-border/50">
-                              <div
-                                className="mt-3 mb-4 p-3 border border-border rounded-lg cursor-pointer hover:bg-accent/5 transition-colors group"
-                                onClick={() => {
-                                  const longTextKey = posKey;
-                                  const newSet = new Set(expandedLongText);
-                                  if (newSet.has(longTextKey)) {
-                                    newSet.delete(longTextKey);
-                                  } else {
-                                    newSet.add(longTextKey);
-                                  }
-                                  setExpandedLongText(newSet);
-                                }}
-                              >
-                                <div className="flex items-center gap-2 mb-2">
-                                  {expandedLongText.has(posKey) ?
-                                    <ChevronDown className="w-4 h-4 text-primary shrink-0" /> :
-                                    <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary shrink-0" />
-                                  }
-                                  <p className="text-sm font-semibold text-foreground">{getDisplayText(pos)}</p>
+                              {pos.long_text &&
+                              <div className="mt-3 mb-4 bg-muted/30 rounded-lg p-3 border-l-2 border-primary/30">
+                                  <p className="bg-transparent text-[#000000] text-xs">
+                                    {(() => {
+                                    const displayText = getDisplayText(pos);
+                                    const lt = pos.long_text.trim();
+                                    if (displayText && lt.startsWith(displayText)) {
+                                      return lt.slice(displayText.length).trimStart();
+                                    }
+                                    return lt;
+                                  })()}
+                                  </p>
                                 </div>
-                                {expandedLongText.has(posKey) && pos.long_text && (
-                                  <div className="mt-3 ml-6 p-3 bg-muted/30 rounded-lg border-l-2 border-primary/30">
-                                    <p className="text-xs text-muted-foreground">
-                                      {(() => {
-                                        const displayText = getDisplayText(pos);
-                                        const lt = pos.long_text.trim();
-                                        if (displayText && lt.startsWith(displayText)) {
-                                          return lt.slice(displayText.length).trimStart();
-                                        }
-                                        return lt;
-                                      })()}
-                                    </p>
-                                  </div>
-                                )}
-                              </div>
+                              }
                               <div className="mt-3">
                                 <PositionKalkTable
                                   rows={rows}
