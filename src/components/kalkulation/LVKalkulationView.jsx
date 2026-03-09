@@ -297,7 +297,7 @@ export default function LVKalkulationView({ project }) {
               <p className="text-lg font-bold text-primary">{totalAngebotsumme.toLocaleString("de-DE", { style: "currency", currency: "EUR" })}</p>
             </div>
             <Button
-              onClick={() => generateKalkulationPDF(project, kalk)}
+              onClick={async () => await generateKalkulationPDF(project, kalk)}
               className="gap-2 whitespace-nowrap"
               size="sm"
             >
