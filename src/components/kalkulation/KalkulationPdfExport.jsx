@@ -108,9 +108,15 @@ export async function generateKalkulationPDF(project, kalkulation, options = {})
       // Pos-Nummer (links)
       doc.text((pos.oz || "").toString(), MARGIN_LEFT + 1, yPos + 1);
 
-      // Kurztext (Spalte 2) – begrenzt auf erste Zeile
+      // Kurztext (Spalte 2) – mit Umbruch bei Bedarf
       const shortText = (pos.short_text || "").split("\n")[0];
-      doc.text(shortText, MARGIN_LEFT + 27, yPos + 1);
+      const shortTextWidth = MARGIN_LEFT + 105 - MARGIN_LEFT - 27 - 2; // -2 für Puffer
+      const shortTextLines = doc.splitTextToSize(shortText, shortTextWidth);
+      const shortTextHeight = shortTextLines.length * 3.5;
+      
+      shortTextLines.forEach((line, idx) => {
+        doc.text(line, MARGIN_LEFT + 27, yPos + 1 + (idx * 3.5));
+      });
       
       // Menge/Einheit (Spalte 3, rechtsausgerichtet)
       const mengeText = `${menge.toLocaleString("de-DE", { minimumFractionDigits: 2 })} ${pos.einheit || ""}`;
@@ -126,7 +132,7 @@ export async function generateKalkulationPDF(project, kalkulation, options = {})
       doc.text(gpText, MARGIN_LEFT + 143, yPos + 1, { align: "right" });
       doc.setFont(undefined, "normal");
 
-      yPos += 7;
+      yPos += Math.max(7, shortTextHeight);
 
       // Langtext (falls vorhanden und im textMode "both") – unter Position
       if (pos.long_text && textMode === "both") {
