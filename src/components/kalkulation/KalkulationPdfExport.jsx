@@ -61,7 +61,7 @@ export async function generateKalkulationPDF(project, kalkulation, options = {})
   
   // Tabellenkopf auf der ersten Seite
   addTableHeader(doc, MARGIN_LEFT, yPos, contentWidth, headerColor);
-  yPos += 6;
+  yPos += 10;
   let firstPageDone = true;
 
   for (const titleGroup of positionsByTitle) {
