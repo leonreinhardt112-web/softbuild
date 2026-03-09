@@ -191,29 +191,35 @@ export default function LVKalkulationView({ project }) {
                 return (
                   <Card key={`${gi}-${pi}-${pos.oz}`} className={`transition-all ${isExpanded ? "border-primary/40 shadow-md" : "hover:border-border/80"}`}>
                     <div
-                      className="flex items-center gap-3 px-4 py-3 cursor-pointer select-none"
+                      className="flex items-center gap-2 px-4 py-2.5 cursor-pointer select-none"
                       onClick={() => setExpandedOz(isExpanded ? null : pos.oz)}
                     >
+                      {/* Expand icon */}
                       {isExpanded
                         ? <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
                         : <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
                       }
+                      {/* Status dot */}
                       {isCalculated
                         ? <CheckCircle2 className="w-3.5 h-3.5 text-green-500 shrink-0" />
                         : <div className="w-3.5 h-3.5 rounded-full border-2 border-muted-foreground/30 shrink-0" />
                       }
-                      <span className="text-xs font-mono text-muted-foreground w-16 shrink-0">{pos.oz}</span>
-                      <div className="flex-1 min-w-0">
-                        <span className="text-sm font-medium">{pos.short_text}</span>
-                        <span className="text-xs text-muted-foreground ml-2">{pos.quantity} {pos.unit}</span>
-                      </div>
-                      {isCalculated && (
-                        <div className="text-right shrink-0 hidden sm:block">
-                          <span className="text-xs font-semibold text-primary">{ep.toFixed(2)} €/Eh</span>
-                          {gp > 0 && <span className="text-xs text-muted-foreground ml-2">GP: {gp.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</span>}
-                        </div>
-                      )}
-                      {rows.length > 0 && <Badge variant="secondary" className="text-[10px] shrink-0">{rows.length}</Badge>}
+                      {/* POS. */}
+                      <span className="text-xs font-mono text-muted-foreground w-14 shrink-0">{pos.oz}</span>
+                      {/* BESCHREIBUNG */}
+                      <div className="flex-1 min-w-0 text-sm text-foreground truncate">{pos.short_text || <span className="text-muted-foreground/50 italic">–</span>}</div>
+                      {/* MENGE + EINHEIT */}
+                      <span className="text-xs text-muted-foreground w-20 text-right shrink-0 hidden sm:block">
+                        {pos.quantity && <>{parseFloat(pos.quantity).toLocaleString("de-DE", { minimumFractionDigits: 3 })} {pos.unit}</>}
+                      </span>
+                      {/* EP */}
+                      <span className={`text-xs w-24 text-right shrink-0 hidden md:block ${isCalculated ? "font-semibold text-primary" : "text-muted-foreground/40"}`}>
+                        {isCalculated ? `${ep.toFixed(2)} €` : "–"}
+                      </span>
+                      {/* GP */}
+                      <span className={`text-xs w-24 text-right shrink-0 hidden md:block ${gp > 0 ? "font-semibold text-foreground" : "text-muted-foreground/40"}`}>
+                        {gp > 0 ? gp.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €" : "–"}
+                      </span>
                       {savingOz === pos.oz && <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground shrink-0" />}
                     </div>
 
