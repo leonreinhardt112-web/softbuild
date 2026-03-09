@@ -354,14 +354,13 @@ function addFooter(doc, company, pageWidth, pageHeight, marginLeft, marginRight,
   doc.setFont(undefined, "normal");
   doc.setFontSize(7);
   
-  const footerBgY = pageHeight - 20;
-  const footerHeight = 18;
+  const footerBgY = pageHeight - 24;
   
-  // Footer-Hintergrund (volle Breite)
+  // Footer-Hintergrund (volle Breite, bis zum Seitenrand)
   const footerColor = company?.pdf_footer_farbe || "#666666";
   const rgb = hexToRgb(footerColor);
   doc.setFillColor(...rgb);
-  doc.rect(0, footerBgY, pageWidth, footerHeight, "F");
+  doc.rect(0, footerBgY, pageWidth, pageHeight - footerBgY, "F");
   
   // Text-Farbe für Footer
   doc.setTextColor(255, 255, 255);
@@ -376,7 +375,7 @@ function addFooter(doc, company, pageWidth, pageHeight, marginLeft, marginRight,
     const footerMitte = (company.pdf_footer_mitte || "").split("\n");
     const footerRechts = (company.pdf_footer_rechts || "").split("\n");
     
-    let currentY = footerBgY + 2.5;
+    let currentY = footerBgY + 4;
     const maxLines = Math.max(footerLeft.length, footerMitte.length, footerRechts.length);
     
     for (let j = 0; j < maxLines; j++) {
