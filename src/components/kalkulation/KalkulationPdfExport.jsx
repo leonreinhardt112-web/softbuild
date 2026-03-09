@@ -171,9 +171,9 @@ export async function generateKalkulationPDF(project, kalkulation, options = {})
               doc.addPage();
               yPos = MARGIN_TOP;
               addTableHeader(doc, MARGIN_LEFT, yPos, contentWidth, headerColor);
-              yPos += 6;
-            }
-            doc.text(line, MARGIN_LEFT + 2, yPos);
+              yPos += 10;
+              }
+                    doc.text(line, MARGIN_LEFT + 2, yPos);
             yPos += 3.5;
           });
           yPos += 1; // kleiner Abstand zwischen Absätzen
