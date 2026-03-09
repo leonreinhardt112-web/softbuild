@@ -20,17 +20,17 @@ export default function LVKalkulationView({ project }) {
   const { data: kalkulationen = [], isLoading } = useQuery({
     queryKey: ["kalkulation", projectId],
     queryFn: () => base44.entities.Kalkulation.filter({ project_id: projectId }),
-    enabled: !!projectId,
+    enabled: !!projectId
   });
 
   const createKalkMutation = useMutation({
     mutationFn: (data) => base44.entities.Kalkulation.create(data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["kalkulation", projectId] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["kalkulation", projectId] })
   });
 
   const updateKalkMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.Kalkulation.update(id, data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["kalkulation", projectId] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["kalkulation", projectId] })
   });
 
   const lvPositions = project?.lv_positions || [];
@@ -41,10 +41,10 @@ export default function LVKalkulationView({ project }) {
       createKalkMutation.mutate({
         project_id: projectId,
         version_name: "Hauptangebot",
-        positions: lvPositions.map(p => ({
+        positions: lvPositions.map((p) => ({
           oz: p.oz, short_text: p.short_text, menge: parseFloat(p.quantity) || 0,
           einheit: p.unit, ep: 0, gp: 0, rows: []
-        })),
+        }))
       });
     }
   }, [isLoading, kalkulationen.length]);
@@ -55,7 +55,7 @@ export default function LVKalkulationView({ project }) {
     const kalk = kalkulationen[0];
     if (kalk?.positions && !initialSyncDone.current) {
       const lv = project?.lv_positions || [];
-      const items = lv.filter(p => {
+      const items = lv.filter((p) => {
         if (p.type === "title") return false;
         if (p.type === "position") return true;
         const cleanOz = (p.oz || "").replace(/\s/g, "");
@@ -64,7 +64,7 @@ export default function LVKalkulationView({ project }) {
       });
       const map = {};
       items.forEach((item, idx) => {
-        const saved = kalk.positions.find(p => p.oz === item.oz && p.short_text === item.short_text);
+        const saved = kalk.positions.find((p) => p.oz === item.oz && p.short_text === item.short_text);
         if (saved) map[String(idx)] = saved.rows || [];
       });
       setLocalPositions(map);
@@ -74,7 +74,7 @@ export default function LVKalkulationView({ project }) {
 
   const kalk = kalkulationen[0];
   const kalkRef = useRef(kalk);
-  useEffect(() => { kalkRef.current = kalkulationen[0]; }, [kalkulationen]);
+  useEffect(() => {kalkRef.current = kalkulationen[0];}, [kalkulationen]);
 
   if (isLoading || createKalkMutation.isPending) {
     return <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>;
@@ -88,13 +88,13 @@ export default function LVKalkulationView({ project }) {
           <p className="text-sm font-medium text-muted-foreground">Kein Leistungsverzeichnis vorhanden</p>
           <p className="text-xs text-muted-foreground/70 mt-1">Bitte zuerst eine GAEB-Datei unter Übersicht hochladen.</p>
         </CardContent>
-      </Card>
-    );
+      </Card>);
+
   }
 
   // Create unique key for each position (including group + index to handle duplicate OZ)
   const getPositionKey = (posIndex) => `${posIndex}`;
-  
+
   const getRows = (posIndex) => localPositions[getPositionKey(posIndex)] || [];
 
   // Derive display short text from long_text if short_text is missing
@@ -111,7 +111,7 @@ export default function LVKalkulationView({ project }) {
 
   const handleRowsChange = (posIndex, rows) => {
     const posKey = getPositionKey(posIndex);
-    setLocalPositions(prev => ({ ...prev, [posKey]: rows }));
+    setLocalPositions((prev) => ({ ...prev, [posKey]: rows }));
 
     // Debounced save — use ref so stale closure is not an issue
     if (saveTimers.current[posKey]) clearTimeout(saveTimers.current[posKey]);
@@ -121,7 +121,7 @@ export default function LVKalkulationView({ project }) {
       if (!currentKalk) return;
       const pos = positionItems[posIndex];
       if (!pos) return;
-      
+
       // Calculate EP with markups (including BGK, AGK, WG)
       const ep = rows.reduce((sum, r) => {
         const kosten = Number(r.kosten_einheit || 0);
@@ -139,13 +139,13 @@ export default function LVKalkulationView({ project }) {
         const zuschlag = kosten * (bgk + agk + wg);
         return sum + kosten + zuschlag;
       }, 0);
-      
+
       const menge = parseFloat(pos.quantity) || 0;
       const existingPositions = currentKalk.positions || [];
-      const exists = existingPositions.find(p => p.oz === pos.oz && p.short_text === pos.short_text);
+      const exists = existingPositions.find((p) => p.oz === pos.oz && p.short_text === pos.short_text);
       let updatedPositions;
       if (exists) {
-        updatedPositions = existingPositions.map(p => p.oz === pos.oz && p.short_text === pos.short_text ? { ...p, rows, ep, gp: ep * menge } : p);
+        updatedPositions = existingPositions.map((p) => p.oz === pos.oz && p.short_text === pos.short_text ? { ...p, rows, ep, gp: ep * menge } : p);
       } else {
         updatedPositions = [...existingPositions, { oz: pos.oz, short_text: pos.short_text || "", menge, einheit: pos.unit || "", ep, gp: ep * menge, rows }];
       }
@@ -179,11 +179,11 @@ export default function LVKalkulationView({ project }) {
 
   lvPositions.forEach((pos) => {
     const level = getHierarchyLevel(pos.oz);
-    
+
     // Haupttitel (level 0)
     if (isTitle(pos) && level === 0) {
-      currentHauptTitel = { 
-        title: pos, 
+      currentHauptTitel = {
+        title: pos,
         unterTitels: []
       };
       grouped.push(currentHauptTitel);
@@ -217,11 +217,11 @@ export default function LVKalkulationView({ project }) {
   grouped.forEach((ht, htIdx) => {
     const htNum = String(htIdx + 1).padStart(2, "0");
     ht.hierarchy = htNum;
-    
+
     ht.unterTitels.forEach((ut, utIdx) => {
       const utNum = String(utIdx + 1).padStart(2, "0");
       ut.hierarchy = `${htNum}.${utNum}`;
-      
+
       ut.positions.forEach((item, posIdx) => {
         const posNum = String(posIdx + 1).padStart(4, "0");
         item.hierarchy = `${htNum}.${utNum}.${posNum}`;
@@ -229,31 +229,31 @@ export default function LVKalkulationView({ project }) {
     });
   });
 
-  const positionItems = lvPositions.filter(p => !isTitle(p));
+  const positionItems = lvPositions.filter((p) => !isTitle(p));
 
   const totalAngebotsumme = positionItems.reduce((sum, pos, idx) => {
-   const rows = getRows(idx);
-   const ep = rows.reduce((s, r) => {
-     const kosten = Number(r.kosten_einheit || 0);
-     const keys = {
-       Lohn: { bgk: "lohn_bgk", agk: "lohn_agk", wg: "lohn_wg" },
-       Material: { bgk: "material_bgk", agk: "material_agk", wg: "material_wg" },
-       "Gerät": { bgk: "geraet_bgk", agk: "geraet_agk", wg: "geraet_wg" },
-       NU: { bgk: "nu_bgk", agk: "nu_agk", wg: "nu_wg" },
-       Sonstiges: { bgk: "sonstiges_bgk", agk: "sonstiges_agk", wg: "sonstiges_wg" }
-     };
-     const key = keys[r.kostentyp] || keys["Sonstiges"];
-     const bgk = Number(kalk?.zuschlaege?.[key.bgk] ?? 10) / 100;
-     const agk = Number(kalk?.zuschlaege?.[key.agk] ?? 5) / 100;
-     const wg = Number(kalk?.zuschlaege?.[key.wg] ?? 3) / 100;
-     const zuschlag = kosten * (bgk + agk + wg);
-     return s + kosten + zuschlag;
-   }, 0);
-   return sum + ep * (parseFloat(pos.quantity) || 0);
+    const rows = getRows(idx);
+    const ep = rows.reduce((s, r) => {
+      const kosten = Number(r.kosten_einheit || 0);
+      const keys = {
+        Lohn: { bgk: "lohn_bgk", agk: "lohn_agk", wg: "lohn_wg" },
+        Material: { bgk: "material_bgk", agk: "material_agk", wg: "material_wg" },
+        "Gerät": { bgk: "geraet_bgk", agk: "geraet_agk", wg: "geraet_wg" },
+        NU: { bgk: "nu_bgk", agk: "nu_agk", wg: "nu_wg" },
+        Sonstiges: { bgk: "sonstiges_bgk", agk: "sonstiges_agk", wg: "sonstiges_wg" }
+      };
+      const key = keys[r.kostentyp] || keys["Sonstiges"];
+      const bgk = Number(kalk?.zuschlaege?.[key.bgk] ?? 10) / 100;
+      const agk = Number(kalk?.zuschlaege?.[key.agk] ?? 5) / 100;
+      const wg = Number(kalk?.zuschlaege?.[key.wg] ?? 3) / 100;
+      const zuschlag = kosten * (bgk + agk + wg);
+      return s + kosten + zuschlag;
+    }, 0);
+    return sum + ep * (parseFloat(pos.quantity) || 0);
   }, 0);
 
   const getTitleSum = (positions) => {
-    const startIdx = positionItems.findIndex(p => positions.includes(p));
+    const startIdx = positionItems.findIndex((p) => positions.includes(p));
     return positions.reduce((sum, pos, relIdx) => {
       const rows = getRows(startIdx + relIdx);
       const ep = rows.reduce((s, r) => {
@@ -278,7 +278,7 @@ export default function LVKalkulationView({ project }) {
 
   const getHauptTitelSum = (unterTitels) => {
     return unterTitels.reduce((sum, ut) => {
-      const utSum = getTitleSum(ut.positions.map(item => item.pos));
+      const utSum = getTitleSum(ut.positions.map((item) => item.pos));
       return sum + utSum;
     }, 0);
   };
@@ -300,7 +300,7 @@ export default function LVKalkulationView({ project }) {
         allUtKeys.add(`${htIdx}-${utIdx}`);
       });
     });
-    
+
     if (expandedTitles.size === allUtKeys.size) {
       setExpandedTitles(new Set());
     } else {
@@ -316,8 +316,8 @@ export default function LVKalkulationView({ project }) {
           <p className="text-sm font-semibold">{positionItems.length} LV-Positionen · Hauptangebot</p>
           <p className="text-xs text-muted-foreground mt-0.5">Position anklicken zum Kalkulieren</p>
         </div>
-        {kalk ? (
-          <div className="flex items-center gap-4">
+        {kalk ?
+        <div className="flex items-center gap-4">
             <div className="flex gap-2">
               <Button onClick={toggleAllTitles} variant="outline" size="sm" className="text-xs">
                 {expandedTitles.size === grouped.length ? "Alle Titel zuklappen" : "Alle Titel aufklappen"}
@@ -328,17 +328,17 @@ export default function LVKalkulationView({ project }) {
               <p className="text-lg font-bold text-primary">{totalAngebotsumme.toLocaleString("de-DE", { style: "currency", currency: "EUR" })}</p>
             </div>
             <Button
-              onClick={async () => await generateKalkulationPDF(project, kalk)}
-              className="gap-2 whitespace-nowrap"
-              size="sm"
-            >
+            onClick={async () => await generateKalkulationPDF(project, kalk)}
+            className="gap-2 whitespace-nowrap"
+            size="sm">
+
               <Download className="w-4 h-4" />
               Als PDF exportieren
             </Button>
-          </div>
-        ) : (
-          <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-        )}
+          </div> :
+
+        <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+        }
       </div>
 
       {/* Table header */}
@@ -357,9 +357,9 @@ export default function LVKalkulationView({ project }) {
         {grouped.map((ht, htIdx) => {
           const isHtExpanded = expandedTitles.has(htIdx);
           return (
-          <div key={htIdx} className="space-y-4">
+            <div key={htIdx} className="space-y-4">
             {/* Haupttitel */}
-            {ht.title && (
+            {ht.title &&
               <div
                 className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-primary/5 to-transparent border-l-4 border-primary rounded-lg cursor-pointer hover:bg-gradient-to-r hover:from-primary/10 hover:to-transparent transition-all group"
                 onClick={() => {
@@ -370,12 +370,12 @@ export default function LVKalkulationView({ project }) {
                     newSet.add(htIdx);
                   }
                   setExpandedTitles(newSet);
-                }}
-              >
+                }}>
+
                 <div className="flex items-center gap-3">
-                  {isHtExpanded
-                    ? <ChevronDown className="w-5 h-5 text-primary shrink-0 transition-transform" />
-                    : <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary shrink-0 transition-all" />
+                  {isHtExpanded ?
+                  <ChevronDown className="w-5 h-5 text-primary shrink-0 transition-transform" /> :
+                  <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary shrink-0 transition-all" />
                   }
                   <span className="text-sm font-mono font-bold text-foreground w-16">{ht.hierarchy}</span>
                   <span className="text-base font-bold text-foreground group-hover:text-primary transition-colors">{ht.title.short_text}</span>
@@ -385,23 +385,23 @@ export default function LVKalkulationView({ project }) {
                   return (
                     <span className="text-base font-bold text-primary shrink-0">
                       {htSum.toLocaleString("de-DE", { style: "currency", currency: "EUR" })}
-                    </span>
-                  );
+                    </span>);
+
                 })()}
               </div>
-            )}
+              }
 
             {/* Untertitel + Positionen */}
-            {isHtExpanded && (
-            <div className="space-y-4 pl-0">
+            {isHtExpanded &&
+              <div className="space-y-4 pl-0">
               {ht.unterTitels.map((ut, utIdx) => {
-                const utKey = `${htIdx}-${utIdx}`;
-                const isUtExpanded = expandedTitles.has(utKey);
-                const titleSum = getTitleSum(ut.positions.map(item => item.pos));
-                return (
-                  <div key={utIdx} className="space-y-2">
+                  const utKey = `${htIdx}-${utIdx}`;
+                  const isUtExpanded = expandedTitles.has(utKey);
+                  const titleSum = getTitleSum(ut.positions.map((item) => item.pos));
+                  return (
+                    <div key={utIdx} className="space-y-2">
                     {/* Untertitel */}
-                    {ut.title && (
+                    {ut.title &&
                       <div
                         className="flex items-center justify-between px-3 py-2.5 bg-accent/5 border border-border/50 rounded-lg cursor-pointer hover:bg-accent/15 hover:border-primary/30 transition-all group"
                         onClick={() => {
@@ -412,12 +412,12 @@ export default function LVKalkulationView({ project }) {
                             newSet.add(utKey);
                           }
                           setExpandedTitles(newSet);
-                        }}
-                      >
+                        }}>
+
                         <div className="flex items-center gap-2.5">
-                          {isUtExpanded
-                            ? <ChevronDown className="w-4 h-4 text-primary shrink-0 transition-transform" />
-                            : <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary shrink-0 transition-all" />
+                          {isUtExpanded ?
+                          <ChevronDown className="w-4 h-4 text-primary shrink-0 transition-transform" /> :
+                          <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary shrink-0 transition-all" />
                           }
                           <span className="text-xs font-mono font-bold text-foreground w-20">{ut.hierarchy}</span>
                           <span className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">{ut.title.short_text}</span>
@@ -426,35 +426,35 @@ export default function LVKalkulationView({ project }) {
                           {titleSum.toLocaleString("de-DE", { style: "currency", currency: "EUR" })}
                         </span>
                       </div>
-                    )}
+                      }
 
                     {/* Positions */}
                     {isUtExpanded && ut.positions.map(({ pos, posIndex, hierarchy }, pi) => {
-                      const posKey = getPositionKey(posIndex);
-                      const rows = getRows(posIndex);
-                      const ep = rows.reduce((sum, r) => sum + Number(r.kosten_einheit || 0) + Number(r.zuschlag || 0), 0);
-                      const gp = ep * (parseFloat(pos.quantity) || 0);
-                      const isExpanded = expandedOz === posKey;
-                      const isCalculated = rows.length > 0;
-                      return (
-                        <Card
-                          key={`${posIndex}-${pi}-${pos.oz}`}
-                          className={`transition-all ${isExpanded ? "border-primary/40 shadow-md" : "hover:border-border/80"}`}
-                        >
+                        const posKey = getPositionKey(posIndex);
+                        const rows = getRows(posIndex);
+                        const ep = rows.reduce((sum, r) => sum + Number(r.kosten_einheit || 0) + Number(r.zuschlag || 0), 0);
+                        const gp = ep * (parseFloat(pos.quantity) || 0);
+                        const isExpanded = expandedOz === posKey;
+                        const isCalculated = rows.length > 0;
+                        return (
+                          <Card
+                            key={`${posIndex}-${pi}-${pos.oz}`}
+                            className={`transition-all ${isExpanded ? "border-primary/40 shadow-md" : "hover:border-border/80"}`}>
+
                           <div
-                            className="flex items-center gap-2 px-4 py-2.5 cursor-pointer select-none"
-                            onClick={() => setExpandedOz(isExpanded ? null : posKey)}
-                          >
+                              className="flex items-center gap-2 px-4 py-2.5 cursor-pointer select-none"
+                              onClick={() => setExpandedOz(isExpanded ? null : posKey)}>
+
                             {/* Expand icon */}
-                            {isExpanded
-                              ? <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
-                              : <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
-                            }
+                            {isExpanded ?
+                              <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" /> :
+                              <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                              }
                             {/* Status dot */}
-                            {isCalculated
-                              ? <CheckCircle2 className="w-3.5 h-3.5 text-green-500 shrink-0" />
-                              : <div className="w-3.5 h-3.5 rounded-full border-2 border-muted-foreground/30 shrink-0" />
-                            }
+                            {isCalculated ?
+                              <CheckCircle2 className="w-3.5 h-3.5 text-green-500 shrink-0" /> :
+                              <div className="w-3.5 h-3.5 rounded-full border-2 border-muted-foreground/30 shrink-0" />
+                              }
                             {/* POS. */}
                             <span className="text-xs font-mono font-bold text-foreground w-24 shrink-0">{hierarchy}</span>
                             {/* BESCHREIBUNG */}
@@ -466,26 +466,6 @@ export default function LVKalkulationView({ project }) {
                             {/* EP */}
                             <span className={`text-xs w-24 text-right shrink-0 hidden md:block ${isCalculated ? "font-semibold text-primary" : "text-muted-foreground/40"}`}>
                               {isCalculated ? `${rows.reduce((s, r) => {
-                                const kosten = Number(r.kosten_einheit || 0);
-                                const keys = {
-                                  Lohn: { bgk: "lohn_bgk", agk: "lohn_agk", wg: "lohn_wg" },
-                                  Material: { bgk: "material_bgk", agk: "material_agk", wg: "material_wg" },
-                                  "Gerät": { bgk: "geraet_bgk", agk: "geraet_agk", wg: "geraet_wg" },
-                                  NU: { bgk: "nu_bgk", agk: "nu_agk", wg: "nu_wg" },
-                                  Sonstiges: { bgk: "sonstiges_bgk", agk: "sonstiges_agk", wg: "sonstiges_wg" }
-                                };
-                                const key = keys[r.kostentyp] || keys["Sonstiges"];
-                                const bgk = Number(kalk?.zuschlaege?.[key.bgk] ?? 10) / 100;
-                                const agk = Number(kalk?.zuschlaege?.[key.agk] ?? 5) / 100;
-                                const wg = Number(kalk?.zuschlaege?.[key.wg] ?? 3) / 100;
-                                const zuschlag = kosten * (bgk + agk + wg);
-                                return s + kosten + zuschlag;
-                              }, 0).toFixed(2)} €` : "–"}
-                            </span>
-                            {/* GP */}
-                            <span className={`text-xs w-24 text-right shrink-0 hidden md:block ${gp > 0 ? "font-semibold text-foreground" : "text-muted-foreground/40"}`}>
-                              {(() => {
-                                const epWithMarkup = rows.reduce((s, r) => {
                                   const kosten = Number(r.kosten_einheit || 0);
                                   const keys = {
                                     Lohn: { bgk: "lohn_bgk", agk: "lohn_agk", wg: "lohn_wg" },
@@ -500,51 +480,71 @@ export default function LVKalkulationView({ project }) {
                                   const wg = Number(kalk?.zuschlaege?.[key.wg] ?? 3) / 100;
                                   const zuschlag = kosten * (bgk + agk + wg);
                                   return s + kosten + zuschlag;
-                                }, 0);
-                                const gpWithMarkup = epWithMarkup * (parseFloat(pos.quantity) || 0);
-                                return gpWithMarkup > 0 ? gpWithMarkup.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €" : "–";
-                              })()}
+                                }, 0).toFixed(2)} €` : "–"}
+                            </span>
+                            {/* GP */}
+                            <span className={`text-xs w-24 text-right shrink-0 hidden md:block ${gp > 0 ? "font-semibold text-foreground" : "text-muted-foreground/40"}`}>
+                              {(() => {
+                                  const epWithMarkup = rows.reduce((s, r) => {
+                                    const kosten = Number(r.kosten_einheit || 0);
+                                    const keys = {
+                                      Lohn: { bgk: "lohn_bgk", agk: "lohn_agk", wg: "lohn_wg" },
+                                      Material: { bgk: "material_bgk", agk: "material_agk", wg: "material_wg" },
+                                      "Gerät": { bgk: "geraet_bgk", agk: "geraet_agk", wg: "geraet_wg" },
+                                      NU: { bgk: "nu_bgk", agk: "nu_agk", wg: "nu_wg" },
+                                      Sonstiges: { bgk: "sonstiges_bgk", agk: "sonstiges_agk", wg: "sonstiges_wg" }
+                                    };
+                                    const key = keys[r.kostentyp] || keys["Sonstiges"];
+                                    const bgk = Number(kalk?.zuschlaege?.[key.bgk] ?? 10) / 100;
+                                    const agk = Number(kalk?.zuschlaege?.[key.agk] ?? 5) / 100;
+                                    const wg = Number(kalk?.zuschlaege?.[key.wg] ?? 3) / 100;
+                                    const zuschlag = kosten * (bgk + agk + wg);
+                                    return s + kosten + zuschlag;
+                                  }, 0);
+                                  const gpWithMarkup = epWithMarkup * (parseFloat(pos.quantity) || 0);
+                                  return gpWithMarkup > 0 ? gpWithMarkup.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €" : "–";
+                                })()}
                             </span>
                             {savingOz === posKey && <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground shrink-0" />}
                           </div>
 
-                          {isExpanded && (
+                          {isExpanded &&
                             <CardContent className="pt-0 pb-4 border-t border-border/50">
-                              {pos.long_text && (
-                                <div className="mt-3 mb-4 bg-muted/30 rounded-lg p-3 border-l-2 border-primary/30">
-                                  <p className="text-xs text-muted-foreground">
+                              {pos.long_text &&
+                              <div className="mt-3 mb-4 bg-muted/30 rounded-lg p-3 border-l-2 border-primary/30">
+                                  <p className="bg-transparent text-[#000000] text-xs">
                                     {(() => {
-                                      const displayText = getDisplayText(pos);
-                                      const lt = pos.long_text.trim();
-                                      if (displayText && lt.startsWith(displayText)) {
-                                        return lt.slice(displayText.length).trimStart();
-                                      }
-                                      return lt;
-                                    })()}
+                                    const displayText = getDisplayText(pos);
+                                    const lt = pos.long_text.trim();
+                                    if (displayText && lt.startsWith(displayText)) {
+                                      return lt.slice(displayText.length).trimStart();
+                                    }
+                                    return lt;
+                                  })()}
                                   </p>
                                 </div>
-                              )}
+                              }
                               <div className="mt-3">
                                 <PositionKalkTable
                                   rows={rows}
                                   zuschlaege={kalk?.zuschlaege || {}}
-                                  onRowsChange={(newRows) => handleRowsChange(posIndex, newRows)}
-                                />
+                                  onRowsChange={(newRows) => handleRowsChange(posIndex, newRows)} />
+
                               </div>
                             </CardContent>
-                          )}
-                        </Card>
-                      );
-                    })}
-                  </div>
-                );
-              })}
+                            }
+                        </Card>);
+
+                      })}
+                  </div>);
+
+                })}
             </div>
-            )}
-          </div>
-        );
+              }
+          </div>);
+
         })}
       </div>
-    </div>
-  );
+    </div>);
+
 }
