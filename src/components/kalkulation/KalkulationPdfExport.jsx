@@ -200,6 +200,26 @@ export async function generateKalkulationPDF(project, kalkulation, options = {})
   doc.setFont(undefined, "bold");
   doc.text("Summe-Brutto:", summaryX, yPos);
   doc.text(`${totalBrutto.toLocaleString("de-DE", { minimumFractionDigits: 2 })} €`, pageWidth - MARGIN_RIGHT - 2, yPos, { align: "right" });
+  
+  // Schlusstext hinzufügen
+  if (schlusstext.trim()) {
+    yPos += 10;
+    if (yPos > pageBottom - 20) {
+      doc.addPage();
+      yPos = MARGIN_TOP;
+    }
+    doc.setFont(undefined, "normal");
+    doc.setFontSize(9);
+    const schlusstextLines = doc.splitTextToSize(schlusstext, contentWidth);
+    schlusstextLines.forEach((line) => {
+      if (yPos > pageBottom - 5) {
+        doc.addPage();
+        yPos = MARGIN_TOP;
+      }
+      doc.text(line, MARGIN_LEFT, yPos);
+      yPos += 4;
+    });
+  }
 
   const filename = `Angebot_${project.project_number}_${new Date().toISOString().split("T")[0]}.pdf`;
   doc.save(filename);
