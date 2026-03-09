@@ -448,7 +448,7 @@ export default function LVKalkulationView({ project }) {
                           <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary shrink-0 transition-all" />
                           }
                           <span className="text-xs font-mono font-bold text-foreground w-20">{ut.hierarchy}</span>
-                          <span className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">{ut.title.short_text}</span>
+                          <span className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">{getTitleText(ut.title)}</span>
                         </div>
                         <span className="text-sm font-semibold text-primary shrink-0">
                           {titleSum.toLocaleString("de-DE", { style: "currency", currency: "EUR" })}
