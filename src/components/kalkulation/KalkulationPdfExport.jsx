@@ -110,7 +110,7 @@ export async function generateKalkulationPDF(project, kalkulation, options = {})
 
       // Kurztext (Spalte 2) – mit Umbruch bei Bedarf
       const shortText = (pos.short_text || "").split("\n")[0];
-      const shortTextWidth = MARGIN_LEFT + 105 - MARGIN_LEFT - 27 - 2; // -2 für Puffer
+      const shortTextWidth = 75; // Begrenzte Breite für Kurztext-Spalte
       const shortTextLines = doc.splitTextToSize(shortText, shortTextWidth);
       const shortTextHeight = shortTextLines.length * 3.5;
       
