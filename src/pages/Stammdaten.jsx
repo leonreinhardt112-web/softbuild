@@ -74,7 +74,17 @@ export default function Stammdaten() {
   });
 
   const createMut = useMutation({
-    mutationFn: (d) => base44.entities.Stammdatum.create({ ...d, kostensatz: d.kostensatz ? parseFloat(d.kostensatz) : undefined }),
+    mutationFn: async (d) => {
+      let extra = {};
+      if (d.typ === "auftraggeber") {
+        const all = await base44.entities.Stammdatum.filter({ typ: "auftraggeber" }, "-created_date", 1);
+        const lastNum = all.length > 0 && all[0].kundennummer
+          ? parseInt(all[0].kundennummer.replace(/\D/g, "")) || 0
+          : 0;
+        extra.kundennummer = `KD-${String(lastNum + 1).padStart(5, "0")}`;
+      }
+      return base44.entities.Stammdatum.create({ ...d, ...extra, kostensatz: d.kostensatz ? parseFloat(d.kostensatz) : undefined });
+    },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["stammdaten"] }); setShowForm(false); },
   });
   const deleteMut = useMutation({
