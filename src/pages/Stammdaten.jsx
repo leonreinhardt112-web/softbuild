@@ -146,6 +146,7 @@ export default function Stammdaten() {
                   <thead>
                     <tr className="border-b border-border bg-muted/20">
                       <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Name</th>
+                      {t.key === "auftraggeber" && <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Kunden-Nr.</th>}
                       <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Kürzel</th>
                       <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Ansprechpartner</th>
                       <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">E-Mail / Tel.</th>
