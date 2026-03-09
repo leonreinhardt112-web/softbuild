@@ -169,7 +169,7 @@ export default function LVKalkulationView({ project }) {
               )}
 
               {/* Positions in this group */}
-              {group.positions.map((pos) => {
+              {group.positions.map((pos, pi) => {
                 const rows = getRows(pos.oz);
                 const ep = rows.reduce((sum, r) => sum + Number(r.kosten_einheit || 0) + Number(r.zuschlag || 0), 0);
                 const gp = ep * (parseFloat(pos.quantity) || 0);
