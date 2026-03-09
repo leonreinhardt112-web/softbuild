@@ -323,7 +323,7 @@ function groupPositionsByTitle(lvPositions, kalkulationen) {
       if (currentTitle) {
         currentTitle.positions.push({
           oz: lvPos.oz,
-          short_text: lvPos.short_text,
+          short_text: lvPos.short_text || "",
           long_text: lvPos.long_text || "",
           menge: lvPos.quantity || 0,
           einheit: lvPos.unit || "",
