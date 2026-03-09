@@ -283,31 +283,13 @@ export default function ProjectDetail() {
                 </CardContent>
               </Card>
             )}
-            {!isPostAward && (
-              <Card className="border-dashed border-muted-foreground/30">
-                <CardContent className="py-6 flex items-start gap-3">
-                  <Lock className="w-5 h-5 text-muted-foreground/50 mt-0.5 shrink-0" />
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">AFU-Prüfung & Ausführung</p>
-                    <p className="text-xs text-muted-foreground/70 mt-1">Diese Module werden nach Beauftragung freigeschaltet.</p>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        </TabsContent>
-
-        {/* UNTERLAGEN */}
-        <TabsContent value="unterlagen" className="mt-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="space-y-4">
+            {/* Unterlagen in Übersicht */}
+            <div className="lg:col-span-1 space-y-4">
               <LVUploader project={project} onUpdate={handleLVUpdate} onTradesDetected={handleTradesDetected} />
-            </div>
-            <div className="space-y-4">
               {project.lv_analysis_findings?.length > 0 && (
                 <LVFindings
                   findings={project.lv_analysis_findings}
-                  title={`KI-Befunde LV-Analyse (${project.lv_analysis_findings.length})`}
+                  title={`KI-Befunde (${project.lv_analysis_findings.length})`}
                   onToggle={(id) => {
                     const updated = project.lv_analysis_findings.map((f) =>
                       f.id === id ? { ...f, include_in_report: !f.include_in_report } : f
@@ -323,7 +305,7 @@ export default function ProjectDetail() {
               {project.baulv_conflict_findings?.length > 0 && (
                 <LVFindings
                   findings={project.baulv_conflict_findings}
-                  title={`Widersprüche Baubeschreibung ↔ LV (${project.baulv_conflict_findings.length})`}
+                  title={`Widersprüche Bau ↔ LV (${project.baulv_conflict_findings.length})`}
                   icon="conflict"
                   onToggle={(id) => {
                     const updated = project.baulv_conflict_findings.map((f) =>
@@ -337,16 +319,19 @@ export default function ProjectDetail() {
                   }}
                 />
               )}
-              {!project.lv_file_url && !project.lv_analysis_findings?.length && (
-                <Card className="border-dashed">
-                  <CardContent className="py-8 text-center text-sm text-muted-foreground">
-                    <FileText className="w-8 h-8 mx-auto mb-3 opacity-30" />
-                    Noch keine GAEB/LV-Datei hochgeladen.<br />
-                    Lade eine Datei hoch, um KI-Befunde zu erhalten.
-                  </CardContent>
-                </Card>
-              )}
             </div>
+
+            {!isPostAward && (
+              <Card className="border-dashed border-muted-foreground/30">
+                <CardContent className="py-6 flex items-start gap-3">
+                  <Lock className="w-5 h-5 text-muted-foreground/50 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">AFU-Prüfung & Ausführung</p>
+                    <p className="text-xs text-muted-foreground/70 mt-1">Diese Module werden nach Beauftragung freigeschaltet.</p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </TabsContent>
 
