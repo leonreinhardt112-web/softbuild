@@ -181,57 +181,108 @@ export async function generateKalkulationPDF(project, kalkulation) {
   doc.save(filename);
 }
 
-function addBriefkopf(doc, company, topMargin, leftMargin) {
-  if (!company) {
-    // Fallback ohne Daten
-    doc.setFontSize(14);
+function addHeaderSection(doc, company, project, topMargin, leftMargin, pageWidth) {
+  // Briefkopf links
+  if (company) {
+    doc.setFontSize(11);
     doc.setFont(undefined, "bold");
-    doc.text("Ihr Unternehmen", leftMargin, topMargin + 5);
-    return;
-  }
-
-  // Logo (falls vorhanden)
-  if (company.briefkopf_logo_url) {
-    try {
-      doc.addImage(company.briefkopf_logo_url, "PNG", leftMargin, topMargin, 30, 15);
-    } catch (e) {
-      console.error("Logo konnte nicht geladen werden", e);
+    doc.text(company.name || "", leftMargin, topMargin + 5);
+    
+    doc.setFontSize(8);
+    doc.setFont(undefined, "normal");
+    let addrY = topMargin + 12;
+    if (company.briefkopf_strasse) {
+      doc.text(company.briefkopf_strasse, leftMargin, addrY);
+      addrY += 4;
+    }
+    if (company.briefkopf_plz || company.briefkopf_stadt) {
+      doc.text(`${company.briefkopf_plz || ""} ${company.briefkopf_stadt || ""}`, leftMargin, addrY);
+      addrY += 4;
+    }
+    if (company.briefkopf_email) {
+      doc.text(`E-Mail: ${company.briefkopf_email}`, leftMargin, addrY);
     }
   }
 
-  // Unternehmen Header
-  doc.setFontSize(14);
+  // Projektdaten rechts
+  const rightX = pageWidth - MARGIN_RIGHT - 50;
+  doc.setFontSize(10);
   doc.setFont(undefined, "bold");
-  doc.text(company.name || "", leftMargin, topMargin + 18);
-
-  // Adressblock
+  doc.text("Kalkuliertes Angebot", rightX, topMargin + 5);
+  
   doc.setFontSize(9);
   doc.setFont(undefined, "normal");
-  let addrY = topMargin + 25;
-  if (company.briefkopf_strasse) {
-    doc.text(company.briefkopf_strasse, leftMargin, addrY);
-    addrY += 4;
-  }
-  if (company.briefkopf_plz || company.briefkopf_stadt) {
-    doc.text(`${company.briefkopf_plz || ""} ${company.briefkopf_stadt || ""}`, leftMargin, addrY);
-    addrY += 4;
-  }
-
-  // Kontaktzeile
-  addrY += 2;
-  if (company.briefkopf_telefon) {
-    doc.text(`Tel: ${company.briefkopf_telefon}`, leftMargin, addrY);
-    addrY += 3;
-  }
-  if (company.briefkopf_email) {
-    doc.text(`E-Mail: ${company.briefkopf_email}`, leftMargin, addrY);
-    addrY += 3;
-  }
-  if (company.briefkopf_website) {
-    doc.text(`Web: ${company.briefkopf_website}`, leftMargin, addrY);
-  }
+  let infoY = topMargin + 13;
+  doc.text(`Projekt-Nr.: ${project.project_number || ""}`, rightX, infoY);
+  infoY += 4;
+  doc.text(`Auftraggeber: ${project.client || ""}`, rightX, infoY);
+  infoY += 4;
+  doc.text(`Datum: ${new Date().toLocaleDateString("de-DE")}`, rightX, infoY);
 
   // Trennlinie
-  doc.setDrawColor(200, 200, 200);
-  doc.line(leftMargin, topMargin + 42, 210 - 20, topMargin + 42);
+  doc.setDrawColor(150, 150, 150);
+  doc.line(leftMargin, topMargin + 30, pageWidth - MARGIN_RIGHT, topMargin + 30);
+}
+
+function addTableHeader(doc, x, y, width) {
+  doc.setFont(undefined, "bold");
+  doc.setFontSize(8);
+  doc.setFillColor(70, 130, 180);
+  doc.setTextColor(255, 255, 255);
+  
+  const headers = ["Pos.", "Bezeichnung", "Menge", "EP", "GP"];
+  const colWidths = [15, 70, 22, 18, 20];
+  
+  let xPos = x;
+  headers.forEach((h, i) => {
+    const align = i >= 2 ? "right" : "left";
+    const textX = align === "right" ? xPos + colWidths[i] - 2 : xPos + 2;
+    doc.text(h, textX, y + 2, { align });
+    xPos += colWidths[i];
+  });
+  
+  doc.setTextColor(0, 0, 0);
+}
+
+function groupPositionsByTitle(lvPositions, kalkulationen) {
+  const isTitle = (pos) => {
+    if (pos.type === "title") return true;
+    const hasNoQty = !pos.quantity || pos.quantity === "0" || pos.quantity === "";
+    return hasNoQty;
+  };
+
+  const result = [];
+  let currentTitle = null;
+
+  lvPositions.forEach((lvPos) => {
+    if (isTitle(lvPos)) {
+      if (currentTitle?.positions.length > 0) {
+        result.push(currentTitle);
+      }
+      currentTitle = {
+        title: lvPos.short_text,
+        positions: []
+      };
+    } else {
+      const kalkPos = kalkulationen.find((p) => p.oz === lvPos.oz && p.short_text === lvPos.short_text);
+      if (currentTitle) {
+        currentTitle.positions.push({
+          oz: lvPos.oz,
+          short_text: lvPos.short_text,
+          long_text: lvPos.long_text || "",
+          menge: lvPos.quantity || 0,
+          einheit: lvPos.unit || "",
+          ep: kalkPos?.ep || 0,
+          gp: kalkPos?.gp || 0,
+          posIndex: currentTitle.positions.length
+        });
+      }
+    }
+  });
+
+  if (currentTitle?.positions.length > 0) {
+    result.push(currentTitle);
+  }
+
+  return result;
 }
