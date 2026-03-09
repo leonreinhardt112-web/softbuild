@@ -21,6 +21,7 @@ function parseX83(xmlText, enableDebug = false) {
   const doc = parser.parseFromString(xmlText, "application/xml");
   const positions = [];
   const debugLog = [];
+  let sortIndex = 0;
 
   const getText = (el, ...selectors) => {
     for (const sel of selectors) {
@@ -30,90 +31,81 @@ function parseX83(xmlText, enableDebug = false) {
     return "";
   };
 
-  // Get ancestor RNoPart path (excluding root document)
-  const getAncestorRnoParts = (node) => {
-    const parts = [];
-    let current = node.parentElement;
-    while (current && ["BoQCtgy", "Item", "item"].includes(current.tagName)) {
-      const rno = current.getAttribute("RNoPart");
-      if (rno) parts.unshift(rno);
-      current = current.parentElement;
-    }
-    return parts;
-  };
+  // Recursive parser for GAEB nodes
+  const parseNode = (node, parentPath = []) => {
+    if (node.tagName === "BoQCtgy") {
+      const currentRno = node.getAttribute("RNoPart") || "";
+      const currentPath = currentRno ? [...parentPath, currentRno] : parentPath;
+      const displayOz = currentPath.join(".");
+      const hierarchyLevel = parentPath.length;
 
-  // Build complete display OZ from ancestor path + current RNoPart
-  const buildDisplayOz = (rnopart, ancestorRnos) => {
-    const allParts = [...ancestorRnos, rnopart];
-    return allParts.join(".");
-  };
+      const shortText = getText(node, "LblTx ShortText", "LblTx", "ShortText", "KurzText", "Description") || "";
+      const longText = getText(node, "LblTx", "Description") || "";
 
-  // Get hierarchy level (depth)
-  const getHierarchyLevel = (ancestorRnos) => ancestorRnos.length;
-
-  // Recursively process BoQCtgy hierarchy
-  let sortIndex = 0;
-  const processBoQCtgy = (ctgyNode, parentPathRnos = []) => {
-    const currentRno = ctgyNode.getAttribute("RNoPart") || "";
-    const displayOz = buildDisplayOz(currentRno, parentPathRnos);
-    const hierarchyLevel = getHierarchyLevel(parentPathRnos);
-    
-    const shortText = getText(ctgyNode, "LblTx ShortText", "LblTx", "ShortText", "KurzText", "Description") || "";
-    const longText = getText(ctgyNode, "LblTx", "Description") || "";
-
-    if (currentRno || shortText) {
-      const posObj = {
-        node_type: "category",
-        current_rnopart: currentRno,
-        parent_path_rnoparts: parentPathRnos,
-        display_oz: displayOz,
-        hierarchy_level: hierarchyLevel,
-        sort_index: sortIndex++,
-        short_text: shortText,
-        long_text: longText,
-        quantity: "",
-        unit: ""
-      };
-      positions.push(posObj);
-
-      if (enableDebug) {
-        debugLog.push({
+      if (currentRno || shortText) {
+        const posObj = {
           node_type: "category",
           current_rnopart: currentRno,
-          parent_rnopart_path: parentPathRnos.join(" > ") || "(root)",
-          computed_display_oz: displayOz,
+          parent_path_rnoparts: parentPath,
+          display_oz: displayOz,
           hierarchy_level: hierarchyLevel,
+          sort_index: sortIndex++,
           short_text: shortText,
-          has_quantity: false,
-          has_unit: false
+          long_text: longText,
+          quantity: "",
+          unit: ""
+        };
+        positions.push(posObj);
+
+        if (enableDebug) {
+          debugLog.push({
+            node_type: "category",
+            current_rnopart: currentRno,
+            parent_path: parentPath.join(" > ") || "(root)",
+            computed_display_oz: displayOz,
+            hierarchy_level: hierarchyLevel,
+            short_text: shortText,
+            has_quantity: false,
+            has_unit: false
+          });
+        }
+      }
+
+      // Recursively process BoQBody children
+      const boqBody = node.querySelector("BoQBody");
+      if (boqBody) {
+        Array.from(boqBody.children).forEach((child) => {
+          parseNode(child, currentPath);
         });
       }
-    }
 
-    // Process child Items
-    const childItems = Array.from(ctgyNode.children).filter((c) => c.tagName === "Item" || c.tagName === "item");
-    const newPath = currentRno ? [...parentPathRnos, currentRno] : parentPathRnos;
-    
-    childItems.forEach((item) => {
-      const itemRno = item.getAttribute("RNoPart") || "";
-      const itemDisplayOz = buildDisplayOz(itemRno, newPath);
-      const itemHierarchyLevel = getHierarchyLevel(newPath);
-      
-      const itemShortText = getText(item, "Description ShortText", "ShortText", "KurzText") || "";
-      const itemLongText = getText(item, "DetailTx Text", "CompleteText DetailTx Text", "LongText", "LangText") || "";
-      const qty = getText(item, "Qty", "Menge") || "";
-      const unit = getText(item, "QU", "QtyUnit", "Einheit") || "";
+      // Also process direct child BoQCtgy elements (some GAEB variants)
+      Array.from(node.children)
+        .filter((c) => c.tagName === "BoQCtgy")
+        .forEach((child) => {
+          parseNode(child, currentPath);
+        });
+    } else if (node.tagName === "Item" || node.tagName === "item") {
+      const itemRno = node.getAttribute("RNoPart") || "";
+      const itemPath = itemRno ? [...parentPath, itemRno] : parentPath;
+      const displayOz = itemPath.join(".");
+      const hierarchyLevel = parentPath.length;
 
-      if (itemRno || itemShortText) {
+      const shortText = getText(node, "Description ShortText", "ShortText", "KurzText") || "";
+      const longText = getText(node, "DetailTx Text", "CompleteText DetailTx Text", "LongText", "LangText") || "";
+      const qty = getText(node, "Qty", "Menge") || "";
+      const unit = getText(node, "QU", "QtyUnit", "Einheit") || "";
+
+      if (itemRno || shortText) {
         const itemObj = {
           node_type: "item",
           current_rnopart: itemRno,
-          parent_path_rnoparts: newPath,
-          display_oz: itemDisplayOz,
-          hierarchy_level: itemHierarchyLevel,
+          parent_path_rnoparts: parentPath,
+          display_oz: displayOz,
+          hierarchy_level: hierarchyLevel,
           sort_index: sortIndex++,
-          short_text: itemShortText,
-          long_text: itemLongText,
+          short_text: shortText,
+          long_text: longText,
           quantity: qty,
           unit: unit
         };
@@ -123,32 +115,31 @@ function parseX83(xmlText, enableDebug = false) {
           debugLog.push({
             node_type: "item",
             current_rnopart: itemRno,
-            parent_rnopart_path: newPath.join(" > ") || "(root)",
-            computed_display_oz: itemDisplayOz,
-            hierarchy_level: itemHierarchyLevel,
-            short_text: itemShortText,
+            parent_path: parentPath.join(" > ") || "(root)",
+            computed_display_oz: displayOz,
+            hierarchy_level: hierarchyLevel,
+            short_text: shortText,
             has_quantity: !!qty,
             has_unit: !!unit
           });
         }
       }
-    });
-
-    // Process child BoQCtgy nodes
-    const childCtgys = Array.from(ctgyNode.children).filter((c) => c.tagName === "BoQCtgy");
-    const nextPath = currentRno ? [...parentPathRnos, currentRno] : parentPathRnos;
-    childCtgys.forEach((child) => processBoQCtgy(child, nextPath));
+    }
   };
 
-  // Start from root-level BoQCtgy elements
-  const rootCtgys = Array.from(doc.querySelectorAll("BoQCtgy")).filter(
-    (node) => !node.parentElement || node.parentElement.tagName !== "BoQCtgy"
-  );
-  rootCtgys.forEach((ctgy) => processBoQCtgy(ctgy, []));
+  // Start from root BoQCtgy or BoQBody elements
+  const rootElements = Array.from(doc.documentElement.children);
+  rootElements.forEach((el) => {
+    if (el.tagName === "BoQCtgy") {
+      parseNode(el, []);
+    } else if (el.tagName === "BoQBody") {
+      Array.from(el.children).forEach((child) => parseNode(child, []));
+    }
+  });
 
   // Fallback for DP format (non-GAEB)
   const dpNodes = doc.querySelectorAll("DP");
-  if (dpNodes.length > 0) {
+  if (dpNodes.length > 0 && positions.length === 0) {
     dpNodes.forEach((node) => {
       const oz = getText(node, "OZ", "Pos") || "";
       const shortText = getText(node, "Kurz", "KurzText", "Text") || "";
@@ -174,6 +165,7 @@ function parseX83(xmlText, enableDebug = false) {
 
   if (enableDebug) {
     console.log("=== GAEB-X83 IMPORT DEBUG ===");
+    console.log(`Total nodes imported: ${positions.length}`);
     console.table(debugLog);
   }
 
