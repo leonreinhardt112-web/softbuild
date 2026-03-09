@@ -115,7 +115,7 @@ export default function Stammdaten() {
   const createMut = useMutation({
     mutationFn: async (d) => {
       let extra = {};
-      if (d.typ === "auftraggeber") {
+      if (d.typ === "auftraggeber" && !d.id) {
         const all = await base44.entities.Stammdatum.filter({ typ: "auftraggeber" }, "-created_date", 1);
         const lastNum = all.length > 0 && all[0].kundennummer
           ? parseInt(all[0].kundennummer.replace(/\D/g, "")) || 0
@@ -124,7 +124,11 @@ export default function Stammdaten() {
       }
       return base44.entities.Stammdatum.create({ ...d, ...extra, kostensatz: d.kostensatz ? parseFloat(d.kostensatz) : undefined });
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["stammdaten"] }); setShowForm(false); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["stammdaten"] }); setShowForm(false); setEditingItem(null); },
+  });
+  const updateMut = useMutation({
+    mutationFn: (d) => base44.entities.Stammdatum.update(d.id, { ...d, kostensatz: d.kostensatz ? parseFloat(d.kostensatz) : undefined }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["stammdaten"] }); setShowForm(false); setEditingItem(null); },
   });
   const deleteMut = useMutation({
     mutationFn: (id) => base44.entities.Stammdatum.delete(id),
