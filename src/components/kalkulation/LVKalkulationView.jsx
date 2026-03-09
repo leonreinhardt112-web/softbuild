@@ -359,13 +359,16 @@ export default function LVKalkulationView({ project }) {
                         </div>
                       </CardContent>
                       )}
-                  </Card>
-                );
-              })}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
+                      </Card>
+                      );
+                      })}
+                      </div>
+                      );
+                      })}
+                      </div>
+                      </div>
+                      ))}
+                      </div>
+                      </div>
+                      );
+                      }
