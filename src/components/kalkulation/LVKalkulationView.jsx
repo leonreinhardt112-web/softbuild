@@ -156,12 +156,14 @@ export default function LVKalkulationView({ project }) {
           }
           hauptTitel.unterTitels.push(unterTitel);
           j = k;
-        } else {
+        } else if (!isTitle(lvPositions[j])) {
           // Position direkt unter Haupttitel (kein Untertitel-Dach)
           if (hauptTitel.unterTitels.length === 0 || hauptTitel.unterTitels[hauptTitel.unterTitels.length - 1].title !== null) {
             hauptTitel.unterTitels.push({ title: null, positions: [] });
           }
           hauptTitel.unterTitels[hauptTitel.unterTitels.length - 1].positions.push(lvPositions[j]);
+          j++;
+        } else {
           j++;
         }
       }
