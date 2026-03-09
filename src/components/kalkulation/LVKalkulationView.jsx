@@ -5,14 +5,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, ChevronDown, ChevronRight, Calculator, CheckCircle2 } from "lucide-react";
 import PositionKalkTable from "./PositionKalkTable";
-import { 
-  parseOZ, 
-  getOZDepth, 
-  getOZPrefix, 
-  determineNodeType, 
-  buildHierarchy, 
-  getPositions 
-} from "../lv/lvHierarchyUtils";
 
 export default function LVKalkulationView({ project }) {
   const queryClient = useQueryClient();
@@ -141,13 +133,84 @@ export default function LVKalkulationView({ project }) {
     }, 700);
   };
 
-  // Universal hierarchy logic using robust OZ parsing
-  // Extract positions (items with quantity/unit) from all items
-  const positionItems = getPositions(lvPositions);
+  // Determine if a position is a title:
+  // - explicit type="title", OR
+  // - no quantity and hierarchy level < 2 (0 for Haupttitel, 1 for Untertitel)
+  const isTitle = (pos) => {
+    if (pos.type === "title") return true;
+    if (pos.type === "position") return false;
+    // Heuristic: a title has no quantity and hierarchy level < 2
+    const level = getHierarchyLevel(pos.oz);
+    const hasNoQty = !pos.quantity || pos.quantity === "0" || pos.quantity === "";
+    return hasNoQty && level < 2;
+  };
 
-  // Build hierarchical structure using universal logic
-  // This handles any OZ scheme: "1"/"1.1"/"1.1.10" or "01"/"01.01"/"01.01.0001" etc.
-  const grouped = buildHierarchy(lvPositions);
+  // Count dots in OZ to determine hierarchy level
+  const getHierarchyLevel = (oz) => {
+    const cleanOz = (oz || "").replace(/\s/g, "");
+    const dotCount = (cleanOz.match(/\./g) || []).length;
+    return dotCount; // 0 = haupttitel, 1 = untertitel, 2+ = position
+  };
+
+  // Group by haupttitel, untertitel, positions
+  const grouped = [];
+  let currentHauptTitel = null;
+  let currentUnterTitel = null;
+  let posItemIdx = 0;
+
+  lvPositions.forEach((pos) => {
+    const level = getHierarchyLevel(pos.oz);
+    
+    // Haupttitel (level 0)
+    if (isTitle(pos) && level === 0) {
+      currentHauptTitel = { 
+        title: pos, 
+        unterTitels: []
+      };
+      grouped.push(currentHauptTitel);
+      currentUnterTitel = null;
+    }
+    // Untertitel (level 1)
+    else if (isTitle(pos) && level === 1) {
+      if (!currentHauptTitel) {
+        currentHauptTitel = { title: null, unterTitels: [] };
+        grouped.push(currentHauptTitel);
+      }
+      currentUnterTitel = { title: pos, positions: [] };
+      currentHauptTitel.unterTitels.push(currentUnterTitel);
+    }
+    // Position (level 2+)
+    else {
+      if (!currentUnterTitel) {
+        if (!currentHauptTitel) {
+          currentHauptTitel = { title: null, unterTitels: [] };
+          grouped.push(currentHauptTitel);
+        }
+        currentUnterTitel = { title: null, positions: [] };
+        currentHauptTitel.unterTitels.push(currentUnterTitel);
+      }
+      currentUnterTitel.positions.push({ pos, posIndex: posItemIdx });
+      posItemIdx++;
+    }
+  });
+
+  // Generate hierarchical numbering
+  grouped.forEach((ht, htIdx) => {
+    const htNum = String(htIdx + 1).padStart(2, "0");
+    ht.hierarchy = htNum;
+    
+    ht.unterTitels.forEach((ut, utIdx) => {
+      const utNum = String(utIdx + 1).padStart(2, "0");
+      ut.hierarchy = `${htNum}.${utNum}`;
+      
+      ut.positions.forEach((item, posIdx) => {
+        const posNum = String(posIdx + 1).padStart(4, "0");
+        item.hierarchy = `${htNum}.${utNum}.${posNum}`;
+      });
+    });
+  });
+
+  const positionItems = lvPositions.filter(p => !isTitle(p));
 
   const totalAngebotsumme = positionItems.reduce((sum, pos, idx) => {
     const rows = getRows(idx);
@@ -184,7 +247,7 @@ export default function LVKalkulationView({ project }) {
       <div className="hidden md:grid grid-cols-[auto_auto_auto_1fr_auto_auto_auto] gap-2 px-4 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground border-b border-border">
         <span className="w-4" />
         <span className="w-3.5" />
-        <span className="w-32">OZ</span>
+        <span className="w-24">Pos.</span>
         <span>Beschreibung</span>
         <span className="w-20 text-right">Menge / Einheit</span>
         <span className="w-24 text-right">EP (€)</span>
@@ -196,25 +259,25 @@ export default function LVKalkulationView({ project }) {
         {grouped.map((ht, htIdx) => (
           <div key={htIdx} className="space-y-4">
             {/* Haupttitel */}
-            {ht.type === "title" && (
+            {ht.title && (
               <div className="flex items-center gap-2 px-1 py-2 border-b-2 border-foreground">
-                <span className="text-sm font-mono font-bold text-foreground w-24">{ht.oz}</span>
-                <span className="text-base font-bold text-foreground">{ht.short_text}</span>
+                <span className="text-sm font-mono font-bold text-foreground w-16">{ht.hierarchy}</span>
+                <span className="text-base font-bold text-foreground">{ht.title.short_text}</span>
               </div>
             )}
 
             {/* Untertitel + Positionen */}
             <div className="space-y-4 pl-0">
-              {(ht.subtitles || []).map((ut, utIdx) => {
-                const titleSum = getTitleSum(ut.positions.map(item => item.original_item || item));
+              {ht.unterTitels.map((ut, utIdx) => {
+                const titleSum = getTitleSum(ut.positions.map(item => item.pos));
                 return (
                   <div key={utIdx} className="space-y-2">
                     {/* Untertitel */}
-                    {ut.type === "subtitle" && (
+                    {ut.title && (
                       <div className="flex items-center justify-between px-1 py-1 border-b border-border">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-mono font-bold text-foreground w-24">{ut.oz}</span>
-                          <span className="text-sm font-semibold text-foreground">{ut.short_text}</span>
+                          <span className="text-xs font-mono font-bold text-foreground w-20">{ut.hierarchy}</span>
+                          <span className="text-sm font-semibold text-foreground">{ut.title.short_text}</span>
                         </div>
                         {titleSum > 0 && (
                           <span className="text-sm font-semibold text-primary shrink-0">
@@ -225,8 +288,7 @@ export default function LVKalkulationView({ project }) {
                     )}
 
                     {/* Positions */}
-                    {(ut.positions || []).map((pos, pi) => {
-                      const posIndex = positionItems.findIndex(p => p.oz === pos.oz);
+                    {ut.positions.map(({ pos, posIndex, hierarchy }, pi) => {
                       const posKey = getPositionKey(posIndex);
                       const rows = getRows(posIndex);
                       const ep = rows.reduce((sum, r) => sum + Number(r.kosten_einheit || 0) + Number(r.zuschlag || 0), 0);
@@ -250,8 +312,8 @@ export default function LVKalkulationView({ project }) {
                               ? <CheckCircle2 className="w-3.5 h-3.5 text-green-500 shrink-0" />
                               : <div className="w-3.5 h-3.5 rounded-full border-2 border-muted-foreground/30 shrink-0" />
                             }
-                            {/* OZ */}
-                            <span className="text-xs font-mono font-bold text-foreground w-32 shrink-0">{pos.oz}</span>
+                            {/* POS. */}
+                            <span className="text-xs font-mono font-bold text-foreground w-24 shrink-0">{hierarchy}</span>
                             {/* BESCHREIBUNG */}
                             <div className="flex-1 min-w-0 text-sm text-foreground truncate">{getDisplayText(pos) || <span className="text-muted-foreground/50 italic">–</span>}</div>
                             {/* MENGE + EINHEIT */}
