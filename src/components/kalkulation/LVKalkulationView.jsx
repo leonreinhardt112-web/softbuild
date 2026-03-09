@@ -298,77 +298,77 @@ export default function LVKalkulationView({ project }) {
 
                       return (
                         <Card key={`${posIndex}-${pi}-${pos.oz}`} className={`transition-all ${isExpanded ? "border-primary/40 shadow-md" : "hover:border-border/80"}`}>
-                    <div
-                      className="flex items-center gap-2 px-4 py-2.5 cursor-pointer select-none"
-                      onClick={() => setExpandedOz(isExpanded ? null : posKey)}
-                    >
-                      {/* Expand icon */}
-                      {isExpanded
-                        ? <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
-                        : <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
-                      }
-                      {/* Status dot */}
-                      {isCalculated
-                        ? <CheckCircle2 className="w-3.5 h-3.5 text-green-500 shrink-0" />
-                        : <div className="w-3.5 h-3.5 rounded-full border-2 border-muted-foreground/30 shrink-0" />
-                      }
-                      {/* POS. */}
-                      <span className="text-xs font-mono font-bold text-foreground w-24 shrink-0">{hierarchy}</span>
-                      {/* BESCHREIBUNG */}
-                      <div className="flex-1 min-w-0 text-sm text-foreground truncate">{getDisplayText(pos) || <span className="text-muted-foreground/50 italic">–</span>}</div>
-                      {/* MENGE + EINHEIT */}
-                      <span className="text-xs text-muted-foreground w-20 text-right shrink-0 hidden sm:block">
-                        {pos.quantity && <>{parseFloat(pos.quantity).toLocaleString("de-DE", { minimumFractionDigits: 3 })} {pos.unit}</>}
-                      </span>
-                      {/* EP */}
-                      <span className={`text-xs w-24 text-right shrink-0 hidden md:block ${isCalculated ? "font-semibold text-primary" : "text-muted-foreground/40"}`}>
-                        {isCalculated ? `${ep.toFixed(2)} €` : "–"}
-                      </span>
-                      {/* GP */}
-                      <span className={`text-xs w-24 text-right shrink-0 hidden md:block ${gp > 0 ? "font-semibold text-foreground" : "text-muted-foreground/40"}`}>
-                        {gp > 0 ? gp.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €" : "–"}
-                      </span>
-                      {savingOz === posKey && <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground shrink-0" />}
-                      </div>
-
-                      {isExpanded && (
-                        <CardContent className="pt-0 pb-4 border-t border-border/50">
-                          {pos.long_text && (
-                            <div className="mt-3 mb-4 bg-muted/30 rounded-lg p-3 border-l-2 border-primary/30">
-                              {getDisplayText(pos) && (
-                                <p className="text-xs font-semibold text-foreground mb-2">{getDisplayText(pos)}</p>
-                              )}
-                              <p className="text-xs text-muted-foreground">
-                                {(() => {
-                                  const displayText = getDisplayText(pos);
-                                  const lt = pos.long_text.trim();
-                                  if (displayText && lt.startsWith(displayText)) {
-                                    return lt.slice(displayText.length).trimStart();
-                                  }
-                                  return lt;
-                                })()}
-                              </p>
-                            </div>
-                          )}
-                          <div className="mt-3">
-                            <PositionKalkTable
-                              rows={rows}
-                              zuschlaege={kalk?.zuschlaege || {}}
-                              onRowsChange={(newRows) => handleRowsChange(posIndex, newRows)}
-                            />
+                          <div
+                            className="flex items-center gap-2 px-4 py-2.5 cursor-pointer select-none"
+                            onClick={() => setExpandedOz(isExpanded ? null : posKey)}
+                          >
+                            {/* Expand icon */}
+                            {isExpanded
+                              ? <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
+                              : <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                            }
+                            {/* Status dot */}
+                            {isCalculated
+                              ? <CheckCircle2 className="w-3.5 h-3.5 text-green-500 shrink-0" />
+                              : <div className="w-3.5 h-3.5 rounded-full border-2 border-muted-foreground/30 shrink-0" />
+                            }
+                            {/* POS. */}
+                            <span className="text-xs font-mono font-bold text-foreground w-24 shrink-0">{hierarchy}</span>
+                            {/* BESCHREIBUNG */}
+                            <div className="flex-1 min-w-0 text-sm text-foreground truncate">{getDisplayText(pos) || <span className="text-muted-foreground/50 italic">–</span>}</div>
+                            {/* MENGE + EINHEIT */}
+                            <span className="text-xs text-muted-foreground w-20 text-right shrink-0 hidden sm:block">
+                              {pos.quantity && <>{parseFloat(pos.quantity).toLocaleString("de-DE", { minimumFractionDigits: 3 })} {pos.unit}</>}
+                            </span>
+                            {/* EP */}
+                            <span className={`text-xs w-24 text-right shrink-0 hidden md:block ${isCalculated ? "font-semibold text-primary" : "text-muted-foreground/40"}`}>
+                              {isCalculated ? `${ep.toFixed(2)} €` : "–"}
+                            </span>
+                            {/* GP */}
+                            <span className={`text-xs w-24 text-right shrink-0 hidden md:block ${gp > 0 ? "font-semibold text-foreground" : "text-muted-foreground/40"}`}>
+                              {gp > 0 ? gp.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €" : "–"}
+                            </span>
+                            {savingOz === posKey && <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground shrink-0" />}
                           </div>
-                        </CardContent>
-                      )}
-                    </Card>
-                  );
-                })}
-                </div>
-              );
-            })}
+
+                          {isExpanded && (
+                            <CardContent className="pt-0 pb-4 border-t border-border/50">
+                              {pos.long_text && (
+                                <div className="mt-3 mb-4 bg-muted/30 rounded-lg p-3 border-l-2 border-primary/30">
+                                  {getDisplayText(pos) && (
+                                    <p className="text-xs font-semibold text-foreground mb-2">{getDisplayText(pos)}</p>
+                                  )}
+                                  <p className="text-xs text-muted-foreground">
+                                    {(() => {
+                                      const displayText = getDisplayText(pos);
+                                      const lt = pos.long_text.trim();
+                                      if (displayText && lt.startsWith(displayText)) {
+                                        return lt.slice(displayText.length).trimStart();
+                                      }
+                                      return lt;
+                                    })()}
+                                  </p>
+                                </div>
+                              )}
+                              <div className="mt-3">
+                                <PositionKalkTable
+                                  rows={rows}
+                                  zuschlaege={kalk?.zuschlaege || {}}
+                                  onRowsChange={(newRows) => handleRowsChange(posIndex, newRows)}
+                                />
+                              </div>
+                            </CardContent>
+                          )}
+                        </Card>
+                      );
+                    })}
+                  </div>
+                );
+              })}
             </div>
           </div>
         ))}
       </div>
     </div>
   );
-                      }
+}
