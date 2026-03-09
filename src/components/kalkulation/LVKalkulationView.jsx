@@ -77,16 +77,15 @@ export default function LVKalkulationView({ project }) {
   const getRows = (oz) => localPositions[oz] || [];
 
   // Derive display short text from long_text if short_text is missing
+  // GAEB long_text often starts with "ShortText LongDescription..."
+  // Split before the first German sentence-starter word (article/preposition) after ≥5 chars
   const getDisplayText = (pos) => {
     if (pos.short_text) return pos.short_text;
     if (!pos.long_text) return "";
-    const words = pos.long_text.trim().split(/\s+/);
-    let result = "";
-    for (const word of words) {
-      if (result.length + word.length > 70) break;
-      result += (result ? " " : "") + word;
-    }
-    return result || pos.long_text.slice(0, 70);
+    const lt = pos.long_text.trim();
+    const match = lt.match(/^(.{5,80}?)\s+(?=(?:Die|Der|Das|Den|Dem|Zur|Zum|Zu\s|Bei|Nach|Vor|Über|Unter|Durch|Mit|Von|Für\s|An\s|In\s|Im\s|Am\s|Ab\s|Aus\s|Es\s|Eine|Ein\s|Alle|Je\s|Sofern|Falls|Hierbei|Dabei|Hierzu)\s)/);
+    if (match) return match[1];
+    return lt.slice(0, 60);
   };
 
   const handleRowsChange = (oz, rows) => {
