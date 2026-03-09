@@ -372,6 +372,8 @@ function addFooter(doc, company, pageWidth, pageHeight, marginLeft, marginRight,
   
   // Text-Farbe für Footer
   doc.setTextColor(255, 255, 255);
+  doc.setFont(undefined, "normal");
+  doc.setFontSize(7);
   
   if (company) {
     const col1X = marginLeft;
