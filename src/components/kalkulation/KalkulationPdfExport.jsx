@@ -19,6 +19,7 @@ export async function generateKalkulationPDF(project, kalkulation, options = {})
   const contentWidth = pageWidth - MARGIN_LEFT - MARGIN_RIGHT;
 
   let company = null;
+  let client = null;
   let headerColor = [70, 130, 180]; // Default: Steel Blue
   
   try {
@@ -30,12 +31,17 @@ export async function generateKalkulationPDF(project, kalkulation, options = {})
         headerColor = hexToRgb(company.angebot_header_farbe);
       }
     }
+    
+    // Lade Client-Stammdaten
+    if (project.client_id) {
+      client = await base44.entities.Stammdatum.read(project.client_id);
+    }
   } catch (e) {
-    console.error("Fehler beim Laden der Unternehmens-Stammdaten:", e);
+    console.error("Fehler beim Laden der Stammdaten:", e);
   }
 
   // Erste Seite
-  addHeaderSection(doc, company, project, MARGIN_TOP, MARGIN_LEFT, pageWidth);
+  addHeaderSection(doc, company, project, client, MARGIN_TOP, MARGIN_LEFT, pageWidth);
   
   let yPos = MARGIN_TOP + 60;
   const pageBottom = pageHeight - MARGIN_BOTTOM;
