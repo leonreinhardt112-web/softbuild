@@ -36,6 +36,11 @@ export default function Kalkulation() {
     mutationFn: (d) => base44.entities.Kalkulation.create(d),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["kalkulationen"] }); setShowForm(false); setForm({ project_id: "", version_name: "Hauptangebot", bgk_prozent: 10, agk_prozent: 5, wagnis_gewinn_prozent: 3, notes: "" }); },
   });
+
+  const updateMut = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.Kalkulation.update(id, data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["kalkulationen"] }); setEditingKalkId(null); },
+  });
   const deleteMut = useMutation({
     mutationFn: (id) => base44.entities.Kalkulation.delete(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["kalkulationen"] }),
