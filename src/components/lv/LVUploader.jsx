@@ -284,7 +284,7 @@ export default function LVUploader({ project, onUpdate, onTradesDetected }) {
     if (!project?.lv_positions?.length) return;
     setAnalyzing(true);
     setError(null);
-    const positionList = project.lv_positions.map((p) => `OZ ${p.oz}: ${p.short_text} (${p.quantity} ${p.unit})`).join("\n");
+    const positionList = project.lv_positions.map((p) => `OZ ${p.display_oz}: ${p.short_text} (${p.quantity} ${p.unit})`).join("\n");
     const selectedTrades = (project.selected_trades || []).join(", ");
     try {
       const result = await base44.integrations.Core.InvokeLLM({
