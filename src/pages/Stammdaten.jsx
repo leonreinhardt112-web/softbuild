@@ -31,7 +31,20 @@ const TABS = [
 ];
 
 function StammdatenForm({ typ, item, onSave, onCancel }) {
-  const [form, setForm] = useState(item || { typ, name: "", kuerzel: "", kontakt_name: "", email: "", telefon: "", strasse: "", plz: "", ort: "", adresse: "", kategorie: "", kostensatz: "", einheit: "", qualifikation: "", aktiv: true });
+  const [form, setForm] = useState(() => {
+    if (!item) return { typ, name: "", kuerzel: "", kontakt_name: "", email: "", telefon: "", strasse: "", plz: "", ort: "", adresse: "", kategorie: "", kostensatz: "", einheit: "", qualifikation: "", aktiv: true };
+    // Parse adresse zurück zu strasse, plz, ort falls vorhanden
+    let strasse = item.strasse || "", plz = item.plz || "", ort = item.ort || "";
+    if (item.adresse && !strasse && !plz && !ort) {
+      const parts = item.adresse.split(", ");
+      strasse = parts[0] || "";
+      if (parts[1]) {
+        const plzOrtMatch = parts[1].match(/^(\d+)\s+(.+)$/);
+        if (plzOrtMatch) { plz = plzOrtMatch[1]; ort = plzOrtMatch[2]; }
+      }
+    }
+    return { ...item, strasse, plz, ort };
+  });
   const [plzLoading, setPlzLoading] = useState(false);
 
   const handlePlzChange = async (plz) => {
