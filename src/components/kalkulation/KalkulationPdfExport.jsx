@@ -286,8 +286,9 @@ export async function generateKalkulationPDF(project, kalkulation, options = {})
   doc.save(filename);
 }
 
-function addHeaderSection(doc, company, project, topMargin, leftMargin, pageWidth) {
+function addHeaderSection(doc, company, project, client, topMargin, leftMargin, pageWidth) {
   const rightMargin = MARGIN_RIGHT;
+  const contentWidth = pageWidth - leftMargin - rightMargin;
   
   // 1. Kopfzeile: Kurze Adresse links + Logo Beschreibung rechts
   if (company) {
@@ -315,12 +316,21 @@ function addHeaderSection(doc, company, project, topMargin, leftMargin, pageWidt
   });
   doc.setTextColor(0, 0, 0);
   
-  // 2. Empfängeradresse links
+  // 2. Empfängeradresse links (aus Stammdaten)
   let addrY = topMargin + 16;
   doc.setFontSize(9);
   doc.setFont(undefined, "normal");
-  doc.text(project.client || "", leftMargin, addrY);
-  addrY += 4;
+  if (client) {
+    doc.text(client.name || "", leftMargin, addrY);
+    addrY += 4;
+    if (client.adresse) {
+      doc.text(client.adresse, leftMargin, addrY);
+      addrY += 4;
+    }
+  } else {
+    doc.text(project.client || "", leftMargin, addrY);
+    addrY += 4;
+  }
   
   // 3. Rechts: Titel "Kalkuliertes Angebot" + Projekt-Details
   const titleX = pageWidth - rightMargin - 40;
@@ -335,21 +345,18 @@ function addHeaderSection(doc, company, project, topMargin, leftMargin, pageWidt
   detailY += 4;
   doc.text(`Datum: ${new Date().toLocaleDateString("de-DE")}`, titleX, detailY);
   
-  // 4. Projektname und Beschreibung
+  // 4. Projektname mit Umbruch
   let projectY = addrY + 8;
   doc.setFontSize(10);
   doc.setFont(undefined, "bold");
-  doc.text(project.project_name || "", leftMargin, projectY);
-  
-  if (project.selected_trades && project.selected_trades.length > 0) {
-    projectY += 5;
-    doc.setFontSize(9);
-    doc.setFont(undefined, "normal");
-    doc.text(project.selected_trades.join(", "), leftMargin, projectY);
-  }
+  const projectNameLines = doc.splitTextToSize(project.project_name || "", contentWidth * 0.6);
+  projectNameLines.forEach((line, idx) => {
+    doc.text(line, leftMargin, projectY + (idx * 5));
+  });
+  projectY += projectNameLines.length * 5;
   
   // Trennlinie
-  projectY += 8;
+  projectY += 3;
   doc.setDrawColor(150, 150, 150);
   doc.line(leftMargin, projectY, pageWidth - rightMargin, projectY);
 }
