@@ -87,13 +87,13 @@ export async function generateKalkulationPDF(project, kalkulation) {
       const ep = Number(pos.ep) || 0;
       const gp = Number(pos.gp) || 0;
 
-      // Pos-Nummer (links)
+      // Pos-Nummer (links) – max 15mm Breite
       doc.text((pos.oz || "").toString(), MARGIN_LEFT + 1, yPos + 1);
 
       // Kurztext (Spalte 2) – mit Platz für mehrzeilig
-      const shortLines = doc.splitTextToSize(pos.short_text || "", 67);
+      const shortLines = doc.splitTextToSize(pos.short_text || "", 55);
       const shortTextStartY = yPos + 1;
-      doc.text(shortLines[0] || "", MARGIN_LEFT + 16, shortTextStartY);
+      doc.text(shortLines[0] || "", MARGIN_LEFT + 18, shortTextStartY);
       
       // Menge/Einheit (Spalte 3, rechtsausgerichtet)
       const mengeText = `${menge.toLocaleString("de-DE", { minimumFractionDigits: 2 })} ${pos.einheit || ""}`;
