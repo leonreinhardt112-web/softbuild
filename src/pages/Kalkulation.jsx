@@ -55,7 +55,10 @@ export default function Kalkulation() {
           <h1 className="text-2xl font-bold text-foreground">Kalkulation & Angebot</h1>
           <p className="text-sm text-muted-foreground mt-0.5">Angebotsbearbeitung und Preiskalkulation</p>
         </div>
-        <Button className="gap-2" onClick={() => setShowForm(true)}><Plus className="w-4 h-4" />Neue Kalkulation</Button>
+        <div className="flex gap-2">
+          <StammLVDialog />
+          <Button className="gap-2" onClick={() => setShowForm(true)}><Plus className="w-4 h-4" />Neue Kalkulation</Button>
+        </div>
       </div>
 
       {/* Stats */}
