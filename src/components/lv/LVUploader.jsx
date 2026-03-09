@@ -228,7 +228,7 @@ export default function LVUploader({ project, onUpdate, onTradesDetected }) {
     setUploading(true);
     try {
       const text = await file.text();
-      const positions = parseX83(text);
+      const positions = parseX83(text, true); // Debug enabled
       if (positions.length === 0) {
         setError("Keine LV-Positionen gefunden. Bitte GAEB X83/X82/X81 (XML) verwenden.");
         setUploading(false);
@@ -242,6 +242,7 @@ export default function LVUploader({ project, onUpdate, onTradesDetected }) {
         lv_positions: positions,
         lv_analysis_findings: [],
         baulv_conflict_findings: [],
+        lv_import_debug: []
       });
       if (onTradesDetected) onTradesDetected(detectedTrades);
     } catch (err) {
