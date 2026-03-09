@@ -328,6 +328,7 @@ function addTableHeader(doc, x, y, width, colorRGB = [70, 130, 180]) {
   });
   
   doc.setTextColor(0, 0, 0);
+  doc.setFont(undefined, "normal");
 }
 
 function hexToRgb(hex) {
