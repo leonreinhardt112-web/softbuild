@@ -238,7 +238,7 @@ export default function LVKalkulationView({ project }) {
               {group.title && (
                 <div className="flex items-center justify-between px-1 py-1 border-b border-border">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-mono text-muted-foreground">{group.title.oz}</span>
+                    <span className="text-xs font-mono font-bold text-foreground w-20">{group.titleHierarchy}</span>
                     <span className="text-sm font-semibold text-foreground">{group.title.short_text}</span>
                   </div>
                   {titleSum > 0 && (
