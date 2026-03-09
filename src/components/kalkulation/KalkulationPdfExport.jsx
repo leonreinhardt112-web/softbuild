@@ -1,12 +1,10 @@
 import jsPDF from "jspdf";
 import { base44 } from "@/api/base44Client";
 
-// DIN 5008 Margins (in mm)
-const DIN_MARGIN_TOP = 20;
-const DIN_MARGIN_LEFT = 20;
-const DIN_MARGIN_RIGHT = 20;
-const DIN_MARGIN_BOTTOM = 20;
-const DIN_FOLD_MARK = 105; // Faltmarke bei ca. 105mm
+const MARGIN_TOP = 20;
+const MARGIN_LEFT = 20;
+const MARGIN_RIGHT = 20;
+const MARGIN_BOTTOM = 20;
 
 export async function generateKalkulationPDF(project, kalkulation) {
   const doc = new jsPDF({
@@ -17,144 +15,168 @@ export async function generateKalkulationPDF(project, kalkulation) {
 
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
-  const contentWidth = pageWidth - DIN_MARGIN_LEFT - DIN_MARGIN_RIGHT;
+  const contentWidth = pageWidth - MARGIN_LEFT - MARGIN_RIGHT;
 
-  // Hole Unternehmens-Briefkopfdaten
   let company = null;
   try {
     const companies = await base44.entities.Stammdatum.filter({ typ: "unternehmen", aktiv: true }, undefined, 1);
-    if (companies && companies.length > 0) {
-      company = companies[0];
-    }
+    if (companies?.length > 0) company = companies[0];
   } catch (e) {
     console.error("Fehler beim Laden der Unternehmens-Stammdaten:", e);
   }
 
-  // Erste Seite mit Briefkopf
-  addBriefkopf(doc, company, DIN_MARGIN_TOP, DIN_MARGIN_LEFT);
+  // Erste Seite
+  addHeaderSection(doc, company, project, MARGIN_TOP, MARGIN_LEFT, pageWidth);
   
-  let yPosition = DIN_MARGIN_TOP + 50; // Nach Briefkopf
+  let yPos = MARGIN_TOP + 60;
+  const pageBottom = pageHeight - MARGIN_BOTTOM;
+
+  // Positionen mit Titel-Struktur
+  const positionsByTitle = groupPositionsByTitle(project.lv_positions || [], kalkulation.positions || []);
   
-  // Betreffzeile
-  doc.setFont(undefined, "bold");
-  doc.setFontSize(11);
-  doc.text("Kalkuliertes Angebot", DIN_MARGIN_LEFT, yPosition);
-  yPosition += 8;
+  let pageNum = 1;
+  let firstPageDone = false;
 
-  // Projektinformationen
-  doc.setFont(undefined, "normal");
-  doc.setFontSize(10);
-  doc.text(`Projekt: ${project.project_name || ""}`, DIN_MARGIN_LEFT, yPosition);
-  yPosition += 5;
-  doc.text(`Projektnummer: ${project.project_number || ""}`, DIN_MARGIN_LEFT, yPosition);
-  yPosition += 5;
-  if (project.client) {
-    doc.text(`Auftraggeber: ${project.client}`, DIN_MARGIN_LEFT, yPosition);
-    yPosition += 5;
-  }
-  yPosition += 5;
-
-  // Tabelle
-  const colWidths = [15, 80, 25, 25, 25];
-  const headers = ["Pos.", "Beschreibung", "Menge", "EP (€)", "GP (€)"];
-  const allPositions = kalkulation.positions || [];
-  
-  // Rendering-Strategie: Alle Positionen auf erste Seite bis zur Seitengröße, dann neue Seiten
-  let posIndex = 0;
-  let isFirstPage = true;
-  const pageBottom = pageHeight - DIN_MARGIN_BOTTOM;
-  const rowHeight = 5;
-
-  while (posIndex < allPositions.length) {
-    if (!isFirstPage) {
+  for (const titleGroup of positionsByTitle) {
+    // Prüfe, ob Titel auf aktuelle Seite passt
+    if (firstPageDone && yPos + 8 > pageBottom) {
       doc.addPage();
-      yPosition = DIN_MARGIN_TOP;
-      
-      // Seitenkopf
-      doc.setFontSize(9);
-      doc.setFont(undefined, "normal");
-      doc.text(`Projekt: ${project.project_number}`, DIN_MARGIN_LEFT, yPosition);
-      yPosition += 8;
+      yPos = MARGIN_TOP + 10;
+      firstPageDone = false;
     }
 
-    // Render table header
-    doc.setFont(undefined, "bold");
-    doc.setFontSize(9);
-    doc.setFillColor(66, 133, 244);
-    doc.setTextColor(255, 255, 255);
+    // Haupttitel
+    if (titleGroup.title) {
+      doc.setFont(undefined, "bold");
+      doc.setFontSize(10);
+      doc.setFillColor(230, 240, 250);
+      doc.rect(MARGIN_LEFT, yPos - 2, contentWidth, 6, "F");
+      doc.text(titleGroup.title, MARGIN_LEFT + 2, yPos + 2);
+      yPos += 8;
+      firstPageDone = true;
+    }
 
-    let xPos = DIN_MARGIN_LEFT;
-    const headerYPos = yPosition;
-    headers.forEach((h, i) => {
-      const cellHeight = 6;
-      doc.rect(xPos, headerYPos, colWidths[i], cellHeight, "F");
-      const align = i >= 2 ? "right" : "left";
-      const textX = align === "right" ? xPos + colWidths[i] - 2 : xPos + 2;
-      doc.text(h, textX, headerYPos + 4, { align });
-      xPos += colWidths[i];
-    });
-    yPosition += 7;
-
-    // Render positions for this page
-    doc.setFont(undefined, "normal");
-    doc.setTextColor(0, 0, 0);
-    doc.setFontSize(8);
-
-    while (posIndex < allPositions.length && yPosition + rowHeight < pageBottom) {
-      const p = allPositions[posIndex];
-      const menge = parseFloat(p.menge) || 0;
-      const ep = Number(p.ep) || 0;
-      const gp = Number(p.gp) || 0;
-
-      // Alternating row colors
-      if (posIndex % 2 === 1) {
-        doc.setFillColor(245, 245, 245);
-        doc.rect(DIN_MARGIN_LEFT, yPosition - 2, contentWidth, rowHeight, "F");
+    // Positionen dieser Gruppe
+    for (const pos of titleGroup.positions) {
+      // Tabellenkopf bei neuer Seite oder Titel
+      if (!firstPageDone || (yPos < MARGIN_TOP + 15)) {
+        addTableHeader(doc, MARGIN_LEFT, yPos, contentWidth);
+        yPos += 6;
+        firstPageDone = true;
       }
 
-      xPos = DIN_MARGIN_LEFT;
-      const rowData = [
-        p.oz || "",
-        p.short_text || "",
-        `${menge.toLocaleString("de-DE", { minimumFractionDigits: 2 })} ${p.einheit || ""}`,
-        `${ep.toLocaleString("de-DE", { minimumFractionDigits: 2 })}`,
-        `${gp.toLocaleString("de-DE", { minimumFractionDigits: 2 })}`,
-      ];
+      // Kurze Zeile (Pos + Kurztext + Menge + EP + GP)
+      doc.setFont(undefined, "normal");
+      doc.setFontSize(9);
+      
+      if (pos.posIndex % 2 === 1) {
+        doc.setFillColor(248, 248, 248);
+        doc.rect(MARGIN_LEFT, yPos - 2, contentWidth, 5, "F");
+      }
 
-      rowData.forEach((val, i) => {
-        const align = i >= 2 ? "right" : "left";
-        const textX = align === "right" ? xPos + colWidths[i] - 2 : xPos + 2;
-        doc.text(val, textX, yPosition, { align, maxWidth: colWidths[i] - 4 });
-        xPos += colWidths[i];
-      });
-      yPosition += rowHeight;
-      posIndex++;
+      const menge = parseFloat(pos.menge) || 0;
+      const ep = Number(pos.ep) || 0;
+      const gp = Number(pos.gp) || 0;
+
+      // Pos-Nummer | Kurztext | Menge ME | EP | GP
+      let xPos = MARGIN_LEFT;
+      doc.text((pos.oz || "").toString(), xPos + 1, yPos + 1);
+      xPos += 15;
+
+      // Kurztext mit Zeilenumbruch
+      const shortLines = doc.splitTextToSize(pos.short_text || "", 70);
+      doc.text(shortLines[0] || "", xPos + 1, yPos + 1);
+      if (shortLines.length > 1) {
+        doc.setFontSize(8);
+        doc.text(shortLines[1], xPos + 1, yPos + 4);
+        doc.setFontSize(9);
+        yPos += 2;
+      }
+      
+      xPos += 70;
+      doc.text(`${menge.toLocaleString("de-DE", { minimumFractionDigits: 2 })} ${pos.einheit || ""}`, xPos, yPos + 1, { align: "center" });
+      xPos += 22;
+      doc.text(`${ep.toLocaleString("de-DE", { minimumFractionDigits: 2 })} €`, xPos, yPos + 1, { align: "right" });
+      xPos += 18;
+      doc.setFont(undefined, "bold");
+      doc.text(`${gp.toLocaleString("de-DE", { minimumFractionDigits: 2 })} €`, xPos, yPos + 1, { align: "right" });
+      doc.setFont(undefined, "normal");
+
+      yPos += 5;
+
+      // Langtext (falls vorhanden) – ausgeglichen unter Beschreibung
+      if (pos.long_text) {
+        doc.setFontSize(8);
+        doc.setTextColor(100, 100, 100);
+        const longLines = doc.splitTextToSize(pos.long_text, 70);
+        let langY = yPos;
+        longLines.forEach((line, idx) => {
+          if (idx < 3) { // Max 3 Zeilen Langtext
+            doc.text(line, MARGIN_LEFT + 71, langY);
+            langY += 3;
+          }
+        });
+        yPos = Math.max(yPos, langY + 1);
+        doc.setTextColor(0, 0, 0);
+        doc.setFontSize(9);
+      }
+
+      // Pagebreak-Check
+      if (yPos > pageBottom - 10) {
+        doc.addPage();
+        yPos = MARGIN_TOP;
+        firstPageDone = false;
+      }
     }
 
-    isFirstPage = false;
+    // Summe pro Titel
+    if (titleGroup.positions.length > 0) {
+      doc.setFont(undefined, "bold");
+      doc.setFontSize(9);
+      const titleSum = titleGroup.positions.reduce((s, p) => s + (Number(p.gp) || 0), 0);
+      doc.text("Summe Titel", MARGIN_LEFT + 86, yPos + 2);
+      doc.text(`${titleSum.toLocaleString("de-DE", { minimumFractionDigits: 2 })} €`, pageWidth - MARGIN_RIGHT - 2, yPos + 2, { align: "right" });
+      yPos += 6;
+      
+      if (yPos > pageBottom - 15) {
+        doc.addPage();
+        yPos = MARGIN_TOP;
+        firstPageDone = false;
+      }
+    }
   }
 
-  // Letzte Seite mit Summen
-  doc.addPage();
-  let finalYPos = DIN_MARGIN_TOP;
-  doc.setFontSize(9);
-  doc.setFont(undefined, "normal");
-  doc.text(`Projekt: ${project.project_number}`, DIN_MARGIN_LEFT, finalYPos);
-  finalYPos += 8;
+  // Abschlusseite mit Summen
+  if (yPos > pageBottom - 20) {
+    doc.addPage();
+    yPos = MARGIN_TOP;
+  }
 
-  // Zusammenfassung
+  yPos += 5;
   doc.setFont(undefined, "bold");
   doc.setFontSize(11);
-  const totalGP = (kalkulation.positions || []).reduce((sum, p) => sum + (Number(p.gp) || 0), 0);
-  
-  doc.text("Kalkuliertes Angebot – Zusammenfassung", DIN_MARGIN_LEFT, finalYPos);
-  finalYPos += 8;
-  
+  doc.text("Zusammenfassung", MARGIN_LEFT, yPos);
+  yPos += 8;
+
+  const totalNetto = (kalkulation.positions || []).reduce((sum, p) => sum + (Number(p.gp) || 0), 0);
+  const mwst = totalNetto * 0.19;
+  const totalBrutto = totalNetto + mwst;
+
   doc.setFont(undefined, "normal");
   doc.setFontSize(10);
-  doc.text(`Gesamtsumme Angebotspositionen: ${totalGP.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`, DIN_MARGIN_LEFT, finalYPos);
+  const summaryX = pageWidth - MARGIN_RIGHT - 40;
+  doc.text("Summe-Netto:", summaryX, yPos);
+  doc.text(`${totalNetto.toLocaleString("de-DE", { minimumFractionDigits: 2 })} €`, pageWidth - MARGIN_RIGHT - 2, yPos, { align: "right" });
+  yPos += 6;
+  
+  doc.text("19,00 % MwSt.:", summaryX, yPos);
+  doc.text(`${mwst.toLocaleString("de-DE", { minimumFractionDigits: 2 })} €`, pageWidth - MARGIN_RIGHT - 2, yPos, { align: "right" });
+  yPos += 6;
+  
+  doc.setFont(undefined, "bold");
+  doc.text("Summe-Brutto:", summaryX, yPos);
+  doc.text(`${totalBrutto.toLocaleString("de-DE", { minimumFractionDigits: 2 })} €`, pageWidth - MARGIN_RIGHT - 2, yPos, { align: "right" });
 
-  // Download
   const filename = `Angebot_${project.project_number}_${new Date().toISOString().split("T")[0]}.pdf`;
   doc.save(filename);
 }
