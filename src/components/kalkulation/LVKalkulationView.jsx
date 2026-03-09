@@ -100,18 +100,43 @@ export default function LVKalkulationView({ project }) {
     }, 700);
   };
 
-  const totalAngebotsumme = lvPositions.reduce((sum, pos) => {
+  // Group positions by title
+  const grouped = [];
+  let currentGroup = null;
+  lvPositions.forEach((pos) => {
+    if (pos.type === "title") {
+      currentGroup = { title: pos, positions: [] };
+      grouped.push(currentGroup);
+    } else {
+      if (!currentGroup) {
+        currentGroup = { title: null, positions: [] };
+        grouped.push(currentGroup);
+      }
+      currentGroup.positions.push(pos);
+    }
+  });
+
+  const positionItems = lvPositions.filter(p => p.type !== "title");
+
+  const totalAngebotsumme = positionItems.reduce((sum, pos) => {
     const rows = getRows(pos.oz);
     const ep = rows.reduce((s, r) => s + Number(r.kosten_einheit || 0) + Number(r.zuschlag || 0), 0);
     return sum + ep * (parseFloat(pos.quantity) || 0);
   }, 0);
+
+  const getTitleSum = (positions) =>
+    positions.reduce((sum, pos) => {
+      const rows = getRows(pos.oz);
+      const ep = rows.reduce((s, r) => s + Number(r.kosten_einheit || 0) + Number(r.zuschlag || 0), 0);
+      return sum + ep * (parseFloat(pos.quantity) || 0);
+    }, 0);
 
   return (
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm font-semibold">{lvPositions.length} LV-Positionen · Hauptangebot</p>
+          <p className="text-sm font-semibold">{positionItems.length} LV-Positionen · Hauptangebot</p>
           <p className="text-xs text-muted-foreground mt-0.5">Position anklicken zum Kalkulieren</p>
         </div>
         {totalAngebotsumme > 0 && (
@@ -122,58 +147,83 @@ export default function LVKalkulationView({ project }) {
         )}
       </div>
 
-      {/* Positions */}
-      <div className="space-y-2">
-        {lvPositions.map((pos) => {
-          const rows = getRows(pos.oz);
-          const ep = rows.reduce((sum, r) => sum + Number(r.kosten_einheit || 0) + Number(r.zuschlag || 0), 0);
-          const gp = ep * (parseFloat(pos.quantity) || 0);
-          const isExpanded = expandedOz === pos.oz;
-          const isCalculated = rows.length > 0;
-
+      {/* Grouped by title */}
+      <div className="space-y-6">
+        {grouped.map((group, gi) => {
+          const titleSum = getTitleSum(group.positions);
           return (
-            <Card key={pos.oz} className={`transition-all ${isExpanded ? "border-primary/40 shadow-md" : "hover:border-border/80"}`}>
-              <div
-                className="flex items-center gap-3 px-4 py-3 cursor-pointer select-none"
-                onClick={() => setExpandedOz(isExpanded ? null : pos.oz)}
-              >
-                {isExpanded
-                  ? <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
-                  : <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
-                }
-                {isCalculated
-                  ? <CheckCircle2 className="w-3.5 h-3.5 text-green-500 shrink-0" />
-                  : <div className="w-3.5 h-3.5 rounded-full border-2 border-muted-foreground/30 shrink-0" />
-                }
-                <span className="text-xs font-mono text-muted-foreground w-16 shrink-0">{pos.oz}</span>
-                <span className="text-sm font-medium flex-1 truncate">{pos.short_text}</span>
-                <span className="text-xs text-muted-foreground shrink-0 hidden sm:block">{pos.quantity} {pos.unit}</span>
-                {isCalculated && (
-                  <div className="text-right shrink-0 hidden sm:block">
-                    <span className="text-xs font-semibold text-primary">{ep.toFixed(2)} €/Einheit</span>
-                    {gp > 0 && <span className="text-xs text-muted-foreground ml-2">GP: {gp.toFixed(2)} €</span>}
+            <div key={gi} className="space-y-2">
+              {/* Title header */}
+              {group.title && (
+                <div className="flex items-center justify-between px-1 py-1 border-b border-border">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-mono text-muted-foreground">{group.title.oz}</span>
+                    <span className="text-sm font-semibold text-foreground">{group.title.short_text}</span>
                   </div>
-                )}
-                {rows.length > 0 && <Badge variant="secondary" className="text-[10px] shrink-0">{rows.length}</Badge>}
-                {savingOz === pos.oz && <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground shrink-0" />}
-              </div>
-
-              {isExpanded && (
-                <CardContent className="pt-0 pb-4 border-t border-border/50">
-                  {pos.long_text && (
-                    <p className="text-xs text-muted-foreground mt-3 mb-4 bg-muted/30 rounded-lg p-3 border-l-2 border-primary/30">
-                      {pos.long_text}
-                    </p>
+                  {titleSum > 0 && (
+                    <span className="text-sm font-semibold text-primary shrink-0">
+                      {titleSum.toLocaleString("de-DE", { style: "currency", currency: "EUR" })}
+                    </span>
                   )}
-                  <div className="mt-3">
-                    <PositionKalkTable
-                      rows={rows}
-                      onRowsChange={(newRows) => handleRowsChange(pos.oz, newRows)}
-                    />
-                  </div>
-                </CardContent>
+                </div>
               )}
-            </Card>
+
+              {/* Positions in this group */}
+              {group.positions.map((pos) => {
+                const rows = getRows(pos.oz);
+                const ep = rows.reduce((sum, r) => sum + Number(r.kosten_einheit || 0) + Number(r.zuschlag || 0), 0);
+                const gp = ep * (parseFloat(pos.quantity) || 0);
+                const isExpanded = expandedOz === pos.oz;
+                const isCalculated = rows.length > 0;
+
+                return (
+                  <Card key={pos.oz} className={`transition-all ${isExpanded ? "border-primary/40 shadow-md" : "hover:border-border/80"}`}>
+                    <div
+                      className="flex items-center gap-3 px-4 py-3 cursor-pointer select-none"
+                      onClick={() => setExpandedOz(isExpanded ? null : pos.oz)}
+                    >
+                      {isExpanded
+                        ? <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
+                        : <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                      }
+                      {isCalculated
+                        ? <CheckCircle2 className="w-3.5 h-3.5 text-green-500 shrink-0" />
+                        : <div className="w-3.5 h-3.5 rounded-full border-2 border-muted-foreground/30 shrink-0" />
+                      }
+                      <span className="text-xs font-mono text-muted-foreground w-16 shrink-0">{pos.oz}</span>
+                      <div className="flex-1 min-w-0">
+                        <span className="text-sm font-medium">{pos.short_text}</span>
+                        <span className="text-xs text-muted-foreground ml-2">{pos.quantity} {pos.unit}</span>
+                      </div>
+                      {isCalculated && (
+                        <div className="text-right shrink-0 hidden sm:block">
+                          <span className="text-xs font-semibold text-primary">{ep.toFixed(2)} €/Eh</span>
+                          {gp > 0 && <span className="text-xs text-muted-foreground ml-2">GP: {gp.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</span>}
+                        </div>
+                      )}
+                      {rows.length > 0 && <Badge variant="secondary" className="text-[10px] shrink-0">{rows.length}</Badge>}
+                      {savingOz === pos.oz && <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground shrink-0" />}
+                    </div>
+
+                    {isExpanded && (
+                      <CardContent className="pt-0 pb-4 border-t border-border/50">
+                        {pos.long_text && (
+                          <p className="text-xs text-muted-foreground mt-3 mb-4 bg-muted/30 rounded-lg p-3 border-l-2 border-primary/30">
+                            {pos.long_text}
+                          </p>
+                        )}
+                        <div className="mt-3">
+                          <PositionKalkTable
+                            rows={rows}
+                            onRowsChange={(newRows) => handleRowsChange(pos.oz, newRows)}
+                          />
+                        </div>
+                      </CardContent>
+                    )}
+                  </Card>
+                );
+              })}
+            </div>
           );
         })}
       </div>
