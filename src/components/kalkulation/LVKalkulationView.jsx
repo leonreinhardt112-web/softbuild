@@ -214,17 +214,19 @@ export default function LVKalkulationView({ project }) {
 
               {/* Positions in this group */}
               {group.positions.map((pos, pi) => {
-                const rows = getRows(pos.oz);
+                const posIndex = positionItems.findIndex(p => p.oz === pos.oz && p.short_text === pos.short_text && positionItems.slice(0, positionItems.findIndex(x => x.oz === pos.oz && x.short_text === pos.short_text) + 1).filter(x => x.oz === pos.oz && x.short_text === pos.short_text).length === pi + 1);
+                const posKey = getPositionKey(posIndex);
+                const rows = getRows(posIndex);
                 const ep = rows.reduce((sum, r) => sum + Number(r.kosten_einheit || 0) + Number(r.zuschlag || 0), 0);
                 const gp = ep * (parseFloat(pos.quantity) || 0);
-                const isExpanded = expandedOz === pos.oz;
+                const isExpanded = expandedOz === posKey;
                 const isCalculated = rows.length > 0;
 
                 return (
                   <Card key={`${gi}-${pi}-${pos.oz}`} className={`transition-all ${isExpanded ? "border-primary/40 shadow-md" : "hover:border-border/80"}`}>
                     <div
                       className="flex items-center gap-2 px-4 py-2.5 cursor-pointer select-none"
-                      onClick={() => setExpandedOz(isExpanded ? null : pos.oz)}
+                      onClick={() => setExpandedOz(isExpanded ? null : posKey)}
                     >
                       {/* Expand icon */}
                       {isExpanded
