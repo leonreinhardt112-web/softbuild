@@ -134,9 +134,10 @@ export default function LVKalkulationView({ project }) {
     return hasNoQty && cleanOz.length <= 4;
   };
 
-  // Group positions by title
+  // Group positions by title, tracking absolute index in positionItems for each pos
   const grouped = [];
   let currentGroup = null;
+  let posItemIdx = 0;
   lvPositions.forEach((pos) => {
     if (isTitle(pos)) {
       currentGroup = { title: pos, positions: [] };
@@ -146,7 +147,8 @@ export default function LVKalkulationView({ project }) {
         currentGroup = { title: null, positions: [] };
         grouped.push(currentGroup);
       }
-      currentGroup.positions.push(pos);
+      currentGroup.positions.push({ pos, posIndex: posItemIdx });
+      posItemIdx++;
     }
   });
 
