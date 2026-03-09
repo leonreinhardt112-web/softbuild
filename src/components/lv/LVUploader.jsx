@@ -68,7 +68,7 @@ export default function LVUploader({ project, onUpdate, onTradesDetected }) {
   const [dragOverBau, setDragOverBau] = useState(false);
 
   const hasLV = project?.lv_positions?.length > 0;
-  const hasBau = !!project?.baubeschreibung_file_name;
+  const unterlagen = project?.projekt_unterlagen || [];
   const hasAnalysis = project?.lv_analysis_findings?.length > 0;
   const hasConflicts = project?.baulv_conflict_findings?.length > 0;
 
