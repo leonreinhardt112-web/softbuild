@@ -260,6 +260,17 @@ export async function generateKalkulationPDF(project, kalkulation, options = {})
     });
   }
 
+  // Seitenzahlen hinzufügen
+  const totalPages = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    doc.setFont(undefined, "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(120, 120, 120);
+    doc.text(`Seite ${i}/${totalPages}`, pageWidth - MARGIN_RIGHT, pageHeight - 8, { align: "right" });
+    doc.setTextColor(0, 0, 0);
+  }
+
   const filename = `Angebot_${project.project_number}_${new Date().toISOString().split("T")[0]}.pdf`;
   doc.save(filename);
 }
