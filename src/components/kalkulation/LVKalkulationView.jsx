@@ -159,6 +159,17 @@ export default function LVKalkulationView({ project }) {
         )}
       </div>
 
+      {/* Table header */}
+      <div className="hidden md:grid grid-cols-[auto_auto_auto_1fr_auto_auto_auto] gap-2 px-4 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground border-b border-border">
+        <span className="w-4" />
+        <span className="w-3.5" />
+        <span className="w-14">Pos.</span>
+        <span>Beschreibung</span>
+        <span className="w-20 text-right">Menge / Einheit</span>
+        <span className="w-24 text-right">EP (€)</span>
+        <span className="w-24 text-right">GP (€)</span>
+      </div>
+
       {/* Grouped by title */}
       <div className="space-y-6">
         {grouped.map((group, gi) => {
