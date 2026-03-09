@@ -34,15 +34,18 @@ export async function generateKalkulationPDF(project, kalkulation) {
   // Positionen mit Titel-Struktur
   const positionsByTitle = groupPositionsByTitle(project.lv_positions || [], kalkulation.positions || []);
   
-  let pageNum = 1;
-  let firstPageDone = false;
+  // Tabellenkopf auf der ersten Seite
+  addTableHeader(doc, MARGIN_LEFT, yPos, contentWidth);
+  yPos += 6;
+  let firstPageDone = true;
 
   for (const titleGroup of positionsByTitle) {
     // Prüfe, ob Titel auf aktuelle Seite passt
-    if (firstPageDone && yPos + 8 > pageBottom) {
+    if (yPos + 8 > pageBottom) {
       doc.addPage();
       yPos = MARGIN_TOP + 10;
-      firstPageDone = false;
+      addTableHeader(doc, MARGIN_LEFT, yPos, contentWidth);
+      yPos += 6;
     }
 
     // Haupttitel
@@ -53,16 +56,14 @@ export async function generateKalkulationPDF(project, kalkulation) {
       doc.rect(MARGIN_LEFT, yPos - 2, contentWidth, 6, "F");
       doc.text(titleGroup.title, MARGIN_LEFT + 2, yPos + 2);
       yPos += 8;
-      firstPageDone = true;
     }
 
     // Positionen dieser Gruppe
     for (const pos of titleGroup.positions) {
-      // Tabellenkopf bei neuer Seite oder Titel
-      if (!firstPageDone || (yPos < MARGIN_TOP + 15)) {
+      // Tabellenkopf bei neuer Seite
+      if (yPos < MARGIN_TOP + 15) {
         addTableHeader(doc, MARGIN_LEFT, yPos, contentWidth);
         yPos += 6;
-        firstPageDone = true;
       }
 
       // Kurze Zeile (Pos + Kurztext + Menge + EP + GP)
