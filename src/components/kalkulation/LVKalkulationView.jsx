@@ -240,10 +240,14 @@ export default function LVKalkulationView({ project }) {
           <p className="text-sm font-semibold">{positionItems.length} LV-Positionen · Hauptangebot</p>
           <p className="text-xs text-muted-foreground mt-0.5">Position anklicken zum Kalkulieren</p>
         </div>
-        <div className="text-right">
-          <p className="text-xs text-muted-foreground">Kalkulierte Angebotssumme</p>
-          <p className="text-lg font-bold text-primary">{totalAngebotsumme.toLocaleString("de-DE", { style: "currency", currency: "EUR" })}</p>
-        </div>
+        {kalk ? (
+          <div className="text-right">
+            <p className="text-xs text-muted-foreground">Kalkulierte Angebotssumme</p>
+            <p className="text-lg font-bold text-primary">{totalAngebotsumme.toLocaleString("de-DE", { style: "currency", currency: "EUR" })}</p>
+          </div>
+        ) : (
+          <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+        )}
       </div>
 
       {/* Table header */}
