@@ -46,8 +46,8 @@ function parseX83(xmlText) {
         }
       } else if (tag === "Item" || tag === "item") {
         const oz = getText(node, "ItemNo", "OZ", "Pos") || node.getAttribute("RNoPart") || "";
-        const shortText = getText(node, "ShortText", "KurzText") || "";
-        const longText = getText(node, "DetailTxt Text", "LongText", "LangText") || "";
+        const shortText = getText(node, "Description ShortText", "ShortText", "KurzText") || "";
+        const longText = getText(node, "DetailTxt Text", "CompleteText DetailTxt Text", "LongText", "LangText") || "";
         const qty = getText(node, "Qty", "Menge") || "";
         const unit = getText(node, "QU", "QtyUnit", "Einheit") || "";
         if (oz || shortText) {
