@@ -211,7 +211,7 @@ export default function LVKalkulationView({ project }) {
     }
   });
 
-  const positionItems = lvPositions.filter(p => !isTitle(p));
+
 
   const totalAngebotsumme = positionItems.reduce((sum, pos, idx) => {
     const rows = getRows(idx);
