@@ -399,7 +399,7 @@ export default function LVKalkulationView({ project }) {
                     {/* Untertitel */}
                     {ut.title && (
                       <div
-                        className="flex items-center justify-between px-1 py-1 border-b border-border cursor-pointer hover:bg-accent/10 rounded transition-colors"
+                        className="flex items-center justify-between px-3 py-2.5 bg-accent/5 border border-border/50 rounded-lg cursor-pointer hover:bg-accent/15 hover:border-primary/30 transition-all group"
                         onClick={() => {
                           const newSet = new Set(expandedTitles);
                           if (newSet.has(utKey)) {
@@ -410,9 +410,13 @@ export default function LVKalkulationView({ project }) {
                           setExpandedTitles(newSet);
                         }}
                       >
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2.5">
+                          {isUtExpanded
+                            ? <ChevronDown className="w-4 h-4 text-primary shrink-0 transition-transform" />
+                            : <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary shrink-0 transition-all" />
+                          }
                           <span className="text-xs font-mono font-bold text-foreground w-20">{ut.hierarchy}</span>
-                          <span className="text-sm font-semibold text-foreground">{ut.title.short_text}</span>
+                          <span className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">{ut.title.short_text}</span>
                         </div>
                         <span className="text-sm font-semibold text-primary shrink-0">
                           {titleSum.toLocaleString("de-DE", { style: "currency", currency: "EUR" })}
