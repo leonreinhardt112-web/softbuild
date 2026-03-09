@@ -250,7 +250,7 @@ export default function LVKalkulationView({ project }) {
               )}
 
               {/* Positions in this group */}
-               {group.positions.map(({ pos, posIndex }, pi) => {
+               {group.positions.map(({ pos, posIndex, hierarchy }, pi) => {
                  const posKey = getPositionKey(posIndex);
                 const rows = getRows(posIndex);
                 const ep = rows.reduce((sum, r) => sum + Number(r.kosten_einheit || 0) + Number(r.zuschlag || 0), 0);
@@ -275,7 +275,7 @@ export default function LVKalkulationView({ project }) {
                         : <div className="w-3.5 h-3.5 rounded-full border-2 border-muted-foreground/30 shrink-0" />
                       }
                       {/* POS. */}
-                      <span className="text-xs font-mono text-muted-foreground w-24 shrink-0">{pos.oz}</span>
+                      <span className="text-xs font-mono font-bold text-foreground w-24 shrink-0">{hierarchy}</span>
                       {/* BESCHREIBUNG */}
                       <div className="flex-1 min-w-0 text-sm text-foreground truncate">{getDisplayText(pos) || <span className="text-muted-foreground/50 italic">–</span>}</div>
                       {/* MENGE + EINHEIT */}
