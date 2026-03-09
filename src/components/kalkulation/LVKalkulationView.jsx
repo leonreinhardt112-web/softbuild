@@ -385,11 +385,45 @@ export default function LVKalkulationView({ project }) {
                             </span>
                             {/* EP */}
                             <span className={`text-xs w-24 text-right shrink-0 hidden md:block ${isCalculated ? "font-semibold text-primary" : "text-muted-foreground/40"}`}>
-                              {isCalculated ? `${ep.toFixed(2)} €` : "–"}
+                              {isCalculated ? `${rows.reduce((s, r) => {
+                                const kosten = Number(r.kosten_einheit || 0);
+                                const keys = {
+                                  Lohn: { bgk: "lohn_bgk", agk: "lohn_agk", wg: "lohn_wg" },
+                                  Material: { bgk: "material_bgk", agk: "material_agk", wg: "material_wg" },
+                                  "Gerät": { bgk: "geraet_bgk", agk: "geraet_agk", wg: "geraet_wg" },
+                                  NU: { bgk: "nu_bgk", agk: "nu_agk", wg: "nu_wg" },
+                                  Sonstiges: { bgk: "sonstiges_bgk", agk: "sonstiges_agk", wg: "sonstiges_wg" }
+                                };
+                                const key = keys[r.kostentyp] || keys["Sonstiges"];
+                                const bgk = Number(kalk?.zuschlaege?.[key.bgk] ?? 10) / 100;
+                                const agk = Number(kalk?.zuschlaege?.[key.agk] ?? 5) / 100;
+                                const wg = Number(kalk?.zuschlaege?.[key.wg] ?? 3) / 100;
+                                const zuschlag = kosten * (bgk + agk + wg);
+                                return s + kosten + zuschlag;
+                              }, 0).toFixed(2)} €` : "–"}
                             </span>
                             {/* GP */}
                             <span className={`text-xs w-24 text-right shrink-0 hidden md:block ${gp > 0 ? "font-semibold text-foreground" : "text-muted-foreground/40"}`}>
-                              {gp > 0 ? gp.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €" : "–"}
+                              {(() => {
+                                const epWithMarkup = rows.reduce((s, r) => {
+                                  const kosten = Number(r.kosten_einheit || 0);
+                                  const keys = {
+                                    Lohn: { bgk: "lohn_bgk", agk: "lohn_agk", wg: "lohn_wg" },
+                                    Material: { bgk: "material_bgk", agk: "material_agk", wg: "material_wg" },
+                                    "Gerät": { bgk: "geraet_bgk", agk: "geraet_agk", wg: "geraet_wg" },
+                                    NU: { bgk: "nu_bgk", agk: "nu_agk", wg: "nu_wg" },
+                                    Sonstiges: { bgk: "sonstiges_bgk", agk: "sonstiges_agk", wg: "sonstiges_wg" }
+                                  };
+                                  const key = keys[r.kostentyp] || keys["Sonstiges"];
+                                  const bgk = Number(kalk?.zuschlaege?.[key.bgk] ?? 10) / 100;
+                                  const agk = Number(kalk?.zuschlaege?.[key.agk] ?? 5) / 100;
+                                  const wg = Number(kalk?.zuschlaege?.[key.wg] ?? 3) / 100;
+                                  const zuschlag = kosten * (bgk + agk + wg);
+                                  return s + kosten + zuschlag;
+                                }, 0);
+                                const gpWithMarkup = epWithMarkup * (parseFloat(pos.quantity) || 0);
+                                return gpWithMarkup > 0 ? gpWithMarkup.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €" : "–";
+                              })()}
                             </span>
                             {savingOz === posKey && <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground shrink-0" />}
                           </div>
