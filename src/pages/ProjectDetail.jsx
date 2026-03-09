@@ -210,9 +210,6 @@ export default function ProjectDetail() {
           <TabsTrigger value="overview" className="gap-1.5 text-xs">
             <FolderOpen className="w-3.5 h-3.5" />Übersicht
           </TabsTrigger>
-          <TabsTrigger value="unterlagen" className="gap-1.5 text-xs">
-            <FileText className="w-3.5 h-3.5" />Unterlagen
-          </TabsTrigger>
           <TabsTrigger value="kalkulation" className="gap-1.5 text-xs">
             <Calculator className="w-3.5 h-3.5" />Kalkulation
           </TabsTrigger>
