@@ -145,6 +145,9 @@ export default function Stammdaten() {
         <p className="text-sm text-muted-foreground mt-0.5">Zentrale Datenbasis – Auftraggeber, NU, Mitarbeiter, Geräte, Materialien</p>
       </div>
 
+      {/* Company Header Section */}
+      <CompanyHeaderForm />
+
       {/* Summary cards */}
       <div className="grid grid-cols-3 lg:grid-cols-6 gap-3">
         {TABS.map(t => (
