@@ -141,84 +141,13 @@ export default function LVKalkulationView({ project }) {
     }, 700);
   };
 
-  // Parse OZ to extract hierarchy: "01" -> [01], "01.01" -> [01, 01], "01.01.0001" -> [01, 01, 0001]
-  const parseOZ = (oz) => {
-    return (oz || "").replace(/\s/g, "").split(".").map(x => x.trim()).filter(Boolean);
-  };
+  // Universal hierarchy logic using robust OZ parsing
+  // Extract positions (items with quantity/unit) from all items
+  const positionItems = getPositions(lvPositions);
 
-  // Get prefix of OZ (e.g. "01.01.0001" -> "01.01")
-  const getPrefix = (oz, depth) => {
-    const parts = parseOZ(oz);
-    return parts.slice(0, depth).join(".");
-  };
-
-  // Count dots to determine level: 0 dots = level 0 (Haupttitel), 1 dot = level 1 (Untertitel), 2+ = level 2 (Position)
-  const getLevel = (oz) => {
-    return parseOZ(oz).length - 1;
-  };
-
-  // Build hierarchical structure based on OZ patterns
-  const grouped = [];
-  const hauptTitelMap = {};
-  const unterTitelMap = {};
-
-  // Separate positions from titles
-  const positionItems = lvPositions.filter(p => {
-    const level = getLevel(p.oz);
-    const hasNoQty = !p.quantity || p.quantity === "0" || p.quantity === "";
-    // Title: explicit type="title" OR no quantity AND level < 2
-    return !(p.type === "title" || (hasNoQty && level < 2));
-  });
-
-  // Group by Haupttitel prefix (first part of OZ) — using original OZ from GAEB
-  lvPositions.forEach((pos) => {
-    const level = getLevel(pos.oz);
-    const hasNoQty = !pos.quantity || pos.quantity === "0" || pos.quantity === "";
-    const isTitle = pos.type === "title" || (hasNoQty && level < 2);
-
-    if (level === 0 && isTitle) {
-      // Haupttitel
-      const htPrefix = parseOZ(pos.oz)[0];
-      if (!hauptTitelMap[htPrefix]) {
-        hauptTitelMap[htPrefix] = { title: pos, unterTitels: [] };
-        grouped.push(hauptTitelMap[htPrefix]);
-      }
-    } else if (level === 1 && isTitle) {
-      // Untertitel
-      const htPrefix = parseOZ(pos.oz)[0];
-      const utPrefix = getPrefix(pos.oz, 2);
-
-      if (!hauptTitelMap[htPrefix]) {
-        hauptTitelMap[htPrefix] = { title: null, unterTitels: [] };
-        grouped.push(hauptTitelMap[htPrefix]);
-      }
-
-      if (!unterTitelMap[utPrefix]) {
-        const ut = { title: pos, positions: [] };
-        unterTitelMap[utPrefix] = ut;
-        hauptTitelMap[htPrefix].unterTitels.push(ut);
-      }
-    } else if (level >= 2 || !isTitle) {
-      // Position — use original OZ from GAEB, no modification
-      const htPrefix = parseOZ(pos.oz)[0];
-      const utPrefix = getPrefix(pos.oz, 2);
-
-      if (!hauptTitelMap[htPrefix]) {
-        hauptTitelMap[htPrefix] = { title: null, unterTitels: [] };
-        grouped.push(hauptTitelMap[htPrefix]);
-      }
-
-      if (!unterTitelMap[utPrefix]) {
-        const ut = { title: null, positions: [] };
-        unterTitelMap[utPrefix] = ut;
-        hauptTitelMap[htPrefix].unterTitels.push(ut);
-      }
-
-      const posIndex = positionItems.findIndex(p => p === pos);
-      // Use original OZ from GAEB, do not modify or generate
-      unterTitelMap[utPrefix].positions.push({ pos, posIndex });
-    }
-  });
+  // Build hierarchical structure using universal logic
+  // This handles any OZ scheme: "1"/"1.1"/"1.1.10" or "01"/"01.01"/"01.01.0001" etc.
+  const grouped = buildHierarchy(lvPositions);
 
   const totalAngebotsumme = positionItems.reduce((sum, pos, idx) => {
     const rows = getRows(idx);
