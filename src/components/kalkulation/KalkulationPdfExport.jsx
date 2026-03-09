@@ -107,41 +107,40 @@ export async function generateKalkulationPDF(project, kalkulation, options = {})
       // Pos-Nummer (links)
       doc.text((pos.oz || "").toString(), MARGIN_LEFT + 1, yPos + 1);
 
-      // Kurztext (Spalte 2)
-      const shortLines = doc.splitTextToSize(pos.short_text || "", 45);
-      const shortTextStartY = yPos + 1;
-      doc.text(shortLines[0] || "", MARGIN_LEFT + 27, shortTextStartY);
+      // Kurztext (Spalte 2) – begrenzt auf erste Zeile
+      const shortText = (pos.short_text || "").split("\n")[0];
+      doc.text(shortText, MARGIN_LEFT + 27, yPos + 1);
       
       // Menge/Einheit (Spalte 3, rechtsausgerichtet)
       const mengeText = `${menge.toLocaleString("de-DE", { minimumFractionDigits: 2 })} ${pos.einheit || ""}`;
-      doc.text(mengeText, MARGIN_LEFT + 105, shortTextStartY, { align: "right" });
+      doc.text(mengeText, MARGIN_LEFT + 105, yPos + 1, { align: "right" });
       
       // EP (Spalte 4, rechtsausgerichtet)
       const epText = `${ep.toLocaleString("de-DE", { minimumFractionDigits: 2 })} €`;
-      doc.text(epText, MARGIN_LEFT + 123, shortTextStartY, { align: "right" });
+      doc.text(epText, MARGIN_LEFT + 123, yPos + 1, { align: "right" });
       
       // GP (Spalte 5, rechtsausgerichtet, bold)
       doc.setFont(undefined, "bold");
       const gpText = `${gp.toLocaleString("de-DE", { minimumFractionDigits: 2 })} €`;
-      doc.text(gpText, MARGIN_LEFT + 143, shortTextStartY, { align: "right" });
+      doc.text(gpText, MARGIN_LEFT + 143, yPos + 1, { align: "right" });
       doc.setFont(undefined, "normal");
 
       yPos += 7;
 
-      // Langtext (falls vorhanden und im textMode enthalten) – unter Kurztext
+      // Langtext (falls vorhanden und im textMode "both") – unter Position
       if (pos.long_text && textMode === "both") {
         doc.setFontSize(8);
         doc.setTextColor(100, 100, 100);
         const longLines = doc.splitTextToSize(pos.long_text, contentWidth - 10);
         longLines.forEach((line, idx) => {
-          if (idx < 4) { // Max 4 Zeilen Langtext
+          if (idx < 5) { // Max 5 Zeilen Langtext
             doc.text(line, MARGIN_LEFT + 27, yPos);
             yPos += 3;
           }
         });
         doc.setTextColor(0, 0, 0);
         doc.setFontSize(9);
-        yPos += 2;
+        yPos += 1;
       }
 
       // Pagebreak-Check
