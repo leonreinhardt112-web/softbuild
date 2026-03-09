@@ -351,9 +351,25 @@ function hexToRgb(hex) {
 }
 
 function addFooter(doc, company, pageWidth, pageHeight, marginLeft, marginRight, totalPages, currentPage) {
-  doc.setFont(undefined, "normal");
-  doc.setFontSize(7);
+  // DIN 676 Vorlage-Markierungen
+  doc.setDrawColor(0);
+  doc.setLineWidth(0.1);
   
+  // Lochmarke 1 (12 mm von oben)
+  doc.line(4, 12, 8, 12);
+  doc.line(6, 10, 6, 14);
+  
+  // Lochmarke 2 (88 mm von oben)
+  doc.line(4, 88, 8, 88);
+  doc.line(6, 86, 6, 90);
+  
+  // Falzmarke 1 (105 mm)
+  doc.line(6, 105, 10, 105);
+  
+  // Falzmarke 2 (210 mm = Seitenmitte)
+  doc.line(6, 210, 10, 210);
+  
+  // Footer mit DIN 676-Abstand
   const footerBgY = pageHeight - 24;
   
   // Footer-Hintergrund (volle Breite, bis zum Seitenrand)
@@ -388,6 +404,7 @@ function addFooter(doc, company, pageWidth, pageHeight, marginLeft, marginRight,
   
   // Seitenzahl rechts über dem Footer
   doc.setTextColor(120, 120, 120);
+  doc.setFontSize(7);
   doc.text(`Seite ${currentPage}/${totalPages}`, pageWidth - marginRight - 1, footerBgY - 2, { align: "right" });
   doc.setTextColor(0, 0, 0);
 }
