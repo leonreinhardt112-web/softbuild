@@ -200,7 +200,7 @@ Gib eine strukturierte Liste konkreter Befunde zurück.`,
 
   // ── Widerspruchsanalyse ────────────────────────────────────────────────────
   const handleAnalyzeConflicts = async () => {
-    if (!project?.lv_positions?.length || !project?.baubeschreibung_file_url) return;
+    if (!project?.lv_positions?.length || !unterlagen.length) return;
     setAnalyzingConflicts(true);
     setError(null);
     const positionList = project.lv_positions.map((p) => `OZ ${p.oz}: ${p.short_text} (${p.quantity} ${p.unit})`).join("\n");
