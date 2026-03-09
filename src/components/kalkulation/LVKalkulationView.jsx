@@ -194,18 +194,19 @@ export default function LVKalkulationView({ project }) {
     }
   });
 
-  // Generate hierarchical numbering
-  grouped.forEach((ht, htIdx) => {
-    const htNum = String(htIdx + 1).padStart(2, "0");
-    ht.hierarchy = htNum;
+  // Use OZ from GAEB, no auto-numbering
+  grouped.forEach((ht) => {
+    if (ht.title) {
+      ht.hierarchy = ht.title.oz || "";
+    }
     
-    ht.unterTitels.forEach((ut, utIdx) => {
-      const utNum = String(utIdx + 1).padStart(2, "0");
-      ut.hierarchy = `${htNum}.${utNum}`;
+    ht.unterTitels.forEach((ut) => {
+      if (ut.title) {
+        ut.hierarchy = ut.title.oz || "";
+      }
       
-      ut.positions.forEach((item, posIdx) => {
-        const posNum = String(posIdx + 1).padStart(4, "0");
-        item.hierarchy = `${htNum}.${utNum}.${posNum}`;
+      ut.positions.forEach((item) => {
+        item.hierarchy = item.pos.oz || "";
       });
     });
   });
