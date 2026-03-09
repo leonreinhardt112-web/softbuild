@@ -118,7 +118,25 @@ export default function LVKalkulationView({ project }) {
       if (!currentKalk) return;
       const pos = positionItems[posIndex];
       if (!pos) return;
-      const ep = rows.reduce((sum, r) => sum + Number(r.kosten_einheit || 0) + Number(r.zuschlag || 0), 0);
+      
+      // Calculate EP with markups (including BGK, AGK, WG)
+      const ep = rows.reduce((sum, r) => {
+        const kosten = Number(r.kosten_einheit || 0);
+        const keys = {
+          Lohn: { bgk: "lohn_bgk", agk: "lohn_agk", wg: "lohn_wg" },
+          Material: { bgk: "material_bgk", agk: "material_agk", wg: "material_wg" },
+          "Gerät": { bgk: "geraet_bgk", agk: "geraet_agk", wg: "geraet_wg" },
+          NU: { bgk: "nu_bgk", agk: "nu_agk", wg: "nu_wg" },
+          Sonstiges: { bgk: "sonstiges_bgk", agk: "sonstiges_agk", wg: "sonstiges_wg" }
+        };
+        const key = keys[r.kostentyp] || keys["Sonstiges"];
+        const bgk = Number(currentKalk.zuschlaege?.[key.bgk] ?? 10) / 100;
+        const agk = Number(currentKalk.zuschlaege?.[key.agk] ?? 5) / 100;
+        const wg = Number(currentKalk.zuschlaege?.[key.wg] ?? 3) / 100;
+        const zuschlag = kosten * (bgk + agk + wg);
+        return sum + kosten + zuschlag;
+      }, 0);
+      
       const menge = parseFloat(pos.quantity) || 0;
       const existingPositions = currentKalk.positions || [];
       const exists = existingPositions.find(p => p.oz === pos.oz && p.short_text === pos.short_text);
