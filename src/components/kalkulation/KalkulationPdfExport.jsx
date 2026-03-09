@@ -70,7 +70,7 @@ export async function generateKalkulationPDF(project, kalkulation) {
     for (const pos of titleGroup.positions) {
       // Tabellenkopf bei neuer Seite
       if (yPos < MARGIN_TOP + 15) {
-        addTableHeader(doc, MARGIN_LEFT, yPos, contentWidth);
+        addTableHeader(doc, MARGIN_LEFT, yPos, contentWidth, headerColor);
         yPos += 6;
       }
 
