@@ -145,43 +145,69 @@ export default function LVKalkulationView({ project }) {
     return hasNoQty && cleanOz.length <= 4;
   };
 
-  // Group positions by title, tracking absolute index and hierarchical numbering
+  // Count dots in OZ to determine hierarchy level
+  const getHierarchyLevel = (oz) => {
+    const cleanOz = (oz || "").replace(/\s/g, "");
+    const dotCount = (cleanOz.match(/\./g) || []).length;
+    return dotCount; // 0 = haupttitel, 1 = untertitel, 2+ = position
+  };
+
+  // Group by haupttitel, untertitel, positions
   const grouped = [];
-  let currentGroup = null;
+  let currentHauptTitel = null;
+  let currentUnterTitel = null;
   let posItemIdx = 0;
-  let titleNum = 0;
+
   lvPositions.forEach((pos) => {
-    if (isTitle(pos)) {
-      titleNum++;
-      const titleHierarchy = String(titleNum).padStart(2, "0");
-      currentGroup = { 
+    const level = getHierarchyLevel(pos.oz);
+    
+    // Haupttitel (level 0)
+    if (isTitle(pos) && level === 0) {
+      currentHauptTitel = { 
         title: pos, 
-        positions: [],
-        titleNum,
-        titleHierarchy,
-        subTitleNum: 0
+        unterTitels: []
       };
-      grouped.push(currentGroup);
-    } else {
-      if (!currentGroup) {
-        titleNum++;
-        const titleHierarchy = String(titleNum).padStart(2, "0");
-        currentGroup = { 
-          title: null, 
-          positions: [],
-          titleNum,
-          titleHierarchy,
-          subTitleNum: 0
-        };
-        grouped.push(currentGroup);
+      grouped.push(currentHauptTitel);
+      currentUnterTitel = null;
+    }
+    // Untertitel (level 1)
+    else if (isTitle(pos) && level === 1) {
+      if (!currentHauptTitel) {
+        currentHauptTitel = { title: null, unterTitels: [] };
+        grouped.push(currentHauptTitel);
       }
-      currentGroup.subTitleNum++;
-      const subNum = String(currentGroup.subTitleNum).padStart(2, "0");
-      const posNum = String(posItemIdx + 1).padStart(4, "0");
-      const hierarchy = `${currentGroup.titleHierarchy}.${subNum}.${posNum}`;
-      currentGroup.positions.push({ pos, posIndex: posItemIdx, hierarchy });
+      currentUnterTitel = { title: pos, positions: [] };
+      currentHauptTitel.unterTitels.push(currentUnterTitel);
+    }
+    // Position (level 2+)
+    else {
+      if (!currentUnterTitel) {
+        if (!currentHauptTitel) {
+          currentHauptTitel = { title: null, unterTitels: [] };
+          grouped.push(currentHauptTitel);
+        }
+        currentUnterTitel = { title: null, positions: [] };
+        currentHauptTitel.unterTitels.push(currentUnterTitel);
+      }
+      currentUnterTitel.positions.push({ pos, posIndex: posItemIdx });
       posItemIdx++;
     }
+  });
+
+  // Generate hierarchical numbering
+  grouped.forEach((ht, htIdx) => {
+    const htNum = String(htIdx + 1).padStart(2, "0");
+    ht.hierarchy = htNum;
+    
+    ht.unterTitels.forEach((ut, utIdx) => {
+      const utNum = String(utIdx + 1).padStart(2, "0");
+      ut.hierarchy = `${htNum}.${utNum}`;
+      
+      ut.positions.forEach((item, posIdx) => {
+        const posNum = String(posIdx + 1).padStart(4, "0");
+        item.hierarchy = `${htNum}.${utNum}.${posNum}`;
+      });
+    });
   });
 
   const positionItems = lvPositions.filter(p => !isTitle(p));
