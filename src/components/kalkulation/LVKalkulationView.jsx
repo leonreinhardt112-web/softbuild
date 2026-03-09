@@ -51,8 +51,19 @@ export default function LVKalkulationView({ project }) {
   useEffect(() => {
     const kalk = kalkulationen[0];
     if (kalk?.positions && !initialSyncDone.current) {
+      const lv = project?.lv_positions || [];
+      const items = lv.filter(p => {
+        if (p.type === "title") return false;
+        if (p.type === "position") return true;
+        const cleanOz = (p.oz || "").replace(/\s/g, "");
+        const hasNoQty = !p.quantity || p.quantity === "0" || p.quantity === "";
+        return !(hasNoQty && cleanOz.length <= 4);
+      });
       const map = {};
-      kalk.positions.forEach(p => { map[p.oz] = p.rows || []; });
+      items.forEach((item, idx) => {
+        const saved = kalk.positions.find(p => p.oz === item.oz && p.short_text === item.short_text);
+        if (saved) map[String(idx)] = saved.rows || [];
+      });
       setLocalPositions(map);
       initialSyncDone.current = true;
     }
