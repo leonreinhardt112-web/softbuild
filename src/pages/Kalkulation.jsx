@@ -20,6 +20,7 @@ const STATUS_COLORS = { entwurf: "bg-secondary text-secondary-foreground", einge
 export default function Kalkulation() {
   const qc = useQueryClient();
   const [showForm, setShowForm] = useState(false);
+  const [editingKalkId, setEditingKalkId] = useState(null);
   const [form, setForm] = useState({ project_id: "", version_name: "Hauptangebot", bgk_prozent: 10, agk_prozent: 5, wagnis_gewinn_prozent: 3, notes: "" });
 
   const { data: kalks = [], isLoading } = useQuery({
