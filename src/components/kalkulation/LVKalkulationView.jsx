@@ -516,8 +516,19 @@ export default function LVKalkulationView({ project }) {
                               {pos.long_text &&
                               <div className="mt-3 mb-4 bg-muted/30 rounded-lg p-3 border-l-2 border-primary/30">
                                   <p className="text-xs font-medium text-foreground mb-1">Leistungsbeschreibung</p>
-                                  <p className="text-xs text-muted-foreground whitespace-pre-wrap">
-                                    {pos.long_text.trim()}
+                                  <p className="text-xs text-muted-foreground leading-relaxed">
+                                    {(() => {
+                                      let text = pos.long_text.trim();
+                                      // Entferne Kurztext vom Anfang und Ende, falls vorhanden
+                                      const shortStart = (pos.short_text || "").split("\n")[0].trim();
+                                      if (shortStart && text.startsWith(shortStart)) {
+                                        text = text.substring(shortStart.length).trim();
+                                      }
+                                      if (shortStart && text.endsWith(shortStart)) {
+                                        text = text.substring(0, text.length - shortStart.length).trim();
+                                      }
+                                      return text;
+                                    })()}
                                   </p>
                                 </div>
                               }
