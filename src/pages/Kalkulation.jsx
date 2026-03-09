@@ -170,6 +170,12 @@ export default function Kalkulation() {
                           {k.created_date ? format(new Date(k.created_date), "dd.MM.yyyy") : "–"}
                         </td>
                         <td className="px-4 py-3">
+                          <ZuschlaegeDialog
+                            zuschlaege={k.zuschlaege}
+                            onSave={(zuschlaege) => updateMut.mutate({ id: k.id, data: { zuschlaege } })}
+                          />
+                        </td>
+                        <td className="px-4 py-3">
                           <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive"
                             onClick={() => deleteMut.mutate(k.id)}>
                             <Trash2 className="w-3.5 h-3.5" />
