@@ -254,10 +254,10 @@ export default function LVKalkulationView({ project }) {
                       <span className={`text-xs w-24 text-right shrink-0 hidden md:block ${gp > 0 ? "font-semibold text-foreground" : "text-muted-foreground/40"}`}>
                         {gp > 0 ? gp.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €" : "–"}
                       </span>
-                      {savingOz === pos.oz && <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground shrink-0" />}
-                    </div>
+                      {savingOz === posKey && <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground shrink-0" />}
+                      </div>
 
-                    {isExpanded && (
+                      {isExpanded && (
                       <CardContent className="pt-0 pb-4 border-t border-border/50">
                         {pos.long_text && (
                           <div className="mt-3 mb-4 bg-muted/30 rounded-lg p-3 border-l-2 border-primary/30">
@@ -280,11 +280,11 @@ export default function LVKalkulationView({ project }) {
                           <PositionKalkTable
                             rows={rows}
                             zuschlaege={kalk?.zuschlaege || {}}
-                            onRowsChange={(newRows) => handleRowsChange(pos.oz, newRows)}
+                            onRowsChange={(newRows) => handleRowsChange(posIndex, newRows)}
                           />
                         </div>
                       </CardContent>
-                    )}
+                      )}
                   </Card>
                 );
               })}
