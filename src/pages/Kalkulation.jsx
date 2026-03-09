@@ -100,18 +100,7 @@ export default function Kalkulation() {
                 <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Versionsbezeichnung</label>
                 <Input value={form.version_name} onChange={e => setForm(f => ({ ...f, version_name: e.target.value }))} />
               </div>
-              <div>
-                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">BGK (%)</label>
-                <Input type="number" value={form.bgk_prozent} onChange={e => setForm(f => ({ ...f, bgk_prozent: +e.target.value }))} />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">AGK (%)</label>
-                <Input type="number" value={form.agk_prozent} onChange={e => setForm(f => ({ ...f, agk_prozent: +e.target.value }))} />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Wagnis & Gewinn (%)</label>
-                <Input type="number" value={form.wagnis_gewinn_prozent} onChange={e => setForm(f => ({ ...f, wagnis_gewinn_prozent: +e.target.value }))} />
-              </div>
+
             </div>
             <div className="flex gap-2 justify-end">
               <Button variant="outline" onClick={() => setShowForm(false)}>Abbrechen</Button>
