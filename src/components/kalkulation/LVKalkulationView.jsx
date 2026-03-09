@@ -100,11 +100,23 @@ export default function LVKalkulationView({ project }) {
     }, 700);
   };
 
+  // Determine if a position is a title:
+  // - explicit type="title", OR
+  // - no quantity (old data without type field) and short OZ (e.g. "01", "02")
+  const isTitle = (pos) => {
+    if (pos.type === "title") return true;
+    if (pos.type === "position") return false;
+    // Heuristic for old data: no quantity and OZ has ≤2 numeric segments
+    const cleanOz = (pos.oz || "").replace(/\s/g, "");
+    const hasNoQty = !pos.quantity || pos.quantity === "0" || pos.quantity === "";
+    return hasNoQty && cleanOz.length <= 4;
+  };
+
   // Group positions by title
   const grouped = [];
   let currentGroup = null;
   lvPositions.forEach((pos) => {
-    if (pos.type === "title") {
+    if (isTitle(pos)) {
       currentGroup = { title: pos, positions: [] };
       grouped.push(currentGroup);
     } else {
@@ -116,7 +128,7 @@ export default function LVKalkulationView({ project }) {
     }
   });
 
-  const positionItems = lvPositions.filter(p => p.type !== "title");
+  const positionItems = lvPositions.filter(p => !isTitle(p));
 
   const totalAngebotsumme = positionItems.reduce((sum, pos) => {
     const rows = getRows(pos.oz);
