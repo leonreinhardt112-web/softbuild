@@ -29,7 +29,11 @@ function parseX83(xmlText) {
       const longText = item.querySelector("DetailTxt Text, LongText, LangText")?.textContent?.trim() || "";
       const qty = item.querySelector("Qty, Menge, qty")?.textContent?.trim() || "";
       const unit = item.querySelector("QU, Einheit, QtyUnit, unit")?.textContent?.trim() || "";
-      if (oz || shortText) positions.push({ oz, short_text: shortText, long_text: longText, quantity: qty, unit });
+      if (oz || shortText) {
+        // Items without quantity are titles/chapters
+        const isTitle = !qty || qty === "0";
+        positions.push({ oz, short_text: shortText, long_text: longText, quantity: qty, unit, type: isTitle ? "title" : "position" });
+      }
     });
   } else {
     const dpItems = doc.querySelectorAll("DP");
@@ -38,9 +42,28 @@ function parseX83(xmlText) {
       const shortText = dp.querySelector("Kurz, KurzText, Text")?.textContent?.trim() || "";
       const qty = dp.querySelector("Menge, Qty")?.textContent?.trim() || "";
       const unit = dp.querySelector("ME, QU")?.textContent?.trim() || "";
-      if (oz || shortText) positions.push({ oz, short_text: shortText, long_text: "", quantity: qty, unit });
+      if (oz || shortText) {
+        const isTitle = !qty || qty === "0";
+        positions.push({ oz, short_text: shortText, long_text: "", quantity: qty, unit, type: isTitle ? "title" : "position" });
+      }
     });
   }
+
+  // If no explicit title items detected, try OZ-based grouping heuristic
+  // (e.g. OZ "01" is a title for positions "01 0001", "01 0002")
+  const hasExplicitTitles = positions.some(p => p.type === "title");
+  if (!hasExplicitTitles) {
+    positions.forEach(p => {
+      const cleanOz = p.oz.replace(/\s/g, "");
+      // Short OZ (≤4 chars, all digits) without a quantity → title
+      if (cleanOz.length <= 4 && /^\d+$/.test(cleanOz) && !p.quantity) {
+        p.type = "title";
+      } else {
+        p.type = "position";
+      }
+    });
+  }
+
   return positions;
 }
 
