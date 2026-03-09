@@ -23,7 +23,20 @@ export default function ProjectForm({ open, onOpenChange, onSave, initialData })
   const qc = useQueryClient();
   const [form, setForm] = useState(initialData || EMPTY_FORM);
   const [showNewClient, setShowNewClient] = useState(false);
-  const [newClientForm, setNewClientForm] = useState({ name: "", adresse: "", kontakt_name: "", email: "", telefon: "" });
+  const [newClientForm, setNewClientForm] = useState({ name: "", strasse: "", plz: "", ort: "", kontakt_name: "", email: "", telefon: "" });
+  const [plzLoading, setPlzLoading] = useState(false);
+
+  const handleNewClientPlz = (plz) => {
+    setNewClientForm(f => ({ ...f, plz }));
+    if (plz.length === 5) {
+      setPlzLoading(true);
+      fetch(`https://openplzapi.org/de/Localities?postalCode=${plz}`)
+        .then(r => r.json())
+        .then(data => { if (data && data.length > 0) setNewClientForm(f => ({ ...f, ort: data[0].name })); })
+        .catch(() => {})
+        .finally(() => setPlzLoading(false));
+    }
+  };
 
   // Load current user for auto-fill
   useEffect(() => {
