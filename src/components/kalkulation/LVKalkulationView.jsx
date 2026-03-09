@@ -398,7 +398,18 @@ export default function LVKalkulationView({ project }) {
                   <div key={utIdx} className="space-y-2">
                     {/* Untertitel */}
                     {ut.title && (
-                      <div className="flex items-center justify-between px-1 py-1 border-b border-border">
+                      <div
+                        className="flex items-center justify-between px-1 py-1 border-b border-border cursor-pointer hover:bg-accent/10 rounded transition-colors"
+                        onClick={() => {
+                          const newSet = new Set(expandedTitles);
+                          if (newSet.has(utKey)) {
+                            newSet.delete(utKey);
+                          } else {
+                            newSet.add(utKey);
+                          }
+                          setExpandedTitles(newSet);
+                        }}
+                      >
                         <div className="flex items-center gap-2">
                           <span className="text-xs font-mono font-bold text-foreground w-20">{ut.hierarchy}</span>
                           <span className="text-sm font-semibold text-foreground">{ut.title.short_text}</span>
@@ -410,7 +421,7 @@ export default function LVKalkulationView({ project }) {
                     )}
 
                     {/* Positions */}
-                    {ut.positions.map(({ pos, posIndex, hierarchy }, pi) => {
+                    {isUtExpanded && ut.positions.map(({ pos, posIndex, hierarchy }, pi) => {
                       const posKey = getPositionKey(posIndex);
                       const rows = getRows(posIndex);
                       const ep = rows.reduce((sum, r) => sum + Number(r.kosten_einheit || 0) + Number(r.zuschlag || 0), 0);
