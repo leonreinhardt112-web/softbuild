@@ -332,7 +332,7 @@ Gib eine strukturierte Liste konkreter Befunde zurück.`,
     if (!project?.lv_positions?.length || !unterlagen.length) return;
     setAnalyzingConflicts(true);
     setError(null);
-    const positionList = project.lv_positions.map((p) => `OZ ${p.oz}: ${p.short_text} (${p.quantity} ${p.unit})`).join("\n");
+    const positionList = project.lv_positions.map((p) => `OZ ${p.display_oz}: ${p.short_text} (${p.quantity} ${p.unit})`).join("\n");
     try {
       const result = await base44.integrations.Core.InvokeLLM({
         prompt: `Du bist ein erfahrener Tiefbauingenieur. Prüfe die beigefügte Baubeschreibung (PDF/Dokument) auf Widersprüche und Unstimmigkeiten mit dem folgenden Leistungsverzeichnis.
