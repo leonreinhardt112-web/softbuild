@@ -33,7 +33,42 @@ export default function LVKalkulationView({ project }) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["kalkulation", projectId] })
   });
 
-  const lvPositions = project?.lv_positions || [];
+  // Extract short_text (first part before long_text) and long_text separately
+  const extractPositionTexts = (pos) => {
+    if (!pos.short_text && !pos.long_text) return { short: "", long: "" };
+    
+    const fullText = (pos.short_text || "").trim();
+    if (!fullText) return { short: "", long: pos.long_text || "" };
+    
+    // If there's already a long_text field, use it as-is
+    if (pos.long_text) return { short: fullText, long: pos.long_text };
+    
+    // Otherwise try to split short_text into short + long
+    // Common pattern: "ShortText LongDescription..."
+    const germanStarters = /\s+(?:Die|Der|Das|Den|Dem|Zur|Zum|Zu\s|Bei|Nach|Vor|Über|Unter|Durch|Mit|Von|Für\s|An\s|In\s|Im\s|Am\s|Ab\s|Aus\s|Es\s|Eine|Ein\s|Alle|Je\s|Sofern|Falls|Hierbei|Dabei|Hierzu)\s/;
+    const match = fullText.match(/^(.{5,120}?)(?:${germanStarters.source}|$)/);
+    
+    if (match) {
+      const shortPart = match[1];
+      const longPart = fullText.slice(shortPart.length).trim();
+      return { short: shortPart, long: longPart || "" };
+    }
+    
+    // Fallback: use first sentence
+    const firstSentence = fullText.split(/[.!?]/)[0];
+    if (firstSentence.length > 5 && firstSentence.length < fullText.length) {
+      return { short: firstSentence, long: fullText.slice(firstSentence.length).trim() };
+    }
+    
+    // Last resort: use as-is short, empty long
+    return { short: fullText, long: "" };
+  };
+
+  const lvPositions = (project?.lv_positions || []).map(pos => ({
+    ...pos,
+    _shortDisplay: extractPositionTexts(pos).short,
+    _longDisplay: extractPositionTexts(pos).long
+  }));
 
   // Auto-create kalkulation if none exists
   useEffect(() => {
