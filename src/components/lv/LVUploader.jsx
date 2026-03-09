@@ -316,8 +316,11 @@ Gib eine strukturierte Liste der Widersprüche zurück.`,
           {!hasBau ? (
             <div>
               <div
-                className="border-2 border-dashed border-border rounded-lg p-5 text-center cursor-pointer hover:border-primary/40 hover:bg-accent/30 transition-all"
+                className={`border-2 border-dashed rounded-lg p-5 text-center cursor-pointer transition-all ${dragOverBau ? "border-primary bg-primary/5 scale-[1.01]" : "border-border hover:border-primary/40 hover:bg-accent/30"}`}
                 onClick={() => bauFileRef.current?.click()}
+                onDragOver={(e) => { e.preventDefault(); setDragOverBau(true); }}
+                onDragLeave={() => setDragOverBau(false)}
+                onDrop={handleBauDrop}
               >
                 {uploadingBau ? <Loader2 className="w-5 h-5 text-primary mx-auto mb-1.5 animate-spin" /> : <Upload className="w-5 h-5 text-muted-foreground mx-auto mb-1.5" />}
                 <p className="text-sm font-medium">{uploadingBau ? "Wird hochgeladen..." : "Baubeschreibung hochladen"}</p>
