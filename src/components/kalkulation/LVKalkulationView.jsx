@@ -370,7 +370,7 @@ export default function LVKalkulationView({ project }) {
                   <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary shrink-0 transition-all" />
                   }
                   <span className="text-sm font-mono font-bold text-foreground w-16">{ht.hierarchy}</span>
-                  <span className="text-base font-bold text-foreground group-hover:text-primary transition-colors">{getTitleText(ht.title)}</span>
+                  <span className="text-base font-bold text-foreground group-hover:text-primary transition-colors">{ht.title?.short_text || ""}</span>
                 </div>
                 {(() => {
                   const htSum = getHauptTitelSum(ht.unterTitels);
