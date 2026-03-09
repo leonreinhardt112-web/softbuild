@@ -231,7 +231,7 @@ export default function LVKalkulationView({ project }) {
                       {/* POS. */}
                       <span className="text-xs font-mono text-muted-foreground w-14 shrink-0">{pos.oz}</span>
                       {/* BESCHREIBUNG */}
-                      <div className="flex-1 min-w-0 text-sm text-foreground truncate">{pos.short_text || <span className="text-muted-foreground/50 italic">–</span>}</div>
+                      <div className="flex-1 min-w-0 text-sm text-foreground truncate">{getDisplayText(pos) || <span className="text-muted-foreground/50 italic">–</span>}</div>
                       {/* MENGE + EINHEIT */}
                       <span className="text-xs text-muted-foreground w-20 text-right shrink-0 hidden sm:block">
                         {pos.quantity && <>{parseFloat(pos.quantity).toLocaleString("de-DE", { minimumFractionDigits: 3 })} {pos.unit}</>}
