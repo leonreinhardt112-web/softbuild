@@ -79,7 +79,8 @@ export async function generateKalkulationPDF(project, kalkulation, options = {})
       doc.setFontSize(10);
       doc.setFillColor(230, 240, 250);
       doc.rect(MARGIN_LEFT, yPos - 2, contentWidth, 6, "F");
-      doc.text(titleGroup.title, MARGIN_LEFT + 2, yPos + 2);
+      doc.text((titleGroup.oz || "").toString(), MARGIN_LEFT + 1, yPos + 2);
+      doc.text(titleGroup.title, MARGIN_LEFT + 27, yPos + 2);
       yPos += 8;
     }
 
