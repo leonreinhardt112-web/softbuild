@@ -133,82 +133,82 @@ export default function LVKalkulationView({ project }) {
     }, 700);
   };
 
-  // Determine if a position is a title:
-  // - explicit type="title", OR
-  // - no quantity and hierarchy level < 2 (0 for Haupttitel, 1 for Untertitel)
-  const isTitle = (pos) => {
-    if (pos.type === "title") return true;
-    if (pos.type === "position") return false;
-    // Heuristic: a title has no quantity and hierarchy level < 2
-    const level = getHierarchyLevel(pos.oz);
-    const hasNoQty = !pos.quantity || pos.quantity === "0" || pos.quantity === "";
-    return hasNoQty && level < 2;
+  // Parse OZ to extract hierarchy: "01" -> [01], "01.01" -> [01, 01], "01.01.0001" -> [01, 01, 0001]
+  const parseOZ = (oz) => {
+    return (oz || "").replace(/\s/g, "").split(".").map(x => x.trim()).filter(Boolean);
   };
 
-  // Count dots in OZ to determine hierarchy level
-  const getHierarchyLevel = (oz) => {
-    const cleanOz = (oz || "").replace(/\s/g, "");
-    const dotCount = (cleanOz.match(/\./g) || []).length;
-    return dotCount; // 0 = haupttitel, 1 = untertitel, 2+ = position
+  // Get prefix of OZ (e.g. "01.01.0001" -> "01.01")
+  const getPrefix = (oz, depth) => {
+    const parts = parseOZ(oz);
+    return parts.slice(0, depth).join(".");
   };
 
-  // Group by haupttitel, untertitel, positions
+  // Count dots to determine level: 0 dots = level 0 (Haupttitel), 1 dot = level 1 (Untertitel), 2+ = level 2 (Position)
+  const getLevel = (oz) => {
+    return parseOZ(oz).length - 1;
+  };
+
+  // Build hierarchical structure based on OZ patterns
   const grouped = [];
-  let currentHauptTitel = null;
-  let currentUnterTitel = null;
-  let posItemIdx = 0;
+  const hauptTitelMap = {};
+  const unterTitelMap = {};
 
-  lvPositions.forEach((pos) => {
-    const level = getHierarchyLevel(pos.oz);
-    
-    // Haupttitel (level 0)
-    if (isTitle(pos) && level === 0) {
-      currentHauptTitel = { 
-        title: pos, 
-        unterTitels: []
-      };
-      grouped.push(currentHauptTitel);
-      currentUnterTitel = null;
-    }
-    // Untertitel (level 1)
-    else if (isTitle(pos) && level === 1) {
-      if (!currentHauptTitel) {
-        currentHauptTitel = { title: null, unterTitels: [] };
-        grouped.push(currentHauptTitel);
-      }
-      currentUnterTitel = { title: pos, positions: [] };
-      currentHauptTitel.unterTitels.push(currentUnterTitel);
-    }
-    // Position (level 2+)
-    else {
-      if (!currentUnterTitel) {
-        if (!currentHauptTitel) {
-          currentHauptTitel = { title: null, unterTitels: [] };
-          grouped.push(currentHauptTitel);
-        }
-        currentUnterTitel = { title: null, positions: [] };
-        currentHauptTitel.unterTitels.push(currentUnterTitel);
-      }
-      currentUnterTitel.positions.push({ pos, posIndex: posItemIdx });
-      posItemIdx++;
-    }
+  // Separate positions from titles
+  const positionItems = lvPositions.filter(p => {
+    const level = getLevel(p.oz);
+    const hasNoQty = !p.quantity || p.quantity === "0" || p.quantity === "";
+    // Title: explicit type="title" OR no quantity AND level < 2
+    return !(p.type === "title" || (hasNoQty && level < 2));
   });
 
-  // Use OZ from GAEB, no auto-numbering
-  grouped.forEach((ht) => {
-    if (ht.title) {
-      ht.hierarchy = ht.title.oz || "";
-    }
-    
-    ht.unterTitels.forEach((ut) => {
-      if (ut.title) {
-        ut.hierarchy = ut.title.oz || "";
+  // Group by Haupttitel prefix (first part of OZ)
+  lvPositions.forEach((pos) => {
+    const level = getLevel(pos.oz);
+    const hasNoQty = !pos.quantity || pos.quantity === "0" || pos.quantity === "";
+    const isTitle = pos.type === "title" || (hasNoQty && level < 2);
+
+    if (level === 0 && isTitle) {
+      // Haupttitel
+      const htPrefix = parseOZ(pos.oz)[0];
+      if (!hauptTitelMap[htPrefix]) {
+        hauptTitelMap[htPrefix] = { title: pos, unterTitels: [] };
+        grouped.push(hauptTitelMap[htPrefix]);
       }
-      
-      ut.positions.forEach((item) => {
-        item.hierarchy = item.pos.oz || "";
-      });
-    });
+    } else if (level === 1 && isTitle) {
+      // Untertitel
+      const htPrefix = parseOZ(pos.oz)[0];
+      const utPrefix = getPrefix(pos.oz, 2);
+
+      if (!hauptTitelMap[htPrefix]) {
+        hauptTitelMap[htPrefix] = { title: null, unterTitels: [] };
+        grouped.push(hauptTitelMap[htPrefix]);
+      }
+
+      if (!unterTitelMap[utPrefix]) {
+        const ut = { title: pos, positions: [] };
+        unterTitelMap[utPrefix] = ut;
+        hauptTitelMap[htPrefix].unterTitels.push(ut);
+      }
+    } else if (level >= 2 || !isTitle) {
+      // Position
+      const htPrefix = parseOZ(pos.oz)[0];
+      const utPrefix = getPrefix(pos.oz, 2);
+
+      if (!hauptTitelMap[htPrefix]) {
+        hauptTitelMap[htPrefix] = { title: null, unterTitels: [] };
+        grouped.push(hauptTitelMap[htPrefix]);
+      }
+
+      if (!unterTitelMap[utPrefix]) {
+        const ut = { title: null, positions: [] };
+        unterTitelMap[utPrefix] = ut;
+        hauptTitelMap[htPrefix].unterTitels.push(ut);
+      }
+
+      const posIndex = positionItems.findIndex(p => p === pos);
+      unterTitelMap[utPrefix].positions.push({ pos, posIndex });
+    }
   });
 
   const positionItems = lvPositions.filter(p => !isTitle(p));
