@@ -149,18 +149,20 @@ export default function LVKalkulationView({ project }) {
 
   const positionItems = lvPositions.filter(p => !isTitle(p));
 
-  const totalAngebotsumme = positionItems.reduce((sum, pos) => {
-    const rows = getRows(pos.oz);
+  const totalAngebotsumme = positionItems.reduce((sum, pos, idx) => {
+    const rows = getRows(idx);
     const ep = rows.reduce((s, r) => s + Number(r.kosten_einheit || 0) + Number(r.zuschlag || 0), 0);
     return sum + ep * (parseFloat(pos.quantity) || 0);
   }, 0);
 
-  const getTitleSum = (positions) =>
-    positions.reduce((sum, pos) => {
-      const rows = getRows(pos.oz);
+  const getTitleSum = (positions) => {
+    const startIdx = positionItems.findIndex(p => positions.includes(p));
+    return positions.reduce((sum, pos, relIdx) => {
+      const rows = getRows(startIdx + relIdx);
       const ep = rows.reduce((s, r) => s + Number(r.kosten_einheit || 0) + Number(r.zuschlag || 0), 0);
       return sum + ep * (parseFloat(pos.quantity) || 0);
     }, 0);
+  };
 
   return (
     <div className="space-y-4">
