@@ -289,15 +289,15 @@ export default function LVKalkulationView({ project }) {
 
                     {/* Positions */}
                     {ut.positions.map(({ pos, posIndex, hierarchy }, pi) => {
-                 const posKey = getPositionKey(posIndex);
-                const rows = getRows(posIndex);
-                const ep = rows.reduce((sum, r) => sum + Number(r.kosten_einheit || 0) + Number(r.zuschlag || 0), 0);
-                const gp = ep * (parseFloat(pos.quantity) || 0);
-                const isExpanded = expandedOz === posKey;
-                const isCalculated = rows.length > 0;
+                      const posKey = getPositionKey(posIndex);
+                      const rows = getRows(posIndex);
+                      const ep = rows.reduce((sum, r) => sum + Number(r.kosten_einheit || 0) + Number(r.zuschlag || 0), 0);
+                      const gp = ep * (parseFloat(pos.quantity) || 0);
+                      const isExpanded = expandedOz === posKey;
+                      const isCalculated = rows.length > 0;
 
-                return (
-                  <Card key={`${gi}-${pi}-${pos.oz}`} className={`transition-all ${isExpanded ? "border-primary/40 shadow-md" : "hover:border-border/80"}`}>
+                      return (
+                        <Card key={`${posIndex}-${pi}-${pos.oz}`} className={`transition-all ${isExpanded ? "border-primary/40 shadow-md" : "hover:border-border/80"}`}>
                     <div
                       className="flex items-center gap-2 px-4 py-2.5 cursor-pointer select-none"
                       onClick={() => setExpandedOz(isExpanded ? null : posKey)}
