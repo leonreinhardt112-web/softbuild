@@ -178,9 +178,17 @@ export default function PdfReport({ project, checklistItems, openPoints }) {
     const blob = new Blob([html], { type: "text/html" });
     const url = URL.createObjectURL(blob);
     const printWindow = window.open(url, "_blank");
-    printWindow.onload = () => {
-      printWindow.print();
-    };
+    if (printWindow) {
+      printWindow.onload = () => {
+        printWindow.print();
+      };
+    } else {
+      // Fallback: direct download if popup blocked
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `AFU-Bericht-${project?.project_number || "report"}.html`;
+      a.click();
+    }
   };
 
   return (
