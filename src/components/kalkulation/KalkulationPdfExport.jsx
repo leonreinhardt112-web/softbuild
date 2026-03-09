@@ -233,10 +233,10 @@ function addHeaderSection(doc, company, project, topMargin, leftMargin, pageWidt
   doc.line(leftMargin, topMargin + 30, pageWidth - MARGIN_RIGHT, topMargin + 30);
 }
 
-function addTableHeader(doc, x, y, width) {
+function addTableHeader(doc, x, y, width, colorRGB = [70, 130, 180]) {
   doc.setFont(undefined, "bold");
   doc.setFontSize(8);
-  doc.setFillColor(70, 130, 180);
+  doc.setFillColor(...colorRGB);
   doc.setTextColor(255, 255, 255);
   
   // Hintergrund-Rechteck
@@ -254,6 +254,15 @@ function addTableHeader(doc, x, y, width) {
   });
   
   doc.setTextColor(0, 0, 0);
+}
+
+function hexToRgb(hex) {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result ? [
+    parseInt(result[1], 16),
+    parseInt(result[2], 16),
+    parseInt(result[3], 16)
+  ] : [70, 130, 180]; // Default fallback
 }
 
 function groupPositionsByTitle(lvPositions, kalkulationen) {
