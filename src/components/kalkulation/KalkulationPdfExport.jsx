@@ -97,16 +97,16 @@ export async function generateKalkulationPDF(project, kalkulation) {
       
       // Menge/Einheit (Spalte 3, rechtsausgerichtet)
       const mengeText = `${menge.toLocaleString("de-DE", { minimumFractionDigits: 2 })} ${pos.einheit || ""}`;
-      doc.text(mengeText, MARGIN_LEFT + 87, shortTextStartY, { align: "right" });
+      doc.text(mengeText, MARGIN_LEFT + 100, shortTextStartY, { align: "right" });
       
       // EP (Spalte 4, rechtsausgerichtet)
       const epText = `${ep.toLocaleString("de-DE", { minimumFractionDigits: 2 })} €`;
-      doc.text(epText, MARGIN_LEFT + 105, shortTextStartY, { align: "right" });
+      doc.text(epText, MARGIN_LEFT + 118, shortTextStartY, { align: "right" });
       
       // GP (Spalte 5, rechtsausgerichtet, bold)
       doc.setFont(undefined, "bold");
       const gpText = `${gp.toLocaleString("de-DE", { minimumFractionDigits: 2 })} €`;
-      doc.text(gpText, pageWidth - MARGIN_RIGHT - 2, shortTextStartY, { align: "right" });
+      doc.text(gpText, MARGIN_LEFT + 137, shortTextStartY, { align: "right" });
       doc.setFont(undefined, "normal");
 
       yPos += 7;
