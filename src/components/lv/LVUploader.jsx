@@ -49,7 +49,10 @@ function parseX83(xmlText) {
       const qty = getText(node, "Qty", "Menge") || "";
       const unit = getText(node, "QU", "QtyUnit", "Einheit") || "";
       
-      const isTitle = !qty || qty === "0";
+      // Determine type based on XML tag first, then quantity as fallback
+      let isTitle = tag === "BoQCtgy";
+      if (tag === "DP") isTitle = !qty || qty === "0";
+      if (tag === "Item" || tag === "item") isTitle = false;
 
       if (oz || shortText) {
         let hierarchicalOz = oz;
