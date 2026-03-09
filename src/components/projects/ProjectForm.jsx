@@ -184,7 +184,10 @@ export default function ProjectForm({ open, onOpenChange, onSave, initialData })
                   <Button type="button" variant="outline" size="sm" onClick={() => setShowNewClient(false)}>Abbrechen</Button>
                   <Button type="button" size="sm"
                     disabled={!newClientForm.name || !newClientForm.adresse || createClientMut.isPending}
-                    onClick={() => createClientMut.mutate(newClientForm)}>
+                    onClick={() => {
+                        const adresse = [newClientForm.strasse, `${newClientForm.plz} ${newClientForm.ort}`.trim()].filter(Boolean).join(", ");
+                        createClientMut.mutate({ ...newClientForm, adresse });
+                      }}>
                     Anlegen & Auswählen
                   </Button>
                 </div>
