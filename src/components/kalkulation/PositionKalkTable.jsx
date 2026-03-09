@@ -6,18 +6,39 @@ import { Plus, Trash2 } from "lucide-react";
 
 const COST_TYPES = ["Lohn", "Material", "Gerät", "NU", "Sonstiges"];
 
-function newRow() {
-  return { id: crypto.randomUUID(), name: "", beschreibung: "", kostentyp: "Lohn", menge: 1, einheit: "h", kosten_einheit: 0, zuschlag: 0 };
+// Maps kostentyp to zuschlaege keys
+const ZUSCHLAG_KEYS = {
+  Lohn:       { bgk: "lohn_bgk", agk: "lohn_agk", wg: "lohn_wg" },
+  Material:   { bgk: "material_bgk", agk: "material_agk", wg: "material_wg" },
+  "Gerät":    { bgk: "geraet_bgk", agk: "geraet_agk", wg: "geraet_wg" },
+  NU:         { bgk: "nu_bgk", agk: "nu_agk", wg: "nu_wg" },
+  Sonstiges:  { bgk: "sonstiges_bgk", agk: "sonstiges_agk", wg: "sonstiges_wg" },
+};
+
+function getZuschlagEur(kostentyp, kosten_einheit, zuschlaege) {
+  const keys = ZUSCHLAG_KEYS[kostentyp] || ZUSCHLAG_KEYS["Sonstiges"];
+  const bgk = Number(zuschlaege[keys.bgk] ?? 10) / 100;
+  const agk = Number(zuschlaege[keys.agk] ?? 5) / 100;
+  const wg = Number(zuschlaege[keys.wg] ?? 3) / 100;
+  const base = Number(kosten_einheit || 0);
+  return base * (bgk + agk + wg);
 }
 
-export default function PositionKalkTable({ rows = [], onRowsChange }) {
+function newRow() {
+  return { id: crypto.randomUUID(), name: "", beschreibung: "", kostentyp: "Lohn", menge: 1, einheit: "h", kosten_einheit: 0 };
+}
+
+export default function PositionKalkTable({ rows = [], onRowsChange, zuschlaege = {} }) {
   const handleChange = (id, field, value) => {
     onRowsChange(rows.map(r => r.id === id ? { ...r, [field]: value } : r));
   };
   const handleAdd = () => onRowsChange([...rows, newRow()]);
   const handleDelete = (id) => onRowsChange(rows.filter(r => r.id !== id));
 
-  const totalEP = rows.reduce((sum, r) => sum + Number(r.kosten_einheit || 0) + Number(r.zuschlag || 0), 0);
+  const totalEP = rows.reduce((sum, r) => {
+    const zuschlag = getZuschlagEur(r.kostentyp, r.kosten_einheit, zuschlaege);
+    return sum + Number(r.kosten_einheit || 0) + zuschlag;
+  }, 0);
 
   return (
     <div className="space-y-3">
@@ -40,7 +61,8 @@ export default function PositionKalkTable({ rows = [], onRowsChange }) {
             )}
             {rows.map((row) => {
               const gesamtkosten = Number(row.menge || 0) * Number(row.kosten_einheit || 0);
-              const ep = Number(row.kosten_einheit || 0) + Number(row.zuschlag || 0);
+              const zuschlag = getZuschlagEur(row.kostentyp, row.kosten_einheit, zuschlaege);
+              const ep = Number(row.kosten_einheit || 0) + zuschlag;
               return (
                 <tr key={row.id} className="border-b border-border/50 hover:bg-muted/20 transition-colors">
                   <td className="px-1 py-1">
@@ -67,9 +89,7 @@ export default function PositionKalkTable({ rows = [], onRowsChange }) {
                     <Input type="number" value={row.kosten_einheit} onChange={e => handleChange(row.id, "kosten_einheit", parseFloat(e.target.value) || 0)} className="h-7 text-xs w-24 text-right border-0 bg-transparent focus:bg-background focus:border focus:border-input" />
                   </td>
                   <td className="px-3 py-1 text-right font-medium tabular-nums">{gesamtkosten.toFixed(2)}</td>
-                  <td className="px-1 py-1">
-                    <Input type="number" value={row.zuschlag} onChange={e => handleChange(row.id, "zuschlag", parseFloat(e.target.value) || 0)} className="h-7 text-xs w-24 text-right border-0 bg-transparent focus:bg-background focus:border focus:border-input" />
-                  </td>
+                  <td className="px-3 py-1 text-right text-muted-foreground tabular-nums">{zuschlag.toFixed(2)}</td>
                   <td className="px-3 py-1 text-right font-semibold text-primary tabular-nums">{ep.toFixed(2)}</td>
                   <td className="px-1 py-1">
                     <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => handleDelete(row.id)}>
