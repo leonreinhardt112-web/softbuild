@@ -57,29 +57,81 @@ export async function generateKalkulationPDF(project, kalkulation) {
   // Tabelle
   const colWidths = [15, 80, 25, 25, 25];
   const headers = ["Pos.", "Beschreibung", "Menge", "EP (€)", "GP (€)"];
+  const allPositions = kalkulation.positions || [];
   
-  yPosition = addTablePage(doc, headers, kalkulation.positions || [], yPosition, DIN_MARGIN_LEFT, pageWidth, pageHeight, contentWidth, colWidths, false);
+  // Rendering-Strategie: Alle Positionen auf erste Seite bis zur Seitengröße, dann neue Seiten
+  let posIndex = 0;
+  let isFirstPage = true;
+  const pageBottom = pageHeight - DIN_MARGIN_BOTTOM;
+  const rowHeight = 5;
 
-  // Zusätzliche Seiten für weitere Positionen falls nötig
-  let remainingPositions = [];
-  const positionsPerPage = Math.floor((pageHeight - DIN_MARGIN_TOP - DIN_MARGIN_BOTTOM - 30) / 5);
-  const firstPagePositions = Math.min(positionsPerPage, (kalkulation.positions || []).length);
-  if (firstPagePositions < (kalkulation.positions || []).length) {
-    remainingPositions = (kalkulation.positions || []).slice(firstPagePositions);
-  }
+  while (posIndex < allPositions.length) {
+    if (!isFirstPage) {
+      doc.addPage();
+      yPosition = DIN_MARGIN_TOP;
+      
+      // Seitenkopf
+      doc.setFontSize(9);
+      doc.setFont(undefined, "normal");
+      doc.text(`Projekt: ${project.project_number}`, DIN_MARGIN_LEFT, yPosition);
+      yPosition += 8;
+    }
 
-  while (remainingPositions.length > 0) {
-    doc.addPage();
-    let yPos = DIN_MARGIN_TOP;
-    
-    // Seitenkopf
+    // Render table header
+    doc.setFont(undefined, "bold");
     doc.setFontSize(9);
-    doc.setFont(undefined, "normal");
-    doc.text(`Projekt: ${project.project_number}`, DIN_MARGIN_LEFT, yPos);
-    yPos += 5;
+    doc.setFillColor(66, 133, 244);
+    doc.setTextColor(255, 255, 255);
 
-    const pagePositions = remainingPositions.splice(0, positionsPerPage);
-    yPos = addTablePage(doc, headers, pagePositions, yPos, DIN_MARGIN_LEFT, pageWidth, pageHeight, contentWidth, colWidths, true);
+    let xPos = DIN_MARGIN_LEFT;
+    const headerYPos = yPosition;
+    headers.forEach((h, i) => {
+      const cellHeight = 6;
+      doc.rect(xPos, headerYPos, colWidths[i], cellHeight, "F");
+      const align = i >= 2 ? "right" : "left";
+      const textX = align === "right" ? xPos + colWidths[i] - 2 : xPos + 2;
+      doc.text(h, textX, headerYPos + 4, { align });
+      xPos += colWidths[i];
+    });
+    yPosition += 7;
+
+    // Render positions for this page
+    doc.setFont(undefined, "normal");
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(8);
+
+    while (posIndex < allPositions.length && yPosition + rowHeight < pageBottom) {
+      const p = allPositions[posIndex];
+      const menge = parseFloat(p.menge) || 0;
+      const ep = Number(p.ep) || 0;
+      const gp = Number(p.gp) || 0;
+
+      // Alternating row colors
+      if (posIndex % 2 === 1) {
+        doc.setFillColor(245, 245, 245);
+        doc.rect(DIN_MARGIN_LEFT, yPosition - 2, contentWidth, rowHeight, "F");
+      }
+
+      xPos = DIN_MARGIN_LEFT;
+      const rowData = [
+        p.oz || "",
+        p.short_text || "",
+        `${menge.toLocaleString("de-DE", { minimumFractionDigits: 2 })} ${p.einheit || ""}`,
+        `${ep.toLocaleString("de-DE", { minimumFractionDigits: 2 })}`,
+        `${gp.toLocaleString("de-DE", { minimumFractionDigits: 2 })}`,
+      ];
+
+      rowData.forEach((val, i) => {
+        const align = i >= 2 ? "right" : "left";
+        const textX = align === "right" ? xPos + colWidths[i] - 2 : xPos + 2;
+        doc.text(val, textX, yPosition, { align, maxWidth: colWidths[i] - 4 });
+        xPos += colWidths[i];
+      });
+      yPosition += rowHeight;
+      posIndex++;
+    }
+
+    isFirstPage = false;
   }
 
   // Letzte Seite mit Summen
