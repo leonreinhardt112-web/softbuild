@@ -14,7 +14,7 @@ const TRADE_KEYWORDS = {
 };
 
 /**
- * Parses a GAEB X83/X81/X82 XML file and returns positions + detected trades.
+ * Parses a GAEB X83/X81/X82 XML file and returns positions with hierarchical OZ numbers.
  */
 function parseX83(xmlText) {
   const parser = new DOMParser();
@@ -34,34 +34,64 @@ function parseX83(xmlText) {
   // Walk the tree in document order to preserve sequence
   const allNodes = doc.querySelectorAll("BoQCtgy, Item, DP, item");
 
+  let lastMainOz = null;   // e.g., "01"
+  let lastSubOz = null;    // e.g., "01.01"
+  let posCounter = 1;      // Counter for positions within current sub-group
+
   if (allNodes.length > 0) {
     allNodes.forEach((node) => {
       const tag = node.tagName;
-      if (tag === "BoQCtgy") {
-        // Title node
-        const oz = getText(node, "CtgyNo", "OZ", "Pos") || node.getAttribute("RNoPart") || "";
-        const shortText = getText(node, "LblTx ShortText", "LblTx", "ShortText", "KurzText", "Description") || "";
-        if (oz || shortText) {
-          positions.push({ oz, short_text: shortText, long_text: "", quantity: "", unit: "", type: "title" });
+      let oz = getText(node, "CtgyNo", "OZ", "Pos", "ItemNo") || node.getAttribute("RNoPart") || "";
+      oz = oz.trim();
+
+      const shortText = getText(node, "LblTx ShortText", "LblTx", "ShortText", "KurzText", "Description") || "";
+      const longText = tag === "Item" || tag === "item" ? getText(node, "DetailTxt Text", "CompleteText DetailTxt Text", "LongText", "LangText") || "" : "";
+      const qty = getText(node, "Qty", "Menge") || "";
+      const unit = getText(node, "QU", "QtyUnit", "Einheit") || "";
+      
+      const isTitle = !qty || qty === "0";
+
+      if (oz || shortText) {
+        let hierarchicalOz = oz;
+
+        if (isTitle) {
+          // Determine hierarchical level
+          const ozClean = oz.replace(/\./g, "");
+          if (ozClean.length <= 4) {
+            // Main title (e.g., "01")
+            lastMainOz = oz;
+            lastSubOz = null;
+            posCounter = 1;
+            hierarchicalOz = oz;
+          } else {
+            // Sub-title (e.g., "01.01")
+            if (lastMainOz && !oz.startsWith(lastMainOz + ".")) {
+              lastMainOz = oz.split(".")[0];
+            }
+            lastSubOz = oz;
+            posCounter = 1;
+            hierarchicalOz = oz;
+          }
+        } else {
+          // Position with quantity
+          if (lastSubOz) {
+            hierarchicalOz = `${lastSubOz}.${String(posCounter).padStart(4, "0")}`;
+          } else if (lastMainOz) {
+            hierarchicalOz = `${lastMainOz}.${String(posCounter).padStart(4, "0")}`;
+          } else {
+            hierarchicalOz = `${String(posCounter).padStart(4, "0")}`;
+          }
+          posCounter++;
         }
-      } else if (tag === "Item" || tag === "item") {
-        const oz = getText(node, "ItemNo", "OZ", "Pos") || node.getAttribute("RNoPart") || "";
-        const shortText = getText(node, "Description ShortText", "ShortText", "KurzText") || "";
-        const longText = getText(node, "DetailTxt Text", "CompleteText DetailTxt Text", "LongText", "LangText") || "";
-        const qty = getText(node, "Qty", "Menge") || "";
-        const unit = getText(node, "QU", "QtyUnit", "Einheit") || "";
-        if (oz || shortText) {
-          positions.push({ oz, short_text: shortText, long_text: longText, quantity: qty, unit, type: "position" });
-        }
-      } else if (tag === "DP") {
-        const oz = getText(node, "OZ", "Pos") || "";
-        const shortText = getText(node, "Kurz", "KurzText", "Text") || "";
-        const qty = getText(node, "Menge", "Qty") || "";
-        const unit = getText(node, "ME", "QU") || "";
-        const isTitle = !qty || qty === "0";
-        if (oz || shortText) {
-          positions.push({ oz, short_text: shortText, long_text: "", quantity: qty, unit, type: isTitle ? "title" : "position" });
-        }
+
+        positions.push({
+          oz: hierarchicalOz,
+          short_text: shortText,
+          long_text: longText,
+          quantity: qty,
+          unit,
+          type: isTitle ? "title" : "position"
+        });
       }
     });
   }
