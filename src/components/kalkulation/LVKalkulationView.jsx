@@ -515,7 +515,8 @@ export default function LVKalkulationView({ project }) {
                             <CardContent className="pt-0 pb-4 border-t border-border/50">
                               {pos.long_text &&
                               <div className="mt-3 mb-4 bg-muted/30 rounded-lg p-3 border-l-2 border-primary/30">
-                                  <p className="text-xs text-muted-foreground">
+                                  <p className="text-xs font-medium text-foreground mb-1">Leistungsbeschreibung</p>
+                                  <p className="text-xs text-muted-foreground whitespace-pre-wrap">
                                     {pos.long_text.trim()}
                                   </p>
                                 </div>
