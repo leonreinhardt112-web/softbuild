@@ -18,9 +18,17 @@ export async function generateKalkulationPDF(project, kalkulation) {
   const contentWidth = pageWidth - MARGIN_LEFT - MARGIN_RIGHT;
 
   let company = null;
+  let headerColor = [70, 130, 180]; // Default: Steel Blue
+  
   try {
     const companies = await base44.entities.Stammdatum.filter({ typ: "unternehmen", aktiv: true }, undefined, 1);
-    if (companies?.length > 0) company = companies[0];
+    if (companies?.length > 0) {
+      company = companies[0];
+      // Parse Hex-Farbe zu RGB
+      if (company.angebot_header_farbe) {
+        headerColor = hexToRgb(company.angebot_header_farbe);
+      }
+    }
   } catch (e) {
     console.error("Fehler beim Laden der Unternehmens-Stammdaten:", e);
   }
