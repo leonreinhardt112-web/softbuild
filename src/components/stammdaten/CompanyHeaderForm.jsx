@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Palette } from "lucide-react";
 
 export default function CompanyHeaderForm() {
@@ -19,6 +20,9 @@ export default function CompanyHeaderForm() {
     briefkopf_website: "",
     briefkopf_logo_url: "",
     angebot_header_farbe: "#4682B4",
+    pdf_footer_links: "",
+    pdf_footer_mitte: "",
+    pdf_footer_rechts: "",
   });
 
   useEffect(() => {
@@ -40,6 +44,9 @@ export default function CompanyHeaderForm() {
           briefkopf_website: companies[0].briefkopf_website || "",
           briefkopf_logo_url: companies[0].briefkopf_logo_url || "",
           angebot_header_farbe: companies[0].angebot_header_farbe || "#4682B4",
+          pdf_footer_links: companies[0].pdf_footer_links || "",
+          pdf_footer_mitte: companies[0].pdf_footer_mitte || "",
+          pdf_footer_rechts: companies[0].pdf_footer_rechts || "",
         });
       }
     } catch (e) {
@@ -180,6 +187,39 @@ export default function CompanyHeaderForm() {
                 className="flex-1 font-mono text-xs"
               />
             </div>
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">PDF-Footer linke Spalte</label>
+            <Textarea
+              value={form.pdf_footer_links}
+              onChange={e => setForm(f => ({ ...f, pdf_footer_links: e.target.value }))}
+              placeholder="z.B.&#10;OWL Bau GmbH&#10;Herforder Straße 285&#10;D-33609 Bielefeld&#10;T: +49 (0)170 / 7762622"
+              rows={4}
+              className="text-xs"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">PDF-Footer mittlere Spalte</label>
+            <Textarea
+              value={form.pdf_footer_mitte}
+              onChange={e => setForm(f => ({ ...f, pdf_footer_mitte: e.target.value }))}
+              placeholder="z.B.&#10;Geschäftsführer: Max Mustermann&#10;Bielefeld, HRB 12345&#10;Steuer-Nr. 123/456/789"
+              rows={4}
+              className="text-xs"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">PDF-Footer rechte Spalte</label>
+            <Textarea
+              value={form.pdf_footer_rechts}
+              onChange={e => setForm(f => ({ ...f, pdf_footer_rechts: e.target.value }))}
+              placeholder="z.B.&#10;Bank: Musterbank eG&#10;IBAN: DE61 1234 5678 9012 3456 78&#10;BIC: MUSTDE33"
+              rows={4}
+              className="text-xs"
+            />
           </div>
           </div>
 
