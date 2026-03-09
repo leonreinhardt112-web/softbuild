@@ -183,28 +183,44 @@ export default function LVKalkulationView({ project }) {
   }
 
   // Konvertiere zu { pos, posIndex } und verwende echte OZ aus GAEB
+  const getDisplayOz = (oz) => {
+    if (!oz) return "00";
+    const clean = (oz || "").replace(/\s/g, "");
+    const parts = clean.split(".");
+    // Entferne führende Nullen nur von der letzten Komponente wenn sie 4-stellig ist
+    if (parts.length === 3 && parts[2].length === 4) {
+      parts[2] = String(parseInt(parts[2], 10));
+    }
+    return parts.join(".");
+  };
+
   let posItemIdx = 0;
   grouped.forEach((ht) => {
-    // Haupttitel: benutze echte OZ (z.B. "01" von "01.01.0001")
+    // Haupttitel: nur erste Komponente (z.B. "01")
     if (ht.title) {
       const oz = (ht.title.oz || "").replace(/\s/g, "");
-      ht.hierarchy = oz.split(".")[0] || "00"; // Erste Komponente
+      const parts = oz.split(".");
+      ht.hierarchy = parts[0] || "00";
     }
     
     ht.unterTitels.forEach((ut) => {
-      // Untertitel: benutze echte OZ (z.B. "01.01")
+      // Untertitel: erste 2 Komponenten (z.B. "01" oder ggf. "01.02")
       if (ut.title) {
         const oz = (ut.title.oz || "").replace(/\s/g, "");
-        ht.hierarchy = oz.split(".").slice(0, 2).join(".") || "00.00"; // Erste 2 Komponenten
+        const parts = oz.split(".");
+        ut.hierarchy = parts.slice(0, 2).join(".") || "00";
       }
       
       ut.positions = ut.positions.map((pos) => {
-        // Positionen: benutze echte OZ (z.B. "01.01.0001")
+        // Positionen: nur die letzte Komponente (z.B. "0001" -> "1")
         const oz = (pos.oz || "").replace(/\s/g, "");
+        const parts = oz.split(".");
+        const displayNum = parts.length > 0 ? String(parseInt(parts[parts.length - 1], 10)) : "0";
         return {
           pos,
           posIndex: posItemIdx++,
-          hierarchy: oz
+          hierarchy: displayNum,
+          fullOz: oz
         };
       });
     });
