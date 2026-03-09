@@ -182,6 +182,13 @@ export default function Kalkulation() {
         </CardContent>
       </Card>
 
+      <KalkulationDetailDialog
+        open={!!detailKalk}
+        kalkulation={detailKalk}
+        projekt={detailKalk ? projects.find(p => p.id === detailKalk.project_id) : null}
+        onClose={() => setDetailKalk(null)}
+      />
+
       <Card className="bg-muted/30">
         <CardContent className="p-4">
           <p className="text-xs text-muted-foreground">
