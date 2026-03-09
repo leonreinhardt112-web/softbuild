@@ -376,9 +376,10 @@ function addFooter(doc, company, pageWidth, pageHeight, marginLeft, marginRight,
   doc.setFontSize(7);
   
   if (company) {
+    const contentWidth = pageWidth - marginLeft - marginRight;
     const col1X = marginLeft;
-    const col2X = pageWidth / 3;
-    const col3X = (pageWidth * 2) / 3;
+    const col2X = marginLeft + contentWidth / 3;
+    const col3X = marginLeft + (2 * contentWidth) / 3;
     
     // Footer-Text splitten (nach Zeilenumbruch)
     const footerLeft = (company.pdf_footer_links || "").split("\n");
