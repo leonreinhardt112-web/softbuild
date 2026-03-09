@@ -361,7 +361,7 @@ export default function LVKalkulationView({ project }) {
             {/* Haupttitel */}
             {ht.title && (
               <div
-                className="flex items-center justify-between px-1 py-2 border-b-2 border-foreground cursor-pointer hover:bg-accent/20 rounded transition-colors"
+                className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-primary/5 to-transparent border-l-4 border-primary rounded-lg cursor-pointer hover:bg-gradient-to-r hover:from-primary/10 hover:to-transparent transition-all group"
                 onClick={() => {
                   const newSet = new Set(expandedTitles);
                   if (newSet.has(htIdx)) {
@@ -372,9 +372,13 @@ export default function LVKalkulationView({ project }) {
                   setExpandedTitles(newSet);
                 }}
               >
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
+                  {isHtExpanded
+                    ? <ChevronDown className="w-5 h-5 text-primary shrink-0 transition-transform" />
+                    : <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary shrink-0 transition-all" />
+                  }
                   <span className="text-sm font-mono font-bold text-foreground w-16">{ht.hierarchy}</span>
-                  <span className="text-base font-bold text-foreground">{ht.title.short_text}</span>
+                  <span className="text-base font-bold text-foreground group-hover:text-primary transition-colors">{ht.title.short_text}</span>
                 </div>
                 {(() => {
                   const htSum = getHauptTitelSum(ht.unterTitels);
