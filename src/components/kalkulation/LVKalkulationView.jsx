@@ -33,31 +33,7 @@ export default function LVKalkulationView({ project }) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["kalkulation", projectId] })
   });
 
-  // Extract short_text (first word) and long_text (rest) separately
-  const extractPositionTexts = (pos) => {
-    const fullText = (pos.short_text || "").trim();
-    if (!fullText) return { short: "", long: pos.long_text || "" };
-    
-    // If there's already a long_text field, use it
-    if (pos.long_text) return { short: fullText, long: pos.long_text };
-    
-    // Split on first space: first word is short, rest is long
-    const spaceIndex = fullText.indexOf(" ");
-    if (spaceIndex > 0) {
-      const shortPart = fullText.substring(0, spaceIndex);
-      const longPart = fullText.substring(spaceIndex + 1).trim();
-      return { short: shortPart, long: longPart };
-    }
-    
-    // Single word
-    return { short: fullText, long: "" };
-  };
-
-  const lvPositions = (project?.lv_positions || []).map(pos => ({
-    ...pos,
-    _shortDisplay: extractPositionTexts(pos).short,
-    _longDisplay: extractPositionTexts(pos).long
-  }));
+  const lvPositions = project?.lv_positions || [];
 
   // Auto-create kalkulation if none exists
   useEffect(() => {
