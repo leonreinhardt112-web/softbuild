@@ -14,14 +14,16 @@ const TRADE_KEYWORDS = {
 };
 
 /**
- * Parses a GAEB X83/X81/X82 XML file and returns positions with hierarchical OZ numbers.
+ * Parses a GAEB X83/X81/X82 XML file with hierarchical grouping:
+ * - Main titles: "01", "02", etc.
+ * - Sub-titles: "01", "02", etc. (under each main title)
+ * - Positions: "0001", "0002", etc. (reset per sub-group)
  */
 function parseX83(xmlText) {
   const parser = new DOMParser();
   const doc = parser.parseFromString(xmlText, "application/xml");
   const positions = [];
 
-  // Helper: get text content of first matching selector (case-insensitive tag search)
   const getText = (el, ...selectors) => {
     for (const sel of selectors) {
       const found = el.querySelector(sel);
@@ -30,72 +32,62 @@ function parseX83(xmlText) {
     return "";
   };
 
-  // GAEB X83: BoQCtgy = Titel, Item = Position
-  // Walk the tree in document order to preserve sequence
   const allNodes = doc.querySelectorAll("BoQCtgy, Item, DP, item");
 
-  let lastMainOz = null;   // e.g., "01"
-  let lastSubOz = null;    // e.g., "01.01"
-  let posCounter = 1;      // Counter for positions within current sub-group
+  let mainTitleNum = 0;     // Counter for main titles: 01, 02, 03...
+  let subTitleNum = 0;      // Counter for sub-titles per main: 01, 02, 03...
+  let posNum = 0;           // Counter for positions: 0001, 0002...
 
   if (allNodes.length > 0) {
     allNodes.forEach((node) => {
       const tag = node.tagName;
-      let oz = getText(node, "CtgyNo", "OZ", "Pos", "ItemNo") || node.getAttribute("RNoPart") || "";
-      oz = oz.trim();
+      let rawOz = getText(node, "CtgyNo", "OZ", "Pos", "ItemNo") || node.getAttribute("RNoPart") || "";
+      rawOz = rawOz.trim();
 
       const shortText = getText(node, "LblTx ShortText", "LblTx", "ShortText", "KurzText", "Description") || "";
       const longText = tag === "Item" || tag === "item" ? getText(node, "DetailTxt Text", "CompleteText DetailTxt Text", "LongText", "LangText") || "" : "";
       const qty = getText(node, "Qty", "Menge") || "";
       const unit = getText(node, "QU", "QtyUnit", "Einheit") || "";
-      
-      // Determine type based on XML tag first, then quantity as fallback
+
+      // Type: BoQCtgy = title, Item/item = position, DP = depends on quantity
       let isTitle = tag === "BoQCtgy";
       if (tag === "DP") isTitle = !qty || qty === "0";
       if (tag === "Item" || tag === "item") isTitle = false;
 
-      if (oz || shortText) {
-        let hierarchicalOz = oz;
-        let finalType = isTitle ? "title" : "position";
+      if (!rawOz && !shortText) return;
 
-        if (isTitle) {
-          // Determine hierarchical level based on number of dots
-          const dotCount = (oz.match(/\./g) || []).length;
-          
-          if (dotCount === 0) {
-            // Main title (e.g., "01")
-            lastMainOz = oz;
-            lastSubOz = null;
-            posCounter = 1;
-          } else if (dotCount === 1) {
-            // Sub-title (e.g., "01.01")
-            lastMainOz = oz.split(".")[0];
-            lastSubOz = oz;
-            posCounter = 1;
-          }
-          // Keep original OZ for titles
-          hierarchicalOz = oz;
+      let displayOz = rawOz;
+
+      if (isTitle) {
+        // Determine if main or sub-title based on dot count
+        const dotCount = (rawOz.match(/\./g) || []).length;
+        
+        if (dotCount === 0) {
+          // Main title — increment main counter
+          mainTitleNum++;
+          subTitleNum = 0;
+          posNum = 0;
+          displayOz = String(mainTitleNum).padStart(2, "0");
         } else {
-          // Position with quantity — build hierarchical OZ
-          if (lastSubOz) {
-            hierarchicalOz = `${lastSubOz}.${String(posCounter).padStart(4, "0")}`;
-          } else if (lastMainOz) {
-            hierarchicalOz = `${lastMainOz}.${String(posCounter).padStart(4, "0")}`;
-          } else {
-            hierarchicalOz = `${String(posCounter).padStart(4, "0")}`;
-          }
-          posCounter++;
+          // Sub-title — increment sub counter
+          subTitleNum++;
+          posNum = 0;
+          displayOz = String(subTitleNum).padStart(2, "0");
         }
-
-        positions.push({
-          oz: hierarchicalOz,
-          short_text: shortText,
-          long_text: longText,
-          quantity: qty,
-          unit,
-          type: finalType
-        });
+      } else {
+        // Position — increment position counter
+        posNum++;
+        displayOz = String(posNum).padStart(4, "0");
       }
+
+      positions.push({
+        oz: displayOz,
+        short_text: shortText,
+        long_text: longText,
+        quantity: qty,
+        unit,
+        type: isTitle ? "title" : "position"
+      });
     });
   }
 
