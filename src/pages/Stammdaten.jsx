@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Trash2, Search, Database, Users, Truck, Package } from "lucide-react";
+import CompanyHeaderForm from "@/components/stammdaten/CompanyHeaderForm";
 
 const TYP_LABELS = {
   auftraggeber: "Auftraggeber", nachunternehmer: "Nachunternehmer", lieferant: "Lieferant",
