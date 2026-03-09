@@ -128,8 +128,8 @@ export async function generateKalkulationPDF(project, kalkulation, options = {})
 
       yPos += 7;
 
-      // Langtext (falls vorhanden) – ausgeglichen unter Beschreibung
-      if (pos.long_text) {
+      // Langtext (falls vorhanden und im textMode enthalten) – ausgeglichen unter Beschreibung
+      if (pos.long_text && textMode === "both") {
         doc.setFontSize(8);
         doc.setTextColor(100, 100, 100);
         const longLines = doc.splitTextToSize(pos.long_text, 70);
