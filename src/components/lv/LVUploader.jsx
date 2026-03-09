@@ -21,45 +21,47 @@ function parseX83(xmlText) {
   const doc = parser.parseFromString(xmlText, "application/xml");
   const positions = [];
 
-  const items = doc.querySelectorAll("Item, item");
-  if (items.length > 0) {
-    items.forEach((item) => {
-      const oz = item.querySelector("ItemNo, Pos, OZ, oz")?.textContent?.trim() || item.getAttribute("RNoPart") || "";
-      const shortText = item.querySelector("ShortText, KurzText, short-text")?.textContent?.trim() || "";
-      const longText = item.querySelector("DetailTxt Text, LongText, LangText")?.textContent?.trim() || "";
-      const qty = item.querySelector("Qty, Menge, qty")?.textContent?.trim() || "";
-      const unit = item.querySelector("QU, Einheit, QtyUnit, unit")?.textContent?.trim() || "";
-      if (oz || shortText) {
-        // Items without quantity are titles/chapters
-        const isTitle = !qty || qty === "0";
-        positions.push({ oz, short_text: shortText, long_text: longText, quantity: qty, unit, type: isTitle ? "title" : "position" });
-      }
-    });
-  } else {
-    const dpItems = doc.querySelectorAll("DP");
-    dpItems.forEach((dp) => {
-      const oz = dp.querySelector("OZ, Pos")?.textContent?.trim() || "";
-      const shortText = dp.querySelector("Kurz, KurzText, Text")?.textContent?.trim() || "";
-      const qty = dp.querySelector("Menge, Qty")?.textContent?.trim() || "";
-      const unit = dp.querySelector("ME, QU")?.textContent?.trim() || "";
-      if (oz || shortText) {
-        const isTitle = !qty || qty === "0";
-        positions.push({ oz, short_text: shortText, long_text: "", quantity: qty, unit, type: isTitle ? "title" : "position" });
-      }
-    });
-  }
+  // Helper: get text content of first matching selector (case-insensitive tag search)
+  const getText = (el, ...selectors) => {
+    for (const sel of selectors) {
+      const found = el.querySelector(sel);
+      if (found?.textContent?.trim()) return found.textContent.trim();
+    }
+    return "";
+  };
 
-  // If no explicit title items detected, try OZ-based grouping heuristic
-  // (e.g. OZ "01" is a title for positions "01 0001", "01 0002")
-  const hasExplicitTitles = positions.some(p => p.type === "title");
-  if (!hasExplicitTitles) {
-    positions.forEach(p => {
-      const cleanOz = p.oz.replace(/\s/g, "");
-      // Short OZ (≤4 chars, all digits) without a quantity → title
-      if (cleanOz.length <= 4 && /^\d+$/.test(cleanOz) && !p.quantity) {
-        p.type = "title";
-      } else {
-        p.type = "position";
+  // GAEB X83: BoQCtgy = Titel, Item = Position
+  // Walk the tree in document order to preserve sequence
+  const allNodes = doc.querySelectorAll("BoQCtgy, Item, DP, item");
+
+  if (allNodes.length > 0) {
+    allNodes.forEach((node) => {
+      const tag = node.tagName;
+      if (tag === "BoQCtgy") {
+        // Title node
+        const oz = getText(node, "CtgyNo", "OZ", "Pos") || node.getAttribute("RNoPart") || "";
+        const shortText = getText(node, "LblTx ShortText", "LblTx", "ShortText", "KurzText", "Description") || "";
+        if (oz || shortText) {
+          positions.push({ oz, short_text: shortText, long_text: "", quantity: "", unit: "", type: "title" });
+        }
+      } else if (tag === "Item" || tag === "item") {
+        const oz = getText(node, "ItemNo", "OZ", "Pos") || node.getAttribute("RNoPart") || "";
+        const shortText = getText(node, "ShortText", "KurzText") || "";
+        const longText = getText(node, "DetailTxt Text", "LongText", "LangText") || "";
+        const qty = getText(node, "Qty", "Menge") || "";
+        const unit = getText(node, "QU", "QtyUnit", "Einheit") || "";
+        if (oz || shortText) {
+          positions.push({ oz, short_text: shortText, long_text: longText, quantity: qty, unit, type: "position" });
+        }
+      } else if (tag === "DP") {
+        const oz = getText(node, "OZ", "Pos") || "";
+        const shortText = getText(node, "Kurz", "KurzText", "Text") || "";
+        const qty = getText(node, "Menge", "Qty") || "";
+        const unit = getText(node, "ME", "QU") || "";
+        const isTitle = !qty || qty === "0";
+        if (oz || shortText) {
+          positions.push({ oz, short_text: shortText, long_text: "", quantity: qty, unit, type: isTitle ? "title" : "position" });
+        }
       }
     });
   }
