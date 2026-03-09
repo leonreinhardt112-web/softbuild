@@ -225,6 +225,13 @@ export default function LVKalkulationView({ project }) {
     }, 0);
   };
 
+  const getHauptTitelSum = (unterTitels) => {
+    return unterTitels.reduce((sum, ut) => {
+      const utSum = getTitleSum(ut.positions.map(item => item.pos));
+      return sum + utSum;
+    }, 0);
+  };
+
   return (
     <div className="space-y-4">
       {/* Header */}
