@@ -177,7 +177,7 @@ export default function LVKalkulationView({ project }) {
                 const isCalculated = rows.length > 0;
 
                 return (
-                  <Card key={pos.oz} className={`transition-all ${isExpanded ? "border-primary/40 shadow-md" : "hover:border-border/80"}`}>
+                  <Card key={`${gi}-${pi}-${pos.oz}`} className={`transition-all ${isExpanded ? "border-primary/40 shadow-md" : "hover:border-border/80"}`}>
                     <div
                       className="flex items-center gap-3 px-4 py-3 cursor-pointer select-none"
                       onClick={() => setExpandedOz(isExpanded ? null : pos.oz)}
