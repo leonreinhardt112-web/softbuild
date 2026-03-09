@@ -26,11 +26,7 @@ export default function ProjectForm({ open, onOpenChange, onSave, initialData })
   const [newClientForm, setNewClientForm] = useState({ name: "", strasse: "", plz: "", ort: "", kontakt_name: "", email: "", telefon: "" });
   const [plzLoading, setPlzLoading] = useState(false);
 
-  // Duplicate check
-  const duplicateClients = auftraggeber.filter(ag =>
-    newClientForm.name.trim().length >= 3 &&
-    ag.name.toLowerCase().includes(newClientForm.name.trim().toLowerCase())
-  );
+
 
   const handleNewClientPlz = (plz) => {
     setNewClientForm(f => ({ ...f, plz }));
