@@ -196,25 +196,25 @@ export default function LVKalkulationView({ project }) {
         {grouped.map((ht, htIdx) => (
           <div key={htIdx} className="space-y-4">
             {/* Haupttitel */}
-            {ht.title && (
+            {ht.type === "title" && (
               <div className="flex items-center gap-2 px-1 py-2 border-b-2 border-foreground">
-                <span className="text-sm font-mono font-bold text-foreground w-16">{ht.title.oz}</span>
-                <span className="text-base font-bold text-foreground">{ht.title.short_text}</span>
+                <span className="text-sm font-mono font-bold text-foreground w-24">{ht.oz}</span>
+                <span className="text-base font-bold text-foreground">{ht.short_text}</span>
               </div>
             )}
 
             {/* Untertitel + Positionen */}
             <div className="space-y-4 pl-0">
-              {ht.unterTitels.map((ut, utIdx) => {
-                const titleSum = getTitleSum(ut.positions.map(item => item.pos));
+              {(ht.subtitles || []).map((ut, utIdx) => {
+                const titleSum = getTitleSum(ut.positions.map(item => item.original_item || item));
                 return (
                   <div key={utIdx} className="space-y-2">
                     {/* Untertitel */}
-                    {ut.title && (
+                    {ut.type === "subtitle" && (
                       <div className="flex items-center justify-between px-1 py-1 border-b border-border">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-mono font-bold text-foreground w-20">{ut.title.oz}</span>
-                          <span className="text-sm font-semibold text-foreground">{ut.title.short_text}</span>
+                          <span className="text-xs font-mono font-bold text-foreground w-24">{ut.oz}</span>
+                          <span className="text-sm font-semibold text-foreground">{ut.short_text}</span>
                         </div>
                         {titleSum > 0 && (
                           <span className="text-sm font-semibold text-primary shrink-0">
@@ -225,7 +225,8 @@ export default function LVKalkulationView({ project }) {
                     )}
 
                     {/* Positions */}
-                    {ut.positions.map(({ pos, posIndex }, pi) => {
+                    {(ut.positions || []).map((pos, pi) => {
+                      const posIndex = positionItems.findIndex(p => p.oz === pos.oz);
                       const posKey = getPositionKey(posIndex);
                       const rows = getRows(posIndex);
                       const ep = rows.reduce((sum, r) => sum + Number(r.kosten_einheit || 0) + Number(r.zuschlag || 0), 0);
