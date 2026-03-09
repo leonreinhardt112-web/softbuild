@@ -52,13 +52,7 @@ export default function LVKalkulationView({ project }) {
     const kalk = kalkulationen[0];
     if (kalk?.positions && !initialSyncDone.current) {
       const lv = project?.lv_positions || [];
-      const items = lv.filter(p => {
-        if (p.type === "title") return false;
-        if (p.type === "position") return true;
-        const cleanOz = (p.oz || "").replace(/\s/g, "");
-        const hasNoQty = !p.quantity || p.quantity === "0" || p.quantity === "";
-        return !(hasNoQty && cleanOz.length <= 4);
-      });
+      const items = lv.filter(p => p.type !== "title");
       const map = {};
       items.forEach((item, idx) => {
         const saved = kalk.positions.find(p => p.oz === item.oz && p.short_text === item.short_text);
@@ -89,14 +83,9 @@ export default function LVKalkulationView({ project }) {
     );
   }
 
-  // Create unique key for each position (including group + index to handle duplicate OZ)
   const getPositionKey = (posIndex) => `${posIndex}`;
-  
   const getRows = (posIndex) => localPositions[getPositionKey(posIndex)] || [];
 
-  // Derive display short text from long_text if short_text is missing
-  // GAEB long_text often starts with "ShortText LongDescription..."
-  // Split before the first German sentence-starter word (article/preposition) after ≥5 chars
   const getDisplayText = (pos) => {
     if (pos.short_text) return pos.short_text;
     if (!pos.long_text) return "";
@@ -110,7 +99,6 @@ export default function LVKalkulationView({ project }) {
     const posKey = getPositionKey(posIndex);
     setLocalPositions(prev => ({ ...prev, [posKey]: rows }));
 
-    // Debounced save — use ref so stale closure is not an issue
     if (saveTimers.current[posKey]) clearTimeout(saveTimers.current[posKey]);
     setSavingOz(posKey);
     saveTimers.current[posKey] = setTimeout(async () => {
@@ -133,96 +121,60 @@ export default function LVKalkulationView({ project }) {
     }, 700);
   };
 
-  // Determine if a position is a title: explicit type="title"
-  const isTitle = (pos) => {
-    return pos.type === "title";
-  };
-
-  // Count dots in OZ to determine hierarchy level
   const getHierarchyLevel = (oz) => {
     const cleanOz = (oz || "").replace(/\s/g, "");
     const dotCount = (cleanOz.match(/\./g) || []).length;
-    return dotCount; // 0 = haupttitel, 1 = untertitel, 2+ = position
+    return dotCount;
   };
 
-  // Find all positions that come after a title until the next title
-  const getPositionsAfterTitle = (titleIndex) => {
-    const positions = [];
-    for (let i = titleIndex + 1; i < lvPositions.length; i++) {
-      if (isTitle(lvPositions[i])) break;
-      positions.push(lvPositions[i]);
-    }
-    return positions;
-  };
+  const isTitle = (pos) => pos.type === "title";
 
-  // Group by haupttitel, untertitel, positions
+  // Build grouped structure: Haupttitel -> Untertitel -> Positionen
+  // A Untertitel ist ein Titel mit Positionen unter sich
+  // Ein reiner Titel hat keine Positionen unter sich
   const grouped = [];
-  const processedIndices = new Set();
+  let i = 0;
 
-  lvPositions.forEach((pos, idx) => {
-    if (processedIndices.has(idx) || !isTitle(pos)) return;
-
-    const level = getHierarchyLevel(pos.oz);
-    const positionsAfter = getPositionsAfterTitle(idx);
+  while (i < lvPositions.length) {
+    const pos = lvPositions[i];
     
-    // Haupttitel: hat keine Positionen direkt unter sich ODER ist level 0
-    if (level === 0) {
-      const unterTitels = [];
-      let currentUnterTitelStart = null;
-      let currentUnterTitelPositions = [];
+    if (isTitle(pos) && getHierarchyLevel(pos.oz) === 0) {
+      // Haupttitel
+      const hauptTitel = { title: pos, unterTitels: [] };
+      let j = i + 1;
 
-      positionsAfter.forEach((p, pIdx) => {
-        const pLevel = getHierarchyLevel(p.oz);
-        if (isTitle(p) && pLevel === 1) {
-          // Neuer Untertitel
-          if (currentUnterTitelStart !== null) {
-            unterTitels.push({
-              title: lvPositions[currentUnterTitelStart],
-              positions: currentUnterTitelPositions,
-            });
-            currentUnterTitelPositions = [];
+      // Sammle alles unter diesem Haupttitel
+      while (j < lvPositions.length && (!isTitle(lvPositions[j]) || getHierarchyLevel(lvPositions[j].oz) === 1)) {
+        if (isTitle(lvPositions[j]) && getHierarchyLevel(lvPositions[j].oz) === 1) {
+          // Untertitel
+          const unterTitelTitle = lvPositions[j];
+          const unterTitel = { title: unterTitelTitle, positions: [] };
+          let k = j + 1;
+          while (k < lvPositions.length && !isTitle(lvPositions[k])) {
+            unterTitel.positions.push(lvPositions[k]);
+            k++;
           }
-          currentUnterTitelStart = idx + 1 + pIdx;
-        } else if (!isTitle(p)) {
-          // Normale Position
-          currentUnterTitelPositions.push(p);
+          hauptTitel.unterTitels.push(unterTitel);
+          j = k;
+        } else {
+          // Position direkt unter Haupttitel (kein Untertitel-Dach)
+          if (hauptTitel.unterTitels.length === 0 || hauptTitel.unterTitels[hauptTitel.unterTitels.length - 1].title !== null) {
+            hauptTitel.unterTitels.push({ title: null, positions: [] });
+          }
+          hauptTitel.unterTitels[hauptTitel.unterTitels.length - 1].positions.push(lvPositions[j]);
+          j++;
         }
-      });
-
-      if (currentUnterTitelStart !== null) {
-        unterTitels.push({
-          title: lvPositions[currentUnterTitelStart],
-          positions: currentUnterTitelPositionen,
-        });
       }
 
-      grouped.push({
-        title: pos,
-        unterTitels: unterTitels.length > 0 ? unterTitels : [{ title: null, positions: positionsAfter }],
-      });
-
-      positionsAfter.forEach((p, pIdx) => {
-        processedIndices.add(idx + 1 + pIdx);
-      });
-      positionsAfter.forEach((p) => {
-        if (isTitle(p)) processedIndices.add(idx + 1 + positionsAfter.indexOf(p));
-      });
+      grouped.push(hauptTitel);
+      i = j;
+    } else {
+      i++;
     }
-  });
+  }
 
+  // Konvertiere zu { pos, posIndex } und generiere Hierarchie
   let posItemIdx = 0;
-  grouped.forEach((ht) => {
-    ht.unterTitels.forEach((ut) => {
-      ut.positions.forEach((pos, posIdx) => {
-        if (!isTitle(pos)) {
-          ut.positions[posIdx] = { pos, posIndex: posItemIdx };
-          posItemIdx++;
-        }
-      });
-    });
-  });
-
-  // Generate hierarchical numbering
   grouped.forEach((ht, htIdx) => {
     const htNum = String(htIdx + 1).padStart(2, "0");
     ht.hierarchy = htNum;
@@ -231,9 +183,13 @@ export default function LVKalkulationView({ project }) {
       const utNum = String(utIdx + 1).padStart(2, "0");
       ut.hierarchy = `${htNum}.${utNum}`;
       
-      ut.positions.forEach((item, posIdx) => {
+      ut.positions = ut.positions.map((pos, posIdx) => {
         const posNum = String(posIdx + 1).padStart(4, "0");
-        item.hierarchy = `${htNum}.${utNum}.${posNum}`;
+        return {
+          pos,
+          posIndex: posItemIdx++,
+          hierarchy: `${htNum}.${utNum}.${posNum}`
+        };
       });
     });
   });
@@ -247,11 +203,14 @@ export default function LVKalkulationView({ project }) {
   }, 0);
 
   const getTitleSum = (positions) => {
-    const startIdx = positionItems.findIndex(p => positions.includes(p));
-    return positions.reduce((sum, pos, relIdx) => {
-      const rows = getRows(startIdx + relIdx);
-      const ep = rows.reduce((s, r) => s + Number(r.kosten_einheit || 0) + Number(r.zuschlag || 0), 0);
-      return sum + ep * (parseFloat(pos.quantity) || 0);
+    return positions.reduce((sum, pos) => {
+      const idx = positionItems.findIndex(p => p === pos);
+      if (idx >= 0) {
+        const rows = getRows(idx);
+        const ep = rows.reduce((s, r) => s + Number(r.kosten_einheit || 0) + Number(r.zuschlag || 0), 0);
+        return sum + ep * (parseFloat(pos.quantity) || 0);
+      }
+      return sum;
     }, 0);
   };
 
