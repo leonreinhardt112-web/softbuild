@@ -323,12 +323,30 @@ function addHeaderSection(doc, company, project, client, kalkulation, topMargin,
   if (client) {
     doc.text(client.name || "", leftMargin, addrY);
     addrY += 4;
-    if (client.briefkopf_strasse) {
-      doc.text(client.briefkopf_strasse, leftMargin, addrY);
+    
+    // Versuche adresse Feld, sonst kombiniere briefkopf oder strasse/plz/ort
+    let addressLine = "";
+    if (client.adresse) {
+      addressLine = client.adresse;
+    } else if (client.briefkopf_strasse) {
+      addressLine = client.briefkopf_strasse;
+    }
+    
+    if (addressLine) {
+      doc.text(addressLine, leftMargin, addrY);
       addrY += 4;
     }
+    
+    // PLZ und Stadt
+    let plzStadt = "";
     if (client.briefkopf_plz || client.briefkopf_stadt) {
-      doc.text(`${client.briefkopf_plz || ""} ${client.briefkopf_stadt || ""}`, leftMargin, addrY);
+      plzStadt = `${client.briefkopf_plz || ""} ${client.briefkopf_stadt || ""}`;
+    } else if (client.plz || client.ort) {
+      plzStadt = `${client.plz || ""} ${client.ort || ""}`;
+    }
+    
+    if (plzStadt.trim()) {
+      doc.text(plzStadt.trim(), leftMargin, addrY);
       addrY += 4;
     }
   } else {
