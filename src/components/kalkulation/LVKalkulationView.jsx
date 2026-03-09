@@ -294,11 +294,9 @@ export default function LVKalkulationView({ project }) {
                           <span className="text-xs font-mono font-bold text-foreground w-20">{ut.hierarchy}</span>
                           <span className="text-sm font-semibold text-foreground">{ut.title.short_text}</span>
                         </div>
-                        {titleSum > 0 && (
-                          <span className="text-sm font-semibold text-primary shrink-0">
-                            {titleSum.toLocaleString("de-DE", { style: "currency", currency: "EUR" })}
-                          </span>
-                        )}
+                        <span className="text-sm font-semibold text-primary shrink-0">
+                          {titleSum.toLocaleString("de-DE", { style: "currency", currency: "EUR" })}
+                        </span>
                       </div>
                     )}
 
