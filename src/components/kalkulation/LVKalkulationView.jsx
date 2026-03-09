@@ -182,22 +182,29 @@ export default function LVKalkulationView({ project }) {
     }
   }
 
-  // Konvertiere zu { pos, posIndex } und generiere Hierarchie
+  // Konvertiere zu { pos, posIndex } und verwende echte OZ aus GAEB
   let posItemIdx = 0;
-  grouped.forEach((ht, htIdx) => {
-    const htNum = String(htIdx + 1).padStart(2, "0");
-    ht.hierarchy = htNum;
+  grouped.forEach((ht) => {
+    // Haupttitel: benutze echte OZ (z.B. "01" von "01.01.0001")
+    if (ht.title) {
+      const oz = (ht.title.oz || "").replace(/\s/g, "");
+      ht.hierarchy = oz.split(".")[0] || "00"; // Erste Komponente
+    }
     
-    ht.unterTitels.forEach((ut, utIdx) => {
-      const utNum = String(utIdx + 1).padStart(2, "0");
-      ut.hierarchy = `${htNum}.${utNum}`;
+    ht.unterTitels.forEach((ut) => {
+      // Untertitel: benutze echte OZ (z.B. "01.01")
+      if (ut.title) {
+        const oz = (ut.title.oz || "").replace(/\s/g, "");
+        ht.hierarchy = oz.split(".").slice(0, 2).join(".") || "00.00"; // Erste 2 Komponenten
+      }
       
-      ut.positions = ut.positions.map((pos, posIdx) => {
-        const posNum = String(posIdx + 1).padStart(4, "0");
+      ut.positions = ut.positions.map((pos) => {
+        // Positionen: benutze echte OZ (z.B. "01.01.0001")
+        const oz = (pos.oz || "").replace(/\s/g, "");
         return {
           pos,
           posIndex: posItemIdx++,
-          hierarchy: `${htNum}.${utNum}.${posNum}`
+          hierarchy: oz
         };
       });
     });
