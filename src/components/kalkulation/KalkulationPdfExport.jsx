@@ -281,46 +281,71 @@ export async function generateKalkulationPDF(project, kalkulation, options = {})
 }
 
 function addHeaderSection(doc, company, project, topMargin, leftMargin, pageWidth) {
-  // Briefkopf links
+  const rightMargin = MARGIN_RIGHT;
+  
+  // 1. Kopfzeile: Kurze Adresse links + Logo Beschreibung rechts
   if (company) {
-    doc.setFontSize(11);
-    doc.setFont(undefined, "bold");
-    doc.text(company.name || "", leftMargin, topMargin + 5);
-    
-    doc.setFontSize(8);
+    doc.setFontSize(9);
     doc.setFont(undefined, "normal");
-    let addrY = topMargin + 12;
-    if (company.briefkopf_strasse) {
-      doc.text(company.briefkopf_strasse, leftMargin, addrY);
-      addrY += 4;
-    }
-    if (company.briefkopf_plz || company.briefkopf_stadt) {
-      doc.text(`${company.briefkopf_plz || ""} ${company.briefkopf_stadt || ""}`, leftMargin, addrY);
-      addrY += 4;
-    }
-    if (company.briefkopf_email) {
-      doc.text(`E-Mail: ${company.briefkopf_email}`, leftMargin, addrY);
-    }
+    const headerLine = `${company.name} | ${company.briefkopf_strasse || ""} | ${company.briefkopf_plz || ""} ${company.briefkopf_stadt || ""}`;
+    doc.text(headerLine, leftMargin, topMargin + 3);
   }
-
-  // Projektdaten rechts
-  const rightX = pageWidth - MARGIN_RIGHT - 50;
-  doc.setFontSize(10);
+  
+  // Rechts: Beschreibung/Tätigkeitsbereich (falls vorhanden)
+  doc.setFontSize(8);
+  doc.setFont(undefined, "normal");
+  doc.setTextColor(100, 100, 100);
+  const descX = pageWidth - rightMargin - 50;
+  const descriptions = [
+    "Verkauf & Vermietung von",
+    "Baumaschinen / Anbaugeräten",
+    "Hoch- / Tiefbau, GaLaBau",
+    "Beratung, Seminare & Coaching"
+  ];
+  let descY = topMargin + 2;
+  descriptions.forEach((desc) => {
+    doc.text(desc, descX, descY);
+    descY += 3;
+  });
+  doc.setTextColor(0, 0, 0);
+  
+  // 2. Empfängeradresse links
+  let addrY = topMargin + 16;
+  doc.setFontSize(9);
+  doc.setFont(undefined, "normal");
+  doc.text(project.client || "", leftMargin, addrY);
+  addrY += 4;
+  
+  // 3. Rechts: Titel "Kalkuliertes Angebot" + Projekt-Details
+  const titleX = pageWidth - rightMargin - 40;
+  doc.setFontSize(14);
   doc.setFont(undefined, "bold");
-  doc.text("Kalkuliertes Angebot", rightX, topMargin + 5);
+  doc.text("Kalkuliertes Angebot", titleX, topMargin + 18);
   
   doc.setFontSize(9);
   doc.setFont(undefined, "normal");
-  let infoY = topMargin + 13;
-  doc.text(`Projekt-Nr.: ${project.project_number || ""}`, rightX, infoY);
-  infoY += 4;
-  doc.text(`Auftraggeber: ${project.client || ""}`, rightX, infoY);
-  infoY += 4;
-  doc.text(`Datum: ${new Date().toLocaleDateString("de-DE")}`, rightX, infoY);
-
+  let detailY = topMargin + 28;
+  doc.text(`Projekt-Nr.: ${project.project_number || ""}`, titleX, detailY);
+  detailY += 4;
+  doc.text(`Datum: ${new Date().toLocaleDateString("de-DE")}`, titleX, detailY);
+  
+  // 4. Projektname und Beschreibung
+  let projectY = addrY + 8;
+  doc.setFontSize(10);
+  doc.setFont(undefined, "bold");
+  doc.text(project.project_name || "", leftMargin, projectY);
+  
+  if (project.selected_trades && project.selected_trades.length > 0) {
+    projectY += 5;
+    doc.setFontSize(9);
+    doc.setFont(undefined, "normal");
+    doc.text(project.selected_trades.join(", "), leftMargin, projectY);
+  }
+  
   // Trennlinie
+  projectY += 8;
   doc.setDrawColor(150, 150, 150);
-  doc.line(leftMargin, topMargin + 30, pageWidth - MARGIN_RIGHT, topMargin + 30);
+  doc.line(leftMargin, projectY, pageWidth - rightMargin, projectY);
 }
 
 function addTableHeader(doc, x, y, width, colorRGB = [70, 130, 180]) {
