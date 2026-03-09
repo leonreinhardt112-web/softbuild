@@ -83,8 +83,27 @@ function parseX83(xmlText) {
 
   const processItem = (node, parentOz) => {
     let oz = getText(node, "ItemNo", "OZ", "Pos") || node.getAttribute("RNoPart") || "";
-    const shortText = getText(node, "Description ShortText", "ShortText", "KurzText") || "";
-    const longText = getText(node, "DetailTxt Text", "CompleteText DetailTxt Text", "LongText", "LangText") || "";
+    
+    // Strikt trennen: Kurztext nur vom ShortText-Element, Langtext vom DetailText/LongText
+    let shortText = "";
+    let longText = "";
+    
+    // Suche Kurztext in ShortText oder KurzText Element
+    const shortEl = node.querySelector("ShortText") || node.querySelector("KurzText") || node.querySelector("Description ShortText");
+    if (shortEl?.textContent?.trim()) {
+      shortText = shortEl.textContent.trim();
+    } else {
+      // Fallback: erstes Description Element
+      const descEl = node.querySelector("Description");
+      if (descEl?.textContent?.trim()) shortText = descEl.textContent.trim();
+    }
+    
+    // Suche Langtext NICHT in ShortText, nur in DetailText/LongText Elementen
+    const longEl = node.querySelector("DetailTxt Text") || node.querySelector("CompleteText") || node.querySelector("LongText") || node.querySelector("LangText");
+    if (longEl?.textContent?.trim()) {
+      longText = longEl.textContent.trim();
+    }
+    
     const qty = getText(node, "Qty", "Menge") || "";
     const unit = getText(node, "QU", "QtyUnit", "Einheit") || "";
 
