@@ -354,42 +354,42 @@ function addFooter(doc, company, pageWidth, pageHeight, marginLeft, marginRight,
   doc.setFont(undefined, "normal");
   doc.setFontSize(7);
   
-  const footerBgY = pageHeight - 22;
-  const footerHeight = 20;
+  const footerBgY = pageHeight - 20;
+  const footerHeight = 18;
   
-  // Footer-Hintergrund
+  // Footer-Hintergrund (volle Breite)
   const footerColor = company?.pdf_footer_farbe || "#666666";
   const rgb = hexToRgb(footerColor);
   doc.setFillColor(...rgb);
-  doc.rect(marginLeft, footerBgY, pageWidth - marginLeft - marginRight, footerHeight, "F");
+  doc.rect(0, footerBgY, pageWidth, footerHeight, "F");
   
   // Text-Farbe für Footer
   doc.setTextColor(255, 255, 255);
   
   if (company) {
-    const col1X = marginLeft + 2;
-    const col2X = pageWidth / 3 + 10;
-    const col3X = (pageWidth * 2) / 3 + 10;
+    const col1X = marginLeft;
+    const col2X = pageWidth / 3;
+    const col3X = (pageWidth * 2) / 3;
     
     // Footer-Text splitten (nach Zeilenumbruch)
     const footerLeft = (company.pdf_footer_links || "").split("\n");
     const footerMitte = (company.pdf_footer_mitte || "").split("\n");
     const footerRechts = (company.pdf_footer_rechts || "").split("\n");
     
-    let currentY = footerBgY + 3;
+    let currentY = footerBgY + 2.5;
     const maxLines = Math.max(footerLeft.length, footerMitte.length, footerRechts.length);
     
     for (let j = 0; j < maxLines; j++) {
       if (footerLeft[j]) doc.text(footerLeft[j], col1X, currentY);
       if (footerMitte[j]) doc.text(footerMitte[j], col2X, currentY);
       if (footerRechts[j]) doc.text(footerRechts[j], col3X, currentY);
-      currentY += 3.5;
+      currentY += 3;
     }
   }
   
-  // Seitenzahl rechts unten
+  // Seitenzahl rechts über dem Footer
   doc.setTextColor(120, 120, 120);
-  doc.text(`Seite ${currentPage}/${totalPages}`, pageWidth - marginRight - 2, pageHeight - 5, { align: "right" });
+  doc.text(`Seite ${currentPage}/${totalPages}`, pageWidth - marginRight - 1, footerBgY - 2, { align: "right" });
   doc.setTextColor(0, 0, 0);
 }
 
