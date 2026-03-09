@@ -322,8 +322,8 @@ export default function LVKalkulationView({ project }) {
                               ? <CheckCircle2 className="w-3.5 h-3.5 text-green-500 shrink-0" />
                               : <div className="w-3.5 h-3.5 rounded-full border-2 border-muted-foreground/30 shrink-0" />
                             }
-                            {/* POS. */}
-                            <span className="text-xs font-mono font-bold text-foreground w-24 shrink-0">{pos.oz}</span>
+                            {/* OZ */}
+                            <span className="text-xs font-mono font-bold text-foreground w-32 shrink-0">{pos.oz}</span>
                             {/* BESCHREIBUNG */}
                             <div className="flex-1 min-w-0 text-sm text-foreground truncate">{getDisplayText(pos) || <span className="text-muted-foreground/50 italic">–</span>}</div>
                             {/* MENGE + EINHEIT */}
