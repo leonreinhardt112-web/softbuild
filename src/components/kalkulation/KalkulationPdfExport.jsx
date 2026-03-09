@@ -364,7 +364,7 @@ function groupPositionsByTitle(lvPositions, kalkulationen) {
 
   lvPositions.forEach((lvPos) => {
     if (isTitle(lvPos)) {
-      if (currentTitle?.positions.length > 0) {
+      if (currentTitle) {
         result.push(currentTitle);
       }
       currentTitle = {
@@ -389,7 +389,7 @@ function groupPositionsByTitle(lvPositions, kalkulationen) {
     }
   });
 
-  if (currentTitle?.positions.length > 0) {
+  if (currentTitle) {
     result.push(currentTitle);
   }
 
