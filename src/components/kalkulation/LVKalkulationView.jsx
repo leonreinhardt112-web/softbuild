@@ -154,8 +154,7 @@ export default function LVKalkulationView({ project }) {
     return hasNoQty;
   };
 
-  // For title display, use short_text directly (titles don't need extraction)
-  const getTitleText = (title) => title?.short_text || title?._shortDisplay || "";
+
 
   // Count dots in OZ to determine hierarchy level
   const getHierarchyLevel = (oz) => {
