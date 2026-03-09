@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
@@ -22,33 +22,21 @@ import {
   STATUS_COLORS,
 } from "@/components/checklistData";
 import {
-  ArrowLeft,
-  ClipboardCheck,
-  Settings,
-  BarChart3,
-  AlertTriangle,
-  Play,
-  Save,
-  Building2,
-  MapPin,
-  Calendar,
-  User,
-  LayoutDashboard,
-  Calculator,
-  Receipt,
-  HardHat,
-  FileText,
-  Euro,
-  Clock,
+  ArrowLeft, ClipboardCheck, Settings, BarChart3, AlertTriangle, Play, Save,
+  Building2, MapPin, Calendar, User, Calculator, Receipt, HardHat, FileText,
+  Euro, Clock, Lock, ChevronRight, FolderOpen,
 } from "lucide-react";
 import { format } from "date-fns";
+
+const POST_AWARD_STATUSES = ["beauftragt", "in_ausfuehrung", "abgeschlossen"];
 
 export default function ProjectDetail() {
   const urlParams = new URLSearchParams(window.location.search);
   const projectId = urlParams.get("id");
-  const initialTab = urlParams.get("tab") || "overview";
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState(initialTab);
+  const [activeTab, setActiveTab] = useState("overview");
+  // AFU internal view
+  const [afuView, setAfuView] = useState("setup"); // setup | review | openpoints | result
   const [activeTrade, setActiveTrade] = useState("allgemein");
 
   const { data: project, isLoading: projectLoading } = useQuery({
@@ -82,24 +70,10 @@ export default function ProjectDetail() {
     enabled: !!projectId,
   });
 
-  const { data: nachtraege = [] } = useQuery({
-    queryKey: ["nachtraege", projectId],
-    queryFn: () => base44.entities.Nachtrag.filter({ project_id: projectId }),
-    enabled: !!projectId,
-  });
-
   const updateProjectMutation = useMutation({
     mutationFn: (data) => base44.entities.Project.update(projectId, data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["project", projectId] }),
   });
-
-  const handleLVUpdate = (data) => updateProjectMutation.mutateAsync(data);
-
-  const handleTradesDetected = (detectedTrades) => {
-    const current = project?.selected_trades || ["allgemein"];
-    const merged = [...new Set([...current, ...detectedTrades])];
-    updateProjectMutation.mutate({ selected_trades: merged });
-  };
 
   const createItemsMutation = useMutation({
     mutationFn: (items) => base44.entities.ChecklistItem.bulkCreate(items),
@@ -110,6 +84,14 @@ export default function ProjectDetail() {
     mutationFn: ({ id, data }) => base44.entities.ChecklistItem.update(id, data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["checklist", projectId] }),
   });
+
+  const handleLVUpdate = (data) => updateProjectMutation.mutateAsync(data);
+
+  const handleTradesDetected = (detectedTrades) => {
+    const current = project?.selected_trades || ["allgemein"];
+    const merged = [...new Set([...current, ...detectedTrades])];
+    updateProjectMutation.mutate({ selected_trades: merged });
+  };
 
   const selectedTrades = project?.selected_trades || ["allgemein"];
 
@@ -141,24 +123,23 @@ export default function ProjectDetail() {
       if (newItems.length > 0) await createItemsMutation.mutateAsync(newItems);
     }
     updateProjectMutation.mutate({ status: "in_pruefung" });
-    setActiveTab("afu-review");
+    setAfuView("review");
   };
 
   const handleFinishReview = () => {
     const relevantItems = checklistItems.filter((i) => i.status !== "nicht_relevant");
-    const notFulfilled = relevantItems.filter((i) => i.status === "nicht_erfuellt").length;
-    const openCount = relevantItems.filter((i) => i.status === "offen").length;
     const criticalFailed = relevantItems.filter(
       (i) => i.status === "nicht_erfuellt" && i.severity === "kritisch"
     ).length;
+    const openCount = relevantItems.filter((i) => i.status === "offen").length;
+    const notFulfilled = relevantItems.filter((i) => i.status === "nicht_erfuellt").length;
     const fulfilled = relevantItems.filter((i) => i.status === "erfuellt").length;
     const score = relevantItems.length > 0 ? Math.round((fulfilled / relevantItems.length) * 100) : 0;
-    const isReady = criticalFailed === 0 && openCount === 0 && notFulfilled === 0;
     updateProjectMutation.mutate({
-      status: isReady ? "ausfuehrungsreif" : "nicht_ausfuehrungsreif",
+      afu_status: criticalFailed === 0 && openCount === 0 && notFulfilled === 0 ? "ausfuehrungsreif" : "nicht_ausfuehrungsreif",
       overall_score: score,
     });
-    setActiveTab("afu-result");
+    setAfuView("result");
   };
 
   const groupedItems = useMemo(() => {
@@ -174,8 +155,7 @@ export default function ProjectDetail() {
   if (projectLoading) {
     return (
       <div className="max-w-6xl mx-auto space-y-4">
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-64 w-full" />
+        <Skeleton className="h-8 w-48" /><Skeleton className="h-64 w-full" />
       </div>
     );
   }
@@ -191,10 +171,9 @@ export default function ProjectDetail() {
     );
   }
 
-  const angebotsumme = kalkulationen[0]?.angebotsumme;
+  const isPostAward = POST_AWARD_STATUSES.includes(project.status);
+  const latestKalk = kalkulationen[0];
   const totalRechnungen = rechnungen.reduce((s, r) => s + (r.betrag_netto || 0), 0);
-  const openNachtraege = nachtraege.filter(n => n.status !== "beauftragt" && n.status !== "abgelehnt").length;
-  const openCheckItems = checklistItems.filter(i => i.status === "offen").length;
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 animate-fade-in">
@@ -215,32 +194,12 @@ export default function ProjectDetail() {
             </div>
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-xs text-muted-foreground">
               <span>{project.project_number}</span>
-              {project.client && (
-                <span className="flex items-center gap-1">
-                  <Building2 className="w-3 h-3" />{project.client}
-                </span>
-              )}
-              {project.location && (
-                <span className="flex items-center gap-1">
-                  <MapPin className="w-3 h-3" />{project.location}
-                </span>
-              )}
-              {project.reviewer && (
-                <span className="flex items-center gap-1">
-                  <User className="w-3 h-3" />{project.reviewer}
-                </span>
-              )}
-              {project.review_date && (
-                <span className="flex items-center gap-1">
-                  <Calendar className="w-3 h-3" />
-                  {format(new Date(project.review_date), "dd.MM.yyyy")}
-                </span>
-              )}
+              {project.client && <span className="flex items-center gap-1"><Building2 className="w-3 h-3" />{project.client}</span>}
+              {project.location && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{project.location}</span>}
+              {project.reviewer && <span className="flex items-center gap-1"><User className="w-3 h-3" />{project.reviewer}</span>}
+              {project.review_date && <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{format(new Date(project.review_date), "dd.MM.yyyy")}</span>}
             </div>
           </div>
-        </div>
-        <div className="flex gap-2">
-          <PdfReport project={project} checklistItems={checklistItems} openPoints={openPoints} />
         </div>
       </div>
 
@@ -248,102 +207,52 @@ export default function ProjectDetail() {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="flex flex-wrap h-auto gap-1">
           <TabsTrigger value="overview" className="gap-1.5 text-xs">
-            <LayoutDashboard className="w-3.5 h-3.5" />Übersicht
+            <FolderOpen className="w-3.5 h-3.5" />Übersicht
           </TabsTrigger>
-          <TabsTrigger value="afu-setup" className="gap-1.5 text-xs">
-            <Settings className="w-3.5 h-3.5" />AFU-Prüfung
+          <TabsTrigger value="unterlagen" className="gap-1.5 text-xs">
+            <FileText className="w-3.5 h-3.5" />Unterlagen
           </TabsTrigger>
-          <TabsTrigger value="afu-review" className="gap-1.5 text-xs" disabled={project.status === "entwurf"}>
-            <ClipboardCheck className="w-3.5 h-3.5" />Checkliste
+          <TabsTrigger value="kalkulation" className="gap-1.5 text-xs">
+            <Calculator className="w-3.5 h-3.5" />Kalkulation
           </TabsTrigger>
-          <TabsTrigger value="afu-openpoints" className="gap-1.5 text-xs" disabled={project.status === "entwurf"}>
-            <AlertTriangle className="w-3.5 h-3.5" />Offene Punkte
+          <TabsTrigger value="afu" className="gap-1.5 text-xs" disabled={!isPostAward}
+            title={!isPostAward ? "Erst nach Beauftragung verfügbar" : ""}>
+            <ClipboardCheck className="w-3.5 h-3.5" />
+            AFU-Prüfung
+            {!isPostAward && <Lock className="w-3 h-3 ml-0.5 opacity-50" />}
           </TabsTrigger>
-          <TabsTrigger value="afu-result" className="gap-1.5 text-xs" disabled={checklistItems.length === 0}>
-            <BarChart3 className="w-3.5 h-3.5" />Ergebnis
+          <TabsTrigger value="ausfuehrung" className="gap-1.5 text-xs" disabled={!isPostAward}
+            title={!isPostAward ? "Erst nach Beauftragung verfügbar" : ""}>
+            <HardHat className="w-3.5 h-3.5" />
+            Ausführung
+            {!isPostAward && <Lock className="w-3 h-3 ml-0.5 opacity-50" />}
           </TabsTrigger>
         </TabsList>
 
-        {/* OVERVIEW TAB */}
+        {/* OVERVIEW */}
         <TabsContent value="overview" className="mt-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <Card>
-              <CardContent className="p-4 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <Euro className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Angebotssumme</p>
-                  <p className="font-semibold text-sm">
-                    {angebotsumme ? angebotsumme.toLocaleString("de-DE", { style: "currency", currency: "EUR" }) : "–"}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
-                  <Receipt className="w-5 h-5 text-green-600" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Abgerechnet (netto)</p>
-                  <p className="font-semibold text-sm">
-                    {totalRechnungen > 0 ? totalRechnungen.toLocaleString("de-DE", { style: "currency", currency: "EUR" }) : "–"}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
-                  <AlertTriangle className="w-5 h-5 text-amber-600" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Offene Prüfpunkte</p>
-                  <p className="font-semibold text-sm">{openCheckItems || "–"}</p>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                  <FileText className="w-5 h-5 text-blue-600" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Nachträge offen</p>
-                  <p className="font-semibold text-sm">{openNachtraege || "–"}</p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Projektdaten */}
             <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-semibold">Projektdaten</CardTitle>
-              </CardHeader>
+              <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold">Projektdaten</CardTitle></CardHeader>
               <CardContent className="space-y-2.5 text-sm">
                 {[
                   ["Projektnummer", project.project_number],
                   ["Auftraggeber", project.client],
                   ["Standort", project.location],
                   ["Vertragsart", project.contract_type],
-                  ["VOB/B vereinbart", project.vob_agreed ? "Ja" : "Nein"],
+                  ["VOB/B vereinbart", project.vob_agreed !== undefined ? (project.vob_agreed ? "Ja" : "Nein") : null],
                   ["Planungsbüro", project.planning_office],
                   ["Projektleiter", project.project_manager],
                   ["Bauleiter", project.site_manager],
                   ["Bearbeiter AFU", project.reviewer],
-                ].map(([label, value]) => value ? (
+                ].filter(([, v]) => v).map(([label, value]) => (
                   <div key={label} className="flex justify-between gap-4">
                     <span className="text-muted-foreground shrink-0">{label}</span>
                     <span className="font-medium text-right">{value}</span>
                   </div>
-                ) : null)}
+                ))}
               </CardContent>
             </Card>
-
-            {/* Termine */}
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-semibold flex items-center gap-2">
@@ -359,57 +268,44 @@ export default function ProjectDetail() {
                 ].map(([label, value]) => (
                   <div key={label} className="flex justify-between gap-4">
                     <span className="text-muted-foreground shrink-0">{label}</span>
-                    <span className="font-medium">
-                      {value ? format(new Date(value), "dd.MM.yyyy") : "–"}
-                    </span>
+                    <span className="font-medium">{value ? format(new Date(value), "dd.MM.yyyy") : "–"}</span>
                   </div>
                 ))}
               </CardContent>
             </Card>
-
-            {/* Schnellzugriff Module */}
-            <Card className="lg:col-span-2">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-semibold">Module</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {[
-                    { label: "Kalkulation", icon: Calculator, page: "Kalkulation", color: "bg-primary/10 text-primary" },
-                    { label: "AFU-Prüfung", icon: ClipboardCheck, tab: "afu-setup", color: "bg-violet-100 text-violet-600" },
-                    { label: "Abrechnung", icon: Receipt, page: "Abrechnung", color: "bg-green-100 text-green-600" },
-                    { label: "Baustelle", icon: HardHat, page: "Baustelle", color: "bg-amber-100 text-amber-600" },
-                  ].map(({ label, icon: Icon, page, tab, color }) => (
-                    tab ? (
-                      <button key={label} onClick={() => setActiveTab(tab)}
-                        className="flex flex-col items-center gap-2 p-4 rounded-xl border border-border hover:bg-accent transition-all text-sm font-medium">
-                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${color}`}>
-                          <Icon className="w-5 h-5" />
-                        </div>
-                        {label}
-                      </button>
-                    ) : (
-                      <Link key={label} to={createPageUrl(`${page}?project_id=${projectId}`)}>
-                        <div className="flex flex-col items-center gap-2 p-4 rounded-xl border border-border hover:bg-accent transition-all text-sm font-medium cursor-pointer">
-                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${color}`}>
-                            <Icon className="w-5 h-5" />
-                          </div>
-                          {label}
-                        </div>
-                      </Link>
-                    )
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+            {latestKalk && (
+              <Card>
+                <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold flex items-center gap-2"><Euro className="w-4 h-4" />Kalkulation</CardTitle></CardHeader>
+                <CardContent className="space-y-2 text-sm">
+                  <div className="flex justify-between"><span className="text-muted-foreground">Angebotssumme</span><span className="font-semibold">{latestKalk.angebotsumme?.toLocaleString("de-DE", { style: "currency", currency: "EUR" }) || "–"}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Deckungsbeitrag</span><span className="font-medium">{latestKalk.deckungsbeitrag?.toLocaleString("de-DE", { style: "currency", currency: "EUR" }) || "–"}</span></div>
+                  <Button size="sm" variant="outline" className="w-full mt-2 gap-1" onClick={() => setActiveTab("kalkulation")}>
+                    Zur Kalkulation <ChevronRight className="w-3.5 h-3.5" />
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+            {!isPostAward && (
+              <Card className="border-dashed border-muted-foreground/30">
+                <CardContent className="py-6 flex items-start gap-3">
+                  <Lock className="w-5 h-5 text-muted-foreground/50 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">AFU-Prüfung & Ausführung</p>
+                    <p className="text-xs text-muted-foreground/70 mt-1">Diese Module werden nach Beauftragung freigeschaltet.</p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </TabsContent>
 
-        {/* AFU-SETUP TAB */}
-        <TabsContent value="afu-setup" className="mt-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 space-y-4">
-              <TradeSelector selected={selectedTrades} onChange={handleTradesChange} />
+        {/* UNTERLAGEN */}
+        <TabsContent value="unterlagen" className="mt-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <LVUploader project={project} onUpdate={handleLVUpdate} onTradesDetected={handleTradesDetected} />
+            </div>
+            <div className="space-y-4">
               {project.lv_analysis_findings?.length > 0 && (
                 <LVFindings
                   findings={project.lv_analysis_findings}
@@ -443,89 +339,218 @@ export default function ProjectDetail() {
                   }}
                 />
               )}
-            </div>
-            <div className="space-y-4">
-              <LVUploader project={project} onUpdate={handleLVUpdate} onTradesDetected={handleTradesDetected} />
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-semibold">Projektdaten</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2 text-xs">
-                  <div className="flex justify-between"><span className="text-muted-foreground">Vertragsart</span><span className="font-medium">{project.contract_type || "–"}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">VOB/B</span><span className="font-medium">{project.vob_agreed ? "Ja" : "Nein"}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">Planungsbüro</span><span className="font-medium">{project.planning_office || "–"}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">Projektstart</span><span className="font-medium">{project.project_start ? format(new Date(project.project_start), "dd.MM.yyyy") : "–"}</span></div>
-                </CardContent>
-              </Card>
-              <Button className="w-full gap-2" onClick={handleStartReview}>
-                <Play className="w-4 h-4" />
-                Prüfung starten
-              </Button>
+              {!project.lv_file_url && !project.lv_analysis_findings?.length && (
+                <Card className="border-dashed">
+                  <CardContent className="py-8 text-center text-sm text-muted-foreground">
+                    <FileText className="w-8 h-8 mx-auto mb-3 opacity-30" />
+                    Noch keine GAEB/LV-Datei hochgeladen.<br />
+                    Lade eine Datei hoch, um KI-Befunde zu erhalten.
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </div>
         </TabsContent>
 
-        {/* CHECKLIST TAB */}
-        <TabsContent value="afu-review" className="mt-6">
-          {itemsLoading ? (
-            <div className="space-y-3">{Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-16" />)}</div>
-          ) : checklistItems.length === 0 ? (
-            <Card>
-              <CardContent className="py-12 text-center">
-                <p className="text-sm text-muted-foreground">Bitte starten Sie die Prüfung im Reiter "AFU-Prüfung"</p>
-                <Button size="sm" className="mt-4 gap-2" onClick={() => setActiveTab("afu-setup")}>
-                  <Settings className="w-3.5 h-3.5" />Zur AFU-Prüfung
-                </Button>
+        {/* KALKULATION */}
+        <TabsContent value="kalkulation" className="mt-6">
+          {kalkulationen.length === 0 ? (
+            <Card className="border-dashed">
+              <CardContent className="py-16 flex flex-col items-center text-center">
+                <Calculator className="w-12 h-12 text-muted-foreground/30 mb-4" />
+                <p className="text-sm font-medium text-muted-foreground">Noch keine Kalkulation für dieses Projekt</p>
+                <p className="text-xs text-muted-foreground/70 mt-1 mb-4">
+                  Lege eine neue Kalkulation über das Kalkulations-Modul an.
+                </p>
+                <Link to={createPageUrl("Kalkulation")}>
+                  <Button size="sm" className="gap-2">
+                    <Calculator className="w-3.5 h-3.5" />Zum Kalkulations-Modul
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-              <div className="lg:col-span-1">
-                <Card>
-                  <CardContent className="p-2">
-                    {selectedTrades.filter((t) => groupedItems[t]).map((t) => {
-                      const tradeItems = checklistItems.filter((i) => i.trade === t && i.status !== "nicht_relevant");
-                      const fulfilledCount = tradeItems.filter((i) => i.status === "erfuellt").length;
-                      const pct = tradeItems.length > 0 ? Math.round((fulfilledCount / tradeItems.length) * 100) : 0;
-                      return (
-                        <button key={t} onClick={() => setActiveTrade(t)}
-                          className={`w-full flex items-center justify-between p-2.5 rounded-lg text-xs font-medium transition-all ${
-                            activeTrade === t ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent"
-                          }`}>
-                          <span className="truncate">{TRADE_LABELS[t]}</span>
-                          <span className={`shrink-0 ml-2 ${activeTrade === t ? "text-primary-foreground/80" : ""}`}>{pct}%</span>
-                        </button>
-                      );
-                    })}
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h2 className="text-base font-semibold">Kalkulationen für dieses Projekt</h2>
+                <Link to={createPageUrl("Kalkulation")}>
+                  <Button size="sm" variant="outline" className="gap-1.5">
+                    <Calculator className="w-3.5 h-3.5" />Vollständiger Editor
+                  </Button>
+                </Link>
+              </div>
+              {kalkulationen.map((k) => (
+                <Card key={k.id}>
+                  <CardContent className="p-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div>
+                        <p className="font-semibold text-sm">{k.version_name}</p>
+                        <div className="flex gap-4 mt-1 text-xs text-muted-foreground">
+                          <span>Herstellkosten: {k.kalkulierte_herstellkosten?.toLocaleString("de-DE", { style: "currency", currency: "EUR" }) || "–"}</span>
+                          <span>Angebotssumme: <span className="font-semibold text-foreground">{k.angebotsumme?.toLocaleString("de-DE", { style: "currency", currency: "EUR" }) || "–"}</span></span>
+                          <span>DB: {k.deckungsbeitrag_prozent ? `${k.deckungsbeitrag_prozent.toFixed(1)} %` : "–"}</span>
+                        </div>
+                        {k.notes && <p className="text-xs text-muted-foreground mt-1 italic">{k.notes}</p>}
+                      </div>
+                      <Badge variant="outline" className="shrink-0 text-xs">
+                        {k.status === "entwurf" ? "Entwurf" : k.status === "eingereicht" ? "Eingereicht" : k.status === "beauftragt" ? "Beauftragt" : "Abgelehnt"}
+                      </Badge>
+                    </div>
                   </CardContent>
                 </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        {/* AFU-PRÜFUNG */}
+        <TabsContent value="afu" className="mt-6">
+          {/* Internal AFU navigation */}
+          <div className="flex gap-2 border-b border-border mb-6 overflow-x-auto">
+            {[
+              { key: "setup", label: "Gewerke & LV", icon: Settings },
+              { key: "review", label: "Checkliste", icon: ClipboardCheck, disabled: project.afu_status === "ausstehend" && checklistItems.length === 0 },
+              { key: "openpoints", label: "Offene Punkte", icon: AlertTriangle },
+              { key: "result", label: "Ergebnis & Bericht", icon: BarChart3, disabled: checklistItems.length === 0 },
+            ].map(({ key, label, icon: Icon, disabled }) => (
+              <button key={key} onClick={() => !disabled && setAfuView(key)}
+                disabled={disabled}
+                className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium border-b-2 transition-all -mb-px shrink-0 disabled:opacity-40 disabled:cursor-not-allowed ${
+                  afuView === key ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}>
+                <Icon className="w-3.5 h-3.5" />{label}
+              </button>
+            ))}
+          </div>
+
+          {/* Setup */}
+          {afuView === "setup" && (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2">
+                <TradeSelector selected={selectedTrades} onChange={handleTradesChange} />
               </div>
-              <div className="lg:col-span-3 space-y-6">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-semibold">{TRADE_LABELS[activeTrade]}</h2>
-                  <Button onClick={handleFinishReview} className="gap-2" size="sm">
-                    <Save className="w-3.5 h-3.5" />Prüfung abschließen
+              <div className="space-y-4">
+                <Card>
+                  <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold">Projektdaten</CardTitle></CardHeader>
+                  <CardContent className="space-y-2 text-xs">
+                    <div className="flex justify-between"><span className="text-muted-foreground">Vertragsart</span><span className="font-medium">{project.contract_type || "–"}</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">VOB/B</span><span className="font-medium">{project.vob_agreed ? "Ja" : "Nein"}</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Planungsbüro</span><span className="font-medium">{project.planning_office || "–"}</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Projektstart</span><span className="font-medium">{project.project_start ? format(new Date(project.project_start), "dd.MM.yyyy") : "–"}</span></div>
+                  </CardContent>
+                </Card>
+                <Button className="w-full gap-2" onClick={handleStartReview}>
+                  <Play className="w-4 h-4" />Prüfung starten
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Review */}
+          {afuView === "review" && (
+            itemsLoading ? (
+              <div className="space-y-3">{Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-16" />)}</div>
+            ) : checklistItems.length === 0 ? (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <p className="text-sm text-muted-foreground">Bitte starten Sie die Prüfung im Reiter "Gewerke & LV"</p>
+                  <Button size="sm" className="mt-4 gap-2" onClick={() => setAfuView("setup")}>
+                    <Settings className="w-3.5 h-3.5" />Zu Gewerke & LV
                   </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                <div className="lg:col-span-1">
+                  <Card>
+                    <CardContent className="p-2">
+                      {selectedTrades.filter((t) => groupedItems[t]).map((t) => {
+                        const tradeItems = checklistItems.filter((i) => i.trade === t && i.status !== "nicht_relevant");
+                        const fulfilledCount = tradeItems.filter((i) => i.status === "erfuellt").length;
+                        const pct = tradeItems.length > 0 ? Math.round((fulfilledCount / tradeItems.length) * 100) : 0;
+                        return (
+                          <button key={t} onClick={() => setActiveTrade(t)}
+                            className={`w-full flex items-center justify-between p-2.5 rounded-lg text-xs font-medium transition-all ${
+                              activeTrade === t ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent"
+                            }`}>
+                            <span className="truncate">{TRADE_LABELS[t]}</span>
+                            <span className={`shrink-0 ml-2 ${activeTrade === t ? "text-primary-foreground/80" : ""}`}>{pct}%</span>
+                          </button>
+                        );
+                      })}
+                    </CardContent>
+                  </Card>
                 </div>
-                {groupedItems[activeTrade] && Object.entries(groupedItems[activeTrade]).map(([category, items]) => (
-                  <ChecklistSection key={category} category={category} items={items}
-                    onUpdateItem={(id, data) => updateItemMutation.mutate({ id, data })}
-                    lvPositions={project?.lv_positions || []} />
-                ))}
+                <div className="lg:col-span-3 space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-lg font-semibold">{TRADE_LABELS[activeTrade]}</h2>
+                    <Button onClick={handleFinishReview} className="gap-2" size="sm">
+                      <Save className="w-3.5 h-3.5" />Prüfung abschließen
+                    </Button>
+                  </div>
+                  {groupedItems[activeTrade] && Object.entries(groupedItems[activeTrade]).map(([category, items]) => (
+                    <ChecklistSection key={category} category={category} items={items}
+                      onUpdateItem={(id, data) => updateItemMutation.mutate({ id, data })}
+                      lvPositions={project?.lv_positions || []} />
+                  ))}
+                </div>
+              </div>
+            )
+          )}
+
+          {/* Open Points */}
+          {afuView === "openpoints" && (
+            <OpenPointsManager projectId={projectId} openPoints={openPoints} selectedTrades={selectedTrades} />
+          )}
+
+          {/* Result */}
+          {afuView === "result" && (
+            <div className="space-y-6">
+              <div className="flex justify-end">
+                <PdfReport project={project} checklistItems={checklistItems} openPoints={openPoints} />
+              </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <ReviewSummary items={checklistItems} selectedTrades={selectedTrades} />
               </div>
             </div>
           )}
         </TabsContent>
 
-        {/* OPEN POINTS TAB */}
-        <TabsContent value="afu-openpoints" className="mt-6">
-          <OpenPointsManager projectId={projectId} openPoints={openPoints} selectedTrades={selectedTrades} />
-        </TabsContent>
-
-        {/* RESULT TAB */}
-        <TabsContent value="afu-result" className="mt-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <ReviewSummary items={checklistItems} selectedTrades={selectedTrades} />
+        {/* AUSFÜHRUNG */}
+        <TabsContent value="ausfuehrung" className="mt-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Link to={createPageUrl("Baustelle")}>
+              <Card className="hover:shadow-md transition-all cursor-pointer">
+                <CardContent className="p-6 flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center">
+                    <HardHat className="w-6 h-6 text-amber-600" />
+                  </div>
+                  <div>
+                    <p className="font-semibold">Baustelle</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Bautagesberichte, Nachträge</p>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground ml-auto" />
+                </CardContent>
+              </Card>
+            </Link>
+            <Link to={createPageUrl("Abrechnung")}>
+              <Card className="hover:shadow-md transition-all cursor-pointer">
+                <CardContent className="p-6 flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center">
+                    <Receipt className="w-6 h-6 text-green-600" />
+                  </div>
+                  <div>
+                    <p className="font-semibold">Abrechnung</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {rechnungen.length > 0
+                        ? `${rechnungen.length} Rechnung(en) · ${totalRechnungen.toLocaleString("de-DE", { style: "currency", currency: "EUR" })} netto`
+                        : "Rechnungen & Zahlungsverfolgung"}
+                    </p>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground ml-auto" />
+                </CardContent>
+              </Card>
+            </Link>
           </div>
         </TabsContent>
       </Tabs>
