@@ -286,7 +286,7 @@ export async function generateKalkulationPDF(project, kalkulation, options = {})
   doc.save(filename);
 }
 
-function addHeaderSection(doc, company, project, client, topMargin, leftMargin, pageWidth) {
+function addHeaderSection(doc, company, project, client, kalkulation, topMargin, leftMargin, pageWidth) {
   const rightMargin = MARGIN_RIGHT;
   const contentWidth = pageWidth - leftMargin - rightMargin;
   
@@ -347,7 +347,15 @@ function addHeaderSection(doc, company, project, client, topMargin, leftMargin, 
   let detailY = topMargin + 28;
   doc.text(`Projekt-Nr.: ${project.project_number || ""}`, titleX, detailY);
   detailY += 4;
+  doc.text(`Angebots-Nr.: ${kalkulation.version_name || ""}`, titleX, detailY);
+  detailY += 4;
   doc.text(`Datum: ${new Date().toLocaleDateString("de-DE")}`, titleX, detailY);
+  
+  // Kundennummer (falls vorhanden)
+  if (client?.kundennummer) {
+    detailY += 4;
+    doc.text(`Kunden-Nr.: ${client.kundennummer}`, titleX, detailY);
+  }
   
   // 4. Projektname mit Umbruch
   let projectY = addrY + 8;
