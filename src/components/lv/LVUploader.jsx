@@ -14,145 +14,108 @@ const TRADE_KEYWORDS = {
 };
 
 /**
- * Parses a GAEB X83/X81/X82 XML file and returns positions + detected trades.
+ * Parses GAEB X83 XML file respecting strict hierarchy:
+ * BoQ (root) > BoQCtgy (titles) > Item (positions)
+ * 
+ * OZ is built from RNoPart attributes in hierarchy:
+ * - RNoPart="01" (title) → OZ="01"
+ * - RNoPart="01" (subtitle under title) → OZ="01.01"
+ * - RNoPart="0001" (position) → OZ="01.01.0001"
  */
 function parseX83(xmlText) {
   const parser = new DOMParser();
   const doc = parser.parseFromString(xmlText, "application/xml");
   const positions = [];
 
-  // Helper: get text content of first matching selector (case-insensitive tag search)
-  const getText = (el, ...selectors) => {
-    for (const sel of selectors) {
-      const found = el.querySelector(sel);
-      if (found?.textContent?.trim()) return found.textContent.trim();
-    }
-    // Fallback: search for any matching tag name case-insensitively
-    for (const sel of selectors) {
-      const tagName = sel.split(" ")[0];
-      for (let child of el.childNodes) {
-        if (child.nodeType === 1 && child.tagName?.toUpperCase() === tagName.toUpperCase()) {
-          if (child.textContent?.trim()) return child.textContent.trim();
-        }
-      }
-    }
-    return "";
+  // Extract text strictly from a single element
+  const getFirstText = (el, tagName) => {
+    if (!el) return "";
+    const found = el.querySelector(tagName);
+    return found?.textContent?.trim() || "";
   };
 
-  // Recursive processor respecting XML hierarchy
-  const processNode = (node, parentOz = "") => {
-    const tag = node.tagName;
-
-    if (tag === "BoQCtgy") {
-      const rawOz = getText(node, "CtgyNo", "OZ", "Pos") || node.getAttribute("RNoPart") || "";
-      const shortText = getText(node, "LblTx ShortText", "LblTx", "ShortText", "KurzText", "Description") || "";
-      const dotCount = (rawOz.match(/\./g) || []).length;
-      let oz = rawOz;
-      
-      if (parentOz && dotCount === 0 && rawOz) {
-        oz = `${parentOz}.${rawOz}`;
-      }
-      
-      if (oz || shortText) {
-        positions.push({ oz, short_text: shortText, long_text: "", quantity: "", unit: "", type: "title" });
-      }
-
-      // Recurse into all children, not just known tags
-      const walkChildren = (el, parentOzLocal) => {
-        for (let i = 0; i < el.children.length; i++) {
-          const child = el.children[i];
-          const t = child.tagName?.toUpperCase();
-          if (t === "BOQCTGY") {
-            processNode(child, parentOzLocal);
-          } else if (t === "ITEM") {
-            processItem(child, parentOzLocal);
-          } else if (t === "DP") {
-            processDP(child, parentOzLocal);
-          } else {
-            walkChildren(child, parentOzLocal);
-          }
-        }
-      };
-      walkChildren(node, oz);
-    } else if (tag === "Item" || tag === "item") {
-      processItem(node, parentOz);
-    } else if (tag === "DP") {
-      processDP(node, parentOz);
-    }
-  };
-
-  const processItem = (node, parentOz) => {
-    let oz = getText(node, "ItemNo", "OZ", "Pos") || node.getAttribute("RNoPart") || "";
+  // Recursively process BoQCtgy (titles and subtitles)
+  const processBoQCtgy = (ctgyNode, parentOzParts = []) => {
+    const rNoPart = ctgyNode.getAttribute("RNoPart") || "";
+    const lblTx = getFirstText(ctgyNode, "LblTx");
     
-    // Strikt trennen: Kurztext nur vom ShortText-Element, Langtext vom DetailText/LongText
-    let shortText = "";
-    let longText = "";
-    
-    // Suche Kurztext in ShortText oder KurzText Element
-    const shortEl = node.querySelector("ShortText") || node.querySelector("KurzText") || node.querySelector("Description ShortText");
-    if (shortEl?.textContent?.trim()) {
-      shortText = shortEl.textContent.trim();
-    } else {
-      // Fallback: erstes Description Element
-      const descEl = node.querySelector("Description");
-      if (descEl?.textContent?.trim()) shortText = descEl.textContent.trim();
-    }
-    
-    // Suche Langtext NICHT in ShortText, nur in DetailText/LongText Elementen
-    const longEl = node.querySelector("DetailTxt Text") || node.querySelector("CompleteText") || node.querySelector("LongText") || node.querySelector("LangText");
-    if (longEl?.textContent?.trim()) {
-      longText = longEl.textContent.trim();
-    }
-    
-    const qty = getText(node, "Qty", "Menge") || "";
-    const unit = getText(node, "QU", "QtyUnit", "Einheit") || "";
+    if (!rNoPart && !lblTx) return;
 
-    if (!oz || oz.length < 2) {
-      if (parentOz) oz = `${parentOz}.0001`;
-      else oz = "0001";
-    } else if (parentOz && !oz.includes(".")) {
-      oz = `${parentOz}.${oz}`;
+    // Build OZ from hierarchy
+    const ozParts = [...parentOzParts, rNoPart].filter(Boolean);
+    const oz = ozParts.join(".");
+
+    // Add title/subtitle
+    if (oz || lblTx) {
+      positions.push({
+        oz,
+        short_text: lblTx,
+        long_text: "",
+        quantity: "",
+        unit: "",
+        type: "title"
+      });
     }
 
-    if (oz || shortText) {
-      positions.push({ oz, short_text: shortText, long_text: longText, quantity: qty, unit, type: "position" });
-    }
-  };
-
-  const processDP = (node, parentOz) => {
-    let oz = getText(node, "OZ", "Pos") || "";
-    const shortText = getText(node, "Kurz", "KurzText", "Text") || "";
-    const qty = getText(node, "Menge", "Qty") || "";
-    const unit = getText(node, "ME", "QU") || "";
-    const isTitle = !qty || qty === "0";
-
-    if (parentOz && !oz.includes(".")) {
-      oz = `${parentOz}.${oz}`;
-    }
-
-    if (oz || shortText) {
-      positions.push({ oz, short_text: shortText, long_text: "", quantity: qty, unit, type: isTitle ? "title" : "position" });
-    }
-  };
-
-  // Deep recursive search through all elements
-  const searchAll = (el, parentOz = "") => {
-    if (!el.children) return;
-    for (let i = 0; i < el.children.length; i++) {
-      const child = el.children[i];
-      const tag = child.tagName?.toUpperCase();
-      if (tag === "BOQCTGY") {
-        processNode(child, parentOz);
-      } else if (tag === "ITEM" || tag === "DP") {
-        tag === "ITEM" ? processItem(child, parentOz) : processDP(child, parentOz);
-      } else {
-        searchAll(child, parentOz);
+    // Process all children
+    for (let child of ctgyNode.children) {
+      if (child.tagName === "BoQCtgy") {
+        // Subtitle: recurse with updated OZ parts
+        processBoQCtgy(child, ozParts);
+      } else if (child.tagName === "Item") {
+        // Position: process with current OZ context
+        processItem(child, ozParts);
       }
     }
   };
 
-  // Start search from root
-  searchAll(doc);
+  // Process Item (positions)
+  const processItem = (itemNode, parentOzParts = []) => {
+    const rNoPart = itemNode.getAttribute("RNoPart") || "";
+    const lblTx = getFirstText(itemNode, "LblTx");
+    
+    // Langtext aus Tx, Description > p, oder Description direkt
+    let longText = getFirstText(itemNode, "Tx");
+    if (!longText) {
+      const descNode = itemNode.querySelector("Description");
+      if (descNode) {
+        const pNode = descNode.querySelector("p");
+        longText = pNode ? pNode.textContent?.trim() || "" : descNode.textContent?.trim() || "";
+      }
+    }
+
+    const qty = getFirstText(itemNode, "Qty") || getFirstText(itemNode, "Menge") || "";
+    const unit = getFirstText(itemNode, "QU") || getFirstText(itemNode, "QtyUnit") || getFirstText(itemNode, "Einheit") || "";
+
+    if (!rNoPart && !lblTx) return;
+
+    // Build OZ
+    const ozParts = [...parentOzParts, rNoPart].filter(Boolean);
+    const oz = ozParts.join(".");
+
+    if (oz || lblTx) {
+      positions.push({
+        oz,
+        short_text: lblTx,
+        long_text: longText,
+        quantity: qty,
+        unit,
+        type: "position"
+      });
+    }
+  };
+
+  // Start from BoQ root
+  const boqNode = doc.querySelector("BoQ");
+  if (boqNode) {
+    for (let child of boqNode.children) {
+      if (child.tagName === "BoQCtgy") {
+        processBoQCtgy(child);
+      } else if (child.tagName === "Item") {
+        processItem(child);
+      }
+    }
+  }
 
   return positions;
 }
