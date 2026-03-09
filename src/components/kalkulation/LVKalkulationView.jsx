@@ -218,9 +218,8 @@ export default function LVKalkulationView({ project }) {
               )}
 
               {/* Positions in this group */}
-              {group.positions.map((pos, pi) => {
-                const posIndex = positionItems.findIndex(p => p.oz === pos.oz && p.short_text === pos.short_text && positionItems.slice(0, positionItems.findIndex(x => x.oz === pos.oz && x.short_text === pos.short_text) + 1).filter(x => x.oz === pos.oz && x.short_text === pos.short_text).length === pi + 1);
-                const posKey = getPositionKey(posIndex);
+               {group.positions.map(({ pos, posIndex }, pi) => {
+                 const posKey = getPositionKey(posIndex);
                 const rows = getRows(posIndex);
                 const ep = rows.reduce((sum, r) => sum + Number(r.kosten_einheit || 0) + Number(r.zuschlag || 0), 0);
                 const gp = ep * (parseFloat(pos.quantity) || 0);
