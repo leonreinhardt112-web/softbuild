@@ -109,28 +109,24 @@ function parseX83(xmlText) {
     }
   };
 
-  // Process root elements
-  for (let i = 0; i < doc.children.length; i++) {
-    const el = doc.children[i];
-    if (el.tagName === "BoQCtgy") {
-      processNode(el);
-    } else if (el.tagName === "Item" || el.tagName === "item") {
-      processItem(el, "");
-    } else if (el.tagName === "DP") {
-      processDP(el, "");
-    } else {
-      for (let j = 0; j < el.children.length; j++) {
-        const child = el.children[j];
-        if (child.tagName === "BoQCtgy") {
-          processNode(child);
-        } else if (child.tagName === "Item" || child.tagName === "item") {
-          processItem(child, "");
-        } else if (child.tagName === "DP") {
-          processDP(child, "");
-        }
+  // Deep recursive search through all elements
+  const searchAll = (el, parentOz = "") => {
+    if (!el.children) return;
+    for (let i = 0; i < el.children.length; i++) {
+      const child = el.children[i];
+      const tag = child.tagName?.toUpperCase();
+      if (tag === "BOQCTGY") {
+        processNode(child, parentOz);
+      } else if (tag === "ITEM" || tag === "DP") {
+        tag === "ITEM" ? processItem(child, parentOz) : processDP(child, parentOz);
+      } else {
+        searchAll(child, parentOz);
       }
     }
-  }
+  };
+
+  // Start search from root
+  searchAll(doc);
 
   return positions;
 }
