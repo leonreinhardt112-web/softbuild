@@ -285,15 +285,25 @@ export default function LVKalkulationView({ project }) {
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-4">
         <div>
           <p className="text-sm font-semibold">{positionItems.length} LV-Positionen · Hauptangebot</p>
           <p className="text-xs text-muted-foreground mt-0.5">Position anklicken zum Kalkulieren</p>
         </div>
         {kalk ? (
-          <div className="text-right">
-            <p className="text-xs text-muted-foreground">Kalkulierte Angebotssumme</p>
-            <p className="text-lg font-bold text-primary">{totalAngebotsumme.toLocaleString("de-DE", { style: "currency", currency: "EUR" })}</p>
+          <div className="flex items-center gap-4">
+            <div className="text-right">
+              <p className="text-xs text-muted-foreground">Kalkulierte Angebotssumme</p>
+              <p className="text-lg font-bold text-primary">{totalAngebotsumme.toLocaleString("de-DE", { style: "currency", currency: "EUR" })}</p>
+            </div>
+            <Button
+              onClick={() => generateKalkulationPDF(project, kalk)}
+              className="gap-2 whitespace-nowrap"
+              size="sm"
+            >
+              <Download className="w-4 h-4" />
+              Als PDF exportieren
+            </Button>
           </div>
         ) : (
           <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
