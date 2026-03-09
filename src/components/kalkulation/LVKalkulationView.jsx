@@ -254,29 +254,41 @@ export default function LVKalkulationView({ project }) {
         <span className="w-24 text-right">GP (€)</span>
       </div>
 
-      {/* Grouped by title */}
-      <div className="space-y-6">
-        {grouped.map((group, gi) => {
-          const titleSum = getTitleSum(group.positions);
-          return (
-            <div key={gi} className="space-y-2">
-              {/* Title header */}
-              {group.title && (
-                <div className="flex items-center justify-between px-1 py-1 border-b border-border">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-mono font-bold text-foreground w-20">{group.titleHierarchy}</span>
-                    <span className="text-sm font-semibold text-foreground">{group.title.short_text}</span>
-                  </div>
-                  {titleSum > 0 && (
-                    <span className="text-sm font-semibold text-primary shrink-0">
-                      {titleSum.toLocaleString("de-DE", { style: "currency", currency: "EUR" })}
-                    </span>
-                  )}
-                </div>
-              )}
+      {/* Grouped by Haupttitel > Untertitel > Positions */}
+      <div className="space-y-8">
+        {grouped.map((ht, htIdx) => (
+          <div key={htIdx} className="space-y-4">
+            {/* Haupttitel */}
+            {ht.title && (
+              <div className="flex items-center gap-2 px-1 py-2 border-b-2 border-foreground">
+                <span className="text-sm font-mono font-bold text-foreground w-16">{ht.hierarchy}</span>
+                <span className="text-base font-bold text-foreground">{ht.title.short_text}</span>
+              </div>
+            )}
 
-              {/* Positions in this group */}
-               {group.positions.map(({ pos, posIndex, hierarchy }, pi) => {
+            {/* Untertitel + Positionen */}
+            <div className="space-y-4 pl-0">
+              {ht.unterTitels.map((ut, utIdx) => {
+                const titleSum = getTitleSum(ut.positions.map(item => item.pos));
+                return (
+                  <div key={utIdx} className="space-y-2">
+                    {/* Untertitel */}
+                    {ut.title && (
+                      <div className="flex items-center justify-between px-1 py-1 border-b border-border">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-mono font-bold text-foreground w-20">{ut.hierarchy}</span>
+                          <span className="text-sm font-semibold text-foreground">{ut.title.short_text}</span>
+                        </div>
+                        {titleSum > 0 && (
+                          <span className="text-sm font-semibold text-primary shrink-0">
+                            {titleSum.toLocaleString("de-DE", { style: "currency", currency: "EUR" })}
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Positions */}
+                    {ut.positions.map(({ pos, posIndex, hierarchy }, pi) => {
                  const posKey = getPositionKey(posIndex);
                 const rows = getRows(posIndex);
                 const ep = rows.reduce((sum, r) => sum + Number(r.kosten_einheit || 0) + Number(r.zuschlag || 0), 0);
