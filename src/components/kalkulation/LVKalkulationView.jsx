@@ -135,14 +135,12 @@ export default function LVKalkulationView({ project }) {
 
   // Determine if a position is a title:
   // - explicit type="title", OR
-  // - no quantity (old data without type field) and short OZ (e.g. "01", "02")
+  // - no quantity = it's a title/subgroup regardless of OZ length
   const isTitle = (pos) => {
     if (pos.type === "title") return true;
     if (pos.type === "position") return false;
-    // Heuristic for old data: no quantity and OZ has ≤2 numeric segments
-    const cleanOz = (pos.oz || "").replace(/\s/g, "");
     const hasNoQty = !pos.quantity || pos.quantity === "0" || pos.quantity === "";
-    return hasNoQty && cleanOz.length <= 4;
+    return hasNoQty;
   };
 
   // Count dots in OZ to determine hierarchy level
