@@ -141,8 +141,11 @@ export default function Stammdaten() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["stammdaten"] }); setShowForm(false); setEditingItem(null); },
   });
   const updateMut = useMutation({
-    mutationFn: (d) => base44.entities.Stammdatum.update(d.id, { ...d, kostensatz: d.kostensatz ? parseFloat(d.kostensatz) : undefined }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["stammdaten"] }); setShowForm(false); setEditingItem(null); },
+   mutationFn: (d) => {
+     const { id, ...updateData } = d;
+     return base44.entities.Stammdatum.update(id, { ...updateData, kostensatz: updateData.kostensatz ? parseFloat(updateData.kostensatz) : undefined });
+   },
+   onSuccess: () => { qc.invalidateQueries({ queryKey: ["stammdaten"] }); setShowForm(false); setEditingItem(null); },
   });
   const deleteMut = useMutation({
     mutationFn: (id) => base44.entities.Stammdatum.delete(id),
