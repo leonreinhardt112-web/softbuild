@@ -53,27 +53,27 @@ function parseX83(xmlText) {
 
       if (oz || shortText) {
         let hierarchicalOz = oz;
+        let finalType = isTitle ? "title" : "position";
 
         if (isTitle) {
-          // Determine hierarchical level
-          const ozClean = oz.replace(/\./g, "");
-          if (ozClean.length <= 4) {
+          // Determine hierarchical level based on number of dots
+          const dotCount = (oz.match(/\./g) || []).length;
+          
+          if (dotCount === 0) {
             // Main title (e.g., "01")
             lastMainOz = oz;
             lastSubOz = null;
             posCounter = 1;
-            hierarchicalOz = oz;
-          } else {
+          } else if (dotCount === 1) {
             // Sub-title (e.g., "01.01")
-            if (lastMainOz && !oz.startsWith(lastMainOz + ".")) {
-              lastMainOz = oz.split(".")[0];
-            }
+            lastMainOz = oz.split(".")[0];
             lastSubOz = oz;
             posCounter = 1;
-            hierarchicalOz = oz;
           }
+          // Keep original OZ for titles
+          hierarchicalOz = oz;
         } else {
-          // Position with quantity
+          // Position with quantity — build hierarchical OZ
           if (lastSubOz) {
             hierarchicalOz = `${lastSubOz}.${String(posCounter).padStart(4, "0")}`;
           } else if (lastMainOz) {
@@ -90,7 +90,7 @@ function parseX83(xmlText) {
           long_text: longText,
           quantity: qty,
           unit,
-          type: isTitle ? "title" : "position"
+          type: finalType
         });
       }
     });
