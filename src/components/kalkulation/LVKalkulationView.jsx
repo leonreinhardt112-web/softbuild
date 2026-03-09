@@ -76,7 +76,10 @@ export default function LVKalkulationView({ project }) {
     );
   }
 
-  const getRows = (oz) => localPositions[oz] || [];
+  // Create unique key for each position (including group + index to handle duplicate OZ)
+  const getPositionKey = (posIndex) => `${posIndex}`;
+  
+  const getRows = (posIndex) => localPositions[getPositionKey(posIndex)] || [];
 
   // Derive display short text from long_text if short_text is missing
   // GAEB long_text often starts with "ShortText LongDescription..."
