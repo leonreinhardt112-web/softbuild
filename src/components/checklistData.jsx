@@ -20,6 +20,13 @@ export const TRADE_LABELS = {
 
 export const STATUS_LABELS = {
   entwurf: "Entwurf",
+  kalkulation: "In Kalkulation",
+  eingereicht: "Eingereicht",
+  beauftragt: "Beauftragt",
+  verloren: "Verloren",
+  in_ausfuehrung: "In Ausführung",
+  abgeschlossen: "Abgeschlossen",
+  // AFU
   in_pruefung: "In Prüfung",
   ausfuehrungsreif: "Ausführungsreif",
   nicht_ausfuehrungsreif: "Nicht ausführungsreif",
@@ -27,6 +34,13 @@ export const STATUS_LABELS = {
 
 export const STATUS_COLORS = {
   entwurf: "bg-secondary text-secondary-foreground",
+  kalkulation: "bg-amber-100 text-amber-800",
+  eingereicht: "bg-blue-100 text-blue-800",
+  beauftragt: "bg-green-100 text-green-800",
+  verloren: "bg-destructive/10 text-destructive",
+  in_ausfuehrung: "bg-primary/10 text-primary",
+  abgeschlossen: "bg-gray-100 text-gray-700",
+  // AFU
   in_pruefung: "bg-primary/10 text-primary",
   ausfuehrungsreif: "bg-green-100 text-green-800",
   nicht_ausfuehrungsreif: "bg-destructive/10 text-destructive",
