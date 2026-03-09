@@ -143,7 +143,6 @@ export default function LVUploader({ project, onUpdate, onTradesDetected }) {
       setError("Fehler beim Hochladen der Baubeschreibung: " + err.message);
     }
     setUploadingBau(false);
-    e.target.value = "";
   };
 
   const handleRemoveBau = async () => {
