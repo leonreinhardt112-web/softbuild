@@ -112,7 +112,6 @@ export default function LVUploader({ project, onUpdate, onTradesDetected }) {
       setError("Fehler beim Verarbeiten der Datei: " + err.message);
     }
     setUploading(false);
-    e.target.value = "";
   };
 
   const handleRemoveLV = async () => {
