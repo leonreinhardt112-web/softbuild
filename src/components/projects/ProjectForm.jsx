@@ -60,6 +60,12 @@ export default function ProjectForm({ open, onOpenChange, onSave, initialData })
   });
   const auftraggeber = alleStammdaten.filter(s => s.typ === "auftraggeber");
 
+  // Duplicate check: show warning when typing a new client name
+  const duplicateClients = auftraggeber.filter(ag =>
+    newClientForm.name.trim().length >= 3 &&
+    ag.name.toLowerCase().includes(newClientForm.name.trim().toLowerCase())
+  );
+
   const createClientMut = useMutation({
     mutationFn: async (data) => {
       const all = await base44.entities.Stammdatum.list("-created_date", 500);
