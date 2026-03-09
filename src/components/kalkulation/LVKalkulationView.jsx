@@ -99,16 +99,17 @@ export default function LVKalkulationView({ project }) {
     const posKey = getPositionKey(posIndex);
     setLocalPositions(prev => ({ ...prev, [posKey]: rows }));
 
-    // Debounced save — use position index to find correct position
+    // Debounced save — use ref so stale closure is not an issue
     if (saveTimers.current[posKey]) clearTimeout(saveTimers.current[posKey]);
     setSavingOz(posKey);
     saveTimers.current[posKey] = setTimeout(async () => {
-      if (!kalk) return;
+      const currentKalk = kalkRef.current;
+      if (!currentKalk) return;
       const pos = positionItems[posIndex];
       if (!pos) return;
       const ep = rows.reduce((sum, r) => sum + Number(r.kosten_einheit || 0) + Number(r.zuschlag || 0), 0);
       const menge = parseFloat(pos.quantity) || 0;
-      const existingPositions = kalk.positions || [];
+      const existingPositions = currentKalk.positions || [];
       const exists = existingPositions.find(p => p.oz === pos.oz && p.short_text === pos.short_text);
       let updatedPositions;
       if (exists) {
@@ -116,7 +117,7 @@ export default function LVKalkulationView({ project }) {
       } else {
         updatedPositions = [...existingPositions, { oz: pos.oz, short_text: pos.short_text || "", menge, einheit: pos.unit || "", ep, gp: ep * menge, rows }];
       }
-      await updateKalkMutation.mutateAsync({ id: kalk.id, data: { positions: updatedPositions } });
+      await updateKalkMutation.mutateAsync({ id: currentKalk.id, data: { positions: updatedPositions } });
       setSavingOz(null);
     }, 700);
   };
