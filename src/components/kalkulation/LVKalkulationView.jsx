@@ -262,7 +262,7 @@ export default function LVKalkulationView({ project }) {
             {/* Haupttitel */}
             {ht.title && (
               <div className="flex items-center gap-2 px-1 py-2 border-b-2 border-foreground">
-                <span className="text-sm font-mono font-bold text-foreground w-16">{ht.hierarchy}</span>
+                <span className="text-sm font-mono font-bold text-foreground w-16">{ht.title.oz}</span>
                 <span className="text-base font-bold text-foreground">{ht.title.short_text}</span>
               </div>
             )}
