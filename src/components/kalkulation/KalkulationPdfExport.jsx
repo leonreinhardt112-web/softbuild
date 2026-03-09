@@ -131,16 +131,30 @@ export async function generateKalkulationPDF(project, kalkulation, options = {})
       if (pos.long_text && textMode === "both") {
         doc.setFontSize(8);
         doc.setTextColor(100, 100, 100);
-        const longLines = doc.splitTextToSize(pos.long_text, contentWidth - 10);
+        
+        // Entferne Kurztext vom Anfang und Ende des Langtexts
+        let cleanedLongText = pos.long_text.trim();
+        if (shortText && cleanedLongText.startsWith(shortText)) {
+          cleanedLongText = cleanedLongText.substring(shortText.length).trim();
+        }
+        if (shortText && cleanedLongText.endsWith(shortText)) {
+          cleanedLongText = cleanedLongText.substring(0, cleanedLongText.length - shortText.length).trim();
+        }
+        
+        const longLines = doc.splitTextToSize(cleanedLongText, contentWidth - 10);
         longLines.forEach((line, idx) => {
-          if (idx < 5) { // Max 5 Zeilen Langtext
-            doc.text(line, MARGIN_LEFT + 27, yPos);
-            yPos += 3;
+          if (yPos > pageBottom - 10) {
+            doc.addPage();
+            yPos = MARGIN_TOP;
+            addTableHeader(doc, MARGIN_LEFT, yPos, contentWidth, headerColor);
+            yPos += 6;
           }
+          doc.text(line, MARGIN_LEFT + 2, yPos);
+          yPos += 3.5;
         });
         doc.setTextColor(0, 0, 0);
         doc.setFontSize(9);
-        yPos += 1;
+        yPos += 2;
       }
 
       // Pagebreak-Check
