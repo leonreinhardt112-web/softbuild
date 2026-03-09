@@ -368,6 +368,7 @@ function groupPositionsByTitle(lvPositions, kalkulationen) {
       }
       currentTitle = {
         title: lvPos.short_text,
+        oz: lvPos.oz,
         positions: []
       };
     } else {
