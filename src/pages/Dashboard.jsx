@@ -198,12 +198,12 @@ export default function Dashboard() {
               <CardTitle className="text-sm font-semibold">Schnellzugriff</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              {[
+              {([
                 { label: "Neue Kalkulation", page: "Kalkulation", icon: Calculator },
                 { label: "Bautagesbericht", page: "Baustelle", icon: HardHat },
                 { label: "Rechnung erstellen", page: "Abrechnung", icon: Receipt },
                 { label: "Controlling", page: "Controlling", icon: TrendingUp },
-              ].map(({ label, page, icon: Icon }) => (
+              ] ).map(({ label, page, icon: Icon }) => (
                 <Link key={page} to={createPageUrl(page)}>
                   <button className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-accent transition-colors text-sm text-muted-foreground hover:text-foreground">
                     <Icon className="w-3.5 h-3.5" />
