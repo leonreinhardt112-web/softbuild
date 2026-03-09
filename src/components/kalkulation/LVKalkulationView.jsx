@@ -535,10 +535,10 @@ export default function LVKalkulationView({ project }) {
 
                           {isExpanded &&
                             <CardContent className="pt-0 pb-4 border-t border-border/50">
-                              {pos.long_text &&
+                              {pos._longDisplay &&
                               <div className="mt-3 mb-4 bg-muted/30 rounded-lg p-3 border-l-2 border-primary/30">
                                   <p className="text-xs text-muted-foreground">
-                                    {pos.long_text.trim()}
+                                    {pos._longDisplay.trim()}
                                   </p>
                                 </div>
                               }
