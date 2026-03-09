@@ -16,13 +16,12 @@ const TRADE_KEYWORDS = {
 /**
  * Parses a GAEB X83/X81/X82 XML file and returns positions + detected trades.
  */
-function parseX83(xmlText, enableDebug = false) {
+function parseX83(xmlText) {
   const parser = new DOMParser();
   const doc = parser.parseFromString(xmlText, "application/xml");
   const positions = [];
-  const debugLog = [];
-  let sortIndex = 0;
 
+  // Helper: get text content of first matching selector (case-insensitive tag search)
   const getText = (el, ...selectors) => {
     for (const sel of selectors) {
       const found = el.querySelector(sel);
@@ -31,142 +30,40 @@ function parseX83(xmlText, enableDebug = false) {
     return "";
   };
 
-  // Recursive parser for GAEB nodes
-  const parseNode = (node, parentPath = []) => {
-    if (node.tagName === "BoQCtgy") {
-      const currentRno = node.getAttribute("RNoPart") || "";
-      const currentPath = currentRno ? [...parentPath, currentRno] : parentPath;
-      const displayOz = currentPath.join(".");
-      const hierarchyLevel = parentPath.length;
+  // GAEB X83: BoQCtgy = Titel, Item = Position
+  // Walk the tree in document order to preserve sequence
+  const allNodes = doc.querySelectorAll("BoQCtgy, Item, DP, item");
 
-      const shortText = getText(node, "LblTx ShortText", "LblTx", "ShortText", "KurzText", "Description") || "";
-      const longText = getText(node, "LblTx", "Description") || "";
-
-      if (currentRno || shortText) {
-        const posObj = {
-          node_type: "category",
-          current_rnopart: currentRno,
-          parent_path_rnoparts: parentPath,
-          display_oz: displayOz,
-          hierarchy_level: hierarchyLevel,
-          sort_index: sortIndex++,
-          short_text: shortText,
-          long_text: longText,
-          quantity: "",
-          unit: ""
-        };
-        positions.push(posObj);
-
-        if (enableDebug) {
-          debugLog.push({
-            node_type: "category",
-            current_rnopart: currentRno,
-            parent_path: parentPath.join(" > ") || "(root)",
-            computed_display_oz: displayOz,
-            hierarchy_level: hierarchyLevel,
-            short_text: shortText,
-            has_quantity: false,
-            has_unit: false
-          });
+  if (allNodes.length > 0) {
+    allNodes.forEach((node) => {
+      const tag = node.tagName;
+      if (tag === "BoQCtgy") {
+        // Title node
+        const oz = getText(node, "CtgyNo", "OZ", "Pos") || node.getAttribute("RNoPart") || "";
+        const shortText = getText(node, "LblTx ShortText", "LblTx", "ShortText", "KurzText", "Description") || "";
+        if (oz || shortText) {
+          positions.push({ oz, short_text: shortText, long_text: "", quantity: "", unit: "", type: "title" });
         }
-      }
-
-      // Recursively process BoQBody children
-      const boqBody = node.querySelector("BoQBody");
-      if (boqBody) {
-        Array.from(boqBody.children).forEach((child) => {
-          parseNode(child, currentPath);
-        });
-      }
-
-      // Also process direct child BoQCtgy elements (some GAEB variants)
-      Array.from(node.children)
-        .filter((c) => c.tagName === "BoQCtgy")
-        .forEach((child) => {
-          parseNode(child, currentPath);
-        });
-    } else if (node.tagName === "Item" || node.tagName === "item") {
-      const itemRno = node.getAttribute("RNoPart") || "";
-      const itemPath = itemRno ? [...parentPath, itemRno] : parentPath;
-      const displayOz = itemPath.join(".");
-      const hierarchyLevel = parentPath.length;
-
-      const shortText = getText(node, "Description ShortText", "ShortText", "KurzText") || "";
-      const longText = getText(node, "DetailTx Text", "CompleteText DetailTx Text", "LongText", "LangText") || "";
-      const qty = getText(node, "Qty", "Menge") || "";
-      const unit = getText(node, "QU", "QtyUnit", "Einheit") || "";
-
-      if (itemRno || shortText) {
-        const itemObj = {
-          node_type: "item",
-          current_rnopart: itemRno,
-          parent_path_rnoparts: parentPath,
-          display_oz: displayOz,
-          hierarchy_level: hierarchyLevel,
-          sort_index: sortIndex++,
-          short_text: shortText,
-          long_text: longText,
-          quantity: qty,
-          unit: unit
-        };
-        positions.push(itemObj);
-
-        if (enableDebug) {
-          debugLog.push({
-            node_type: "item",
-            current_rnopart: itemRno,
-            parent_path: parentPath.join(" > ") || "(root)",
-            computed_display_oz: displayOz,
-            hierarchy_level: hierarchyLevel,
-            short_text: shortText,
-            has_quantity: !!qty,
-            has_unit: !!unit
-          });
+      } else if (tag === "Item" || tag === "item") {
+        const oz = getText(node, "ItemNo", "OZ", "Pos") || node.getAttribute("RNoPart") || "";
+        const shortText = getText(node, "Description ShortText", "ShortText", "KurzText") || "";
+        const longText = getText(node, "DetailTxt Text", "CompleteText DetailTxt Text", "LongText", "LangText") || "";
+        const qty = getText(node, "Qty", "Menge") || "";
+        const unit = getText(node, "QU", "QtyUnit", "Einheit") || "";
+        if (oz || shortText) {
+          positions.push({ oz, short_text: shortText, long_text: longText, quantity: qty, unit, type: "position" });
         }
-      }
-    }
-  };
-
-  // Start from root BoQCtgy or BoQBody elements
-  const rootElements = Array.from(doc.documentElement.children);
-  rootElements.forEach((el) => {
-    if (el.tagName === "BoQCtgy") {
-      parseNode(el, []);
-    } else if (el.tagName === "BoQBody") {
-      Array.from(el.children).forEach((child) => parseNode(child, []));
-    }
-  });
-
-  // Fallback for DP format (non-GAEB)
-  const dpNodes = doc.querySelectorAll("DP");
-  if (dpNodes.length > 0 && positions.length === 0) {
-    dpNodes.forEach((node) => {
-      const oz = getText(node, "OZ", "Pos") || "";
-      const shortText = getText(node, "Kurz", "KurzText", "Text") || "";
-      const qty = getText(node, "Menge", "Qty") || "";
-      const unit = getText(node, "ME", "QU") || "";
-      const isTitle = !qty || qty === "0";
-      if (oz || shortText) {
-        positions.push({
-          node_type: isTitle ? "category" : "item",
-          current_rnopart: oz,
-          parent_path_rnoparts: [],
-          display_oz: oz,
-          hierarchy_level: 0,
-          sort_index: sortIndex++,
-          short_text: shortText,
-          long_text: "",
-          quantity: qty,
-          unit: unit
-        });
+      } else if (tag === "DP") {
+        const oz = getText(node, "OZ", "Pos") || "";
+        const shortText = getText(node, "Kurz", "KurzText", "Text") || "";
+        const qty = getText(node, "Menge", "Qty") || "";
+        const unit = getText(node, "ME", "QU") || "";
+        const isTitle = !qty || qty === "0";
+        if (oz || shortText) {
+          positions.push({ oz, short_text: shortText, long_text: "", quantity: qty, unit, type: isTitle ? "title" : "position" });
+        }
       }
     });
-  }
-
-  if (enableDebug) {
-    console.log("=== GAEB-X83 IMPORT DEBUG ===");
-    console.log(`Total nodes imported: ${positions.length}`);
-    console.table(debugLog);
   }
 
   return positions;
@@ -220,7 +117,7 @@ export default function LVUploader({ project, onUpdate, onTradesDetected }) {
     setUploading(true);
     try {
       const text = await file.text();
-      const positions = parseX83(text, true); // Debug enabled
+      const positions = parseX83(text);
       if (positions.length === 0) {
         setError("Keine LV-Positionen gefunden. Bitte GAEB X83/X82/X81 (XML) verwenden.");
         setUploading(false);
@@ -234,7 +131,6 @@ export default function LVUploader({ project, onUpdate, onTradesDetected }) {
         lv_positions: positions,
         lv_analysis_findings: [],
         baulv_conflict_findings: [],
-        lv_import_debug: []
       });
       if (onTradesDetected) onTradesDetected(detectedTrades);
     } catch (err) {
@@ -284,7 +180,7 @@ export default function LVUploader({ project, onUpdate, onTradesDetected }) {
     if (!project?.lv_positions?.length) return;
     setAnalyzing(true);
     setError(null);
-    const positionList = project.lv_positions.map((p) => `OZ ${p.display_oz}: ${p.short_text} (${p.quantity} ${p.unit})`).join("\n");
+    const positionList = project.lv_positions.map((p) => `OZ ${p.oz}: ${p.short_text} (${p.quantity} ${p.unit})`).join("\n");
     const selectedTrades = (project.selected_trades || []).join(", ");
     try {
       const result = await base44.integrations.Core.InvokeLLM({
@@ -332,7 +228,7 @@ Gib eine strukturierte Liste konkreter Befunde zurück.`,
     if (!project?.lv_positions?.length || !unterlagen.length) return;
     setAnalyzingConflicts(true);
     setError(null);
-    const positionList = project.lv_positions.map((p) => `OZ ${p.display_oz}: ${p.short_text} (${p.quantity} ${p.unit})`).join("\n");
+    const positionList = project.lv_positions.map((p) => `OZ ${p.oz}: ${p.short_text} (${p.quantity} ${p.unit})`).join("\n");
     try {
       const result = await base44.integrations.Core.InvokeLLM({
         prompt: `Du bist ein erfahrener Tiefbauingenieur. Prüfe die beigefügte Baubeschreibung (PDF/Dokument) auf Widersprüche und Unstimmigkeiten mit dem folgenden Leistungsverzeichnis.
