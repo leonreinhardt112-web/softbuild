@@ -105,8 +105,14 @@ function parseX83(xmlText) {
     }
   };
 
-  // Start from BoQ root
-  const boqNode = doc.querySelector("BoQ");
+  // Try to find BoQ root (standard GAEB)
+  let boqNode = doc.querySelector("BoQ");
+  
+  // Fallback: if no BoQ found, search the document root directly
+  if (!boqNode) {
+    boqNode = doc.documentElement;
+  }
+
   if (boqNode) {
     for (let child of boqNode.children) {
       if (child.tagName === "BoQCtgy") {
@@ -115,6 +121,25 @@ function parseX83(xmlText) {
         processItem(child);
       }
     }
+  }
+
+  // Fallback: if still nothing found, search ALL BoQCtgy and Item elements in document
+  if (positions.length === 0) {
+    const allCtgys = doc.querySelectorAll("BoQCtgy");
+    allCtgys.forEach((ctgy) => {
+      // Only process top-level (no parent BoQCtgy)
+      if (!ctgy.parentElement || ctgy.parentElement.tagName !== "BoQCtgy") {
+        processBoQCtgy(ctgy);
+      }
+    });
+
+    // Also process top-level Items
+    const allItems = doc.querySelectorAll("Item");
+    allItems.forEach((item) => {
+      if (!item.closest("BoQCtgy")) {
+        processItem(item);
+      }
+    });
   }
 
   return positions;
