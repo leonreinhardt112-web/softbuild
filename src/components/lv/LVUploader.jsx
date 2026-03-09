@@ -219,7 +219,7 @@ Identifiziere konkrete Widersprüche, z.B.:
 - Normverweise stimmen nicht überein
 
 Gib eine strukturierte Liste der Widersprüche zurück.`,
-        file_urls: [project.baubeschreibung_file_url],
+        file_urls: unterlagen.map((u) => u.url),
         response_json_schema: {
           type: "object",
           properties: {
