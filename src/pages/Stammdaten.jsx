@@ -165,6 +165,7 @@ export default function Stammdaten() {
                     ) : filtered.map(s => (
                       <tr key={s.id} className="border-b border-border hover:bg-accent/30">
                         <td className="px-4 py-3 font-medium text-xs">{s.name}</td>
+                        {t.key === "auftraggeber" && <td className="px-4 py-3 text-xs font-mono text-muted-foreground">{s.kundennummer || "–"}</td>}
                         <td className="px-4 py-3 text-xs text-muted-foreground">{s.kuerzel || "–"}</td>
                         <td className="px-4 py-3 text-xs text-muted-foreground">{s.kontakt_name || "–"}</td>
                         <td className="px-4 py-3 text-xs text-muted-foreground">
