@@ -97,19 +97,7 @@ export default function LVKalkulationView({ project }) {
 
   const getRows = (posIndex) => localPositions[getPositionKey(posIndex)] || [];
 
-  // Derive display short text from long_text if short_text is missing
-  // Returns only the short text portion, not the full long text
-  const getDisplayText = (pos) => {
-    if (pos.short_text) return pos.short_text;
-    if (!pos.long_text) return "";
-    const lt = pos.long_text.trim();
-    // Try to extract first sentence/phrase before common German sentence starters
-    const match = lt.match(/^(.{5,120}?)(?:\s+(?:Die|Der|Das|Den|Dem|Zur|Zum|Zu\s|Bei|Nach|Vor|Über|Unter|Durch|Mit|Von|Für\s|An\s|In\s|Im\s|Am\s|Ab\s|Aus\s|Es\s|Eine|Ein\s|Alle|Je\s|Sofern|Falls|Hierbei|Dabei|Hierzu)\s|$)/);
-    if (match) return match[1];
-    // Fallback: just first 80 chars
-    const firstPart = lt.split(/[.!?]/)[0];
-    return firstPart.length > 80 ? firstPart.slice(0, 80) : firstPart;
-  };
+
 
   const handleRowsChange = (posIndex, rows) => {
     const posKey = getPositionKey(posIndex);
