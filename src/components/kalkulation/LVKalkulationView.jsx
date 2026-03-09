@@ -76,6 +76,19 @@ export default function LVKalkulationView({ project }) {
 
   const getRows = (oz) => localPositions[oz] || [];
 
+  // Derive display short text from long_text if short_text is missing
+  const getDisplayText = (pos) => {
+    if (pos.short_text) return pos.short_text;
+    if (!pos.long_text) return "";
+    const words = pos.long_text.trim().split(/\s+/);
+    let result = "";
+    for (const word of words) {
+      if (result.length + word.length > 70) break;
+      result += (result ? " " : "") + word;
+    }
+    return result || pos.long_text.slice(0, 70);
+  };
+
   const handleRowsChange = (oz, rows) => {
     setLocalPositions(prev => ({ ...prev, [oz]: rows }));
 
