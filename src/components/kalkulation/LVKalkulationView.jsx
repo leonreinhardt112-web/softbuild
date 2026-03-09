@@ -211,8 +211,6 @@ export default function LVKalkulationView({ project }) {
     }
   });
 
-
-
   const totalAngebotsumme = positionItems.reduce((sum, pos, idx) => {
     const rows = getRows(idx);
     const ep = rows.reduce((s, r) => s + Number(r.kosten_einheit || 0) + Number(r.zuschlag || 0), 0);
