@@ -1,11 +1,10 @@
 import jsPDF from "jspdf";
-import "jspdf-autotable";
 
 export function generateKalkulationPDF(project, kalkulation) {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
-  const pageHeight = doc.internal.pageSize.getHeight();
   const margin = 10;
+  const colWidth = (pageWidth - margin * 2) / 5;
   let yPosition = margin;
 
   // Titel
@@ -25,49 +24,89 @@ export function generateKalkulationPDF(project, kalkulation) {
     doc.text(`Auftraggeber: ${project.client}`, margin, yPosition);
     yPosition += 5;
   }
-  yPosition += 3;
+  yPosition += 5;
 
-  // Positionen Tabelle
+  // Tabelle Header
+  doc.setFillColor(66, 133, 244);
+  doc.setTextColor(255, 255, 255);
+  doc.setFont(undefined, "bold");
+  doc.setFontSize(9);
+  
+  const headers = ["Pos.", "Beschreibung", "Menge", "EP (€)", "GP (€)"];
+  const colWidths = [15, 70, 30, 30, 30];
+  let xPos = margin;
+  
+  headers.forEach((h, i) => {
+    doc.rect(xPos, yPosition, colWidths[i], 7, "F");
+    doc.text(h, xPos + 2, yPosition + 5, { align: "left", maxWidth: colWidths[i] - 4 });
+    xPos += colWidths[i];
+  });
+  yPosition += 8;
+
+  // Positionen
   const positions = kalkulation.positions || [];
-  const tableData = positions.map(p => {
+  doc.setTextColor(0, 0, 0);
+  doc.setFont(undefined, "normal");
+  doc.setFontSize(8);
+  let rowCount = 0;
+
+  positions.forEach(p => {
     const menge = parseFloat(p.menge) || 0;
     const ep = Number(p.ep) || 0;
     const gp = Number(p.gp) || 0;
-    return [
+    
+    // Seitenwechsel bei Bedarf
+    if (yPosition > 260) {
+      doc.addPage();
+      yPosition = margin;
+    }
+
+    const row = [
       p.oz || "",
       p.short_text || "",
       `${menge.toLocaleString("de-DE", { minimumFractionDigits: 3 })} ${p.einheit || ""}`,
-      `${ep.toLocaleString("de-DE", { minimumFractionDigits: 2 })} €`,
-      `${gp.toLocaleString("de-DE", { minimumFractionDigits: 2 })} €`,
+      `${ep.toLocaleString("de-DE", { minimumFractionDigits: 2 })}`,
+      `${gp.toLocaleString("de-DE", { minimumFractionDigits: 2 })}`,
     ];
-  });
 
-  doc.autoTable({
-    startY: yPosition,
-    head: [["Pos.", "Beschreibung", "Menge", "EP (€)", "GP (€)"]],
-    body: tableData,
-    margin: { left: margin, right: margin },
-    headStyles: { fillColor: [66, 133, 244], textColor: 255, fontStyle: "bold" },
-    bodyStyles: { textColor: 0 },
-    alternateRowStyles: { fillColor: [245, 245, 245] },
-    columnStyles: {
-      0: { cellWidth: 15, halign: "left" },
-      1: { cellWidth: 70 },
-      2: { halign: "right", cellWidth: 30 },
-      3: { halign: "right", cellWidth: 30 },
-      4: { halign: "right", cellWidth: 30 },
-    },
-  });
+    // Alternating row colors
+    if (rowCount % 2 === 0) {
+      doc.setFillColor(245, 245, 245);
+      xPos = margin;
+      colWidths.forEach(w => {
+        doc.rect(xPos, yPosition, w, 6, "F");
+        xPos += w;
+      });
+    }
 
-  yPosition = doc.lastAutoTable.finalY + 8;
+    // Text
+    xPos = margin;
+    doc.text(row[0], xPos + 1, yPosition + 4);
+    xPos += colWidths[0];
+    doc.text(row[1], xPos + 1, yPosition + 4, { maxWidth: colWidths[1] - 2 });
+    xPos += colWidths[1];
+    doc.text(row[2], xPos + 1, yPosition + 4, { align: "right" });
+    xPos += colWidths[2];
+    doc.text(row[3], xPos + 1, yPosition + 4, { align: "right" });
+    xPos += colWidths[3];
+    doc.text(row[4], xPos + 1, yPosition + 4, { align: "right" });
+
+    yPosition += 6;
+    rowCount++;
+  });
 
   // Summen
+  yPosition += 3;
   doc.setFont(undefined, "bold");
   doc.setFontSize(11);
   const totalGP = positions.reduce((sum, p) => sum + (Number(p.gp) || 0), 0);
+  
+  xPos = margin + colWidths[0] + colWidths[1];
+  doc.text("Gesamtsumme:", xPos, yPosition);
+  xPos = pageWidth - margin - colWidths[4];
   doc.text(
-    `Kalkulierte Angebotssumme: ${totalGP.toLocaleString("de-DE", { style: "currency", currency: "EUR" })}`,
-    pageWidth - margin,
+    totalGP.toLocaleString("de-DE", { minimumFractionDigits: 2 }),
+    xPos,
     yPosition,
     { align: "right" }
   );
