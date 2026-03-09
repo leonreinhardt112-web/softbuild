@@ -43,7 +43,7 @@ export async function generateKalkulationPDF(project, kalkulation) {
   const positionsByTitle = groupPositionsByTitle(project.lv_positions || [], kalkulation.positions || []);
   
   // Tabellenkopf auf der ersten Seite
-  addTableHeader(doc, MARGIN_LEFT, yPos, contentWidth);
+  addTableHeader(doc, MARGIN_LEFT, yPos, contentWidth, headerColor);
   yPos += 6;
   let firstPageDone = true;
 
@@ -52,7 +52,7 @@ export async function generateKalkulationPDF(project, kalkulation) {
     if (yPos + 8 > pageBottom) {
       doc.addPage();
       yPos = MARGIN_TOP + 10;
-      addTableHeader(doc, MARGIN_LEFT, yPos, contentWidth);
+      addTableHeader(doc, MARGIN_LEFT, yPos, contentWidth, headerColor);
       yPos += 6;
     }
 
