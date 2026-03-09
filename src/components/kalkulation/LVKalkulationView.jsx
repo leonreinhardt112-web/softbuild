@@ -5,6 +5,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, ChevronDown, ChevronRight, Calculator, CheckCircle2 } from "lucide-react";
 import PositionKalkTable from "./PositionKalkTable";
+import { 
+  parseOZ, 
+  getOZDepth, 
+  getOZPrefix, 
+  determineNodeType, 
+  buildHierarchy, 
+  getPositions 
+} from "../lv/lvHierarchyUtils";
 
 export default function LVKalkulationView({ project }) {
   const queryClient = useQueryClient();
