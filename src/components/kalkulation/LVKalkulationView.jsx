@@ -253,7 +253,22 @@ export default function LVKalkulationView({ project }) {
     const startIdx = positionItems.findIndex(p => positions.includes(p));
     return positions.reduce((sum, pos, relIdx) => {
       const rows = getRows(startIdx + relIdx);
-      const ep = rows.reduce((s, r) => s + Number(r.kosten_einheit || 0) + Number(r.zuschlag || 0), 0);
+      const ep = rows.reduce((s, r) => {
+        const kosten = Number(r.kosten_einheit || 0);
+        const keys = {
+          Lohn: { bgk: "lohn_bgk", agk: "lohn_agk", wg: "lohn_wg" },
+          Material: { bgk: "material_bgk", agk: "material_agk", wg: "material_wg" },
+          "Gerät": { bgk: "geraet_bgk", agk: "geraet_agk", wg: "geraet_wg" },
+          NU: { bgk: "nu_bgk", agk: "nu_agk", wg: "nu_wg" },
+          Sonstiges: { bgk: "sonstiges_bgk", agk: "sonstiges_agk", wg: "sonstiges_wg" }
+        };
+        const key = keys[r.kostentyp] || keys["Sonstiges"];
+        const bgk = Number(kalk?.zuschlaege?.[key.bgk] ?? 10) / 100;
+        const agk = Number(kalk?.zuschlaege?.[key.agk] ?? 5) / 100;
+        const wg = Number(kalk?.zuschlaege?.[key.wg] ?? 3) / 100;
+        const zuschlag = kosten * (bgk + agk + wg);
+        return s + kosten + zuschlag;
+      }, 0);
       return sum + ep * (parseFloat(pos.quantity) || 0);
     }, 0);
   };
