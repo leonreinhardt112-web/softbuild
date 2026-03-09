@@ -104,6 +104,7 @@ export default function Stammdaten() {
   const qc = useQueryClient();
   const [activeTab, setActiveTab] = useState("auftraggeber");
   const [showForm, setShowForm] = useState(false);
+  const [editingItem, setEditingItem] = useState(null);
   const [search, setSearch] = useState("");
 
   const { data: stammdaten = [], isLoading } = useQuery({
