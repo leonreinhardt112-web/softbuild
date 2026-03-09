@@ -270,6 +270,7 @@ export default function LVKalkulationView({ project }) {
                         <div className="mt-3">
                           <PositionKalkTable
                             rows={rows}
+                            zuschlaege={kalk?.zuschlaege || {}}
                             onRowsChange={(newRows) => handleRowsChange(pos.oz, newRows)}
                           />
                         </div>
