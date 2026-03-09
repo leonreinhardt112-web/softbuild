@@ -80,38 +80,36 @@ export async function generateKalkulationPDF(project, kalkulation) {
       
       if (pos.posIndex % 2 === 1) {
         doc.setFillColor(248, 248, 248);
-        doc.rect(MARGIN_LEFT, yPos - 2, contentWidth, 5, "F");
+        doc.rect(MARGIN_LEFT, yPos - 2.5, contentWidth, 7, "F");
       }
 
       const menge = parseFloat(pos.menge) || 0;
       const ep = Number(pos.ep) || 0;
       const gp = Number(pos.gp) || 0;
 
-      // Pos-Nummer | Kurztext | Menge ME | EP | GP
-      let xPos = MARGIN_LEFT;
-      doc.text((pos.oz || "").toString(), xPos + 1, yPos + 1);
-      xPos += 15;
+      // Pos-Nummer (links)
+      doc.text((pos.oz || "").toString(), MARGIN_LEFT + 1, yPos + 1);
 
-      // Kurztext mit Zeilenumbruch
-      const shortLines = doc.splitTextToSize(pos.short_text || "", 70);
-      doc.text(shortLines[0] || "", xPos + 1, yPos + 1);
-      if (shortLines.length > 1) {
-        doc.setFontSize(8);
-        doc.text(shortLines[1], xPos + 1, yPos + 4);
-        doc.setFontSize(9);
-        yPos += 2;
-      }
+      // Kurztext (Spalte 2) – mit Platz für mehrzeilig
+      const shortLines = doc.splitTextToSize(pos.short_text || "", 67);
+      const shortTextStartY = yPos + 1;
+      doc.text(shortLines[0] || "", MARGIN_LEFT + 16, shortTextStartY);
       
-      xPos += 70;
-      doc.text(`${menge.toLocaleString("de-DE", { minimumFractionDigits: 2 })} ${pos.einheit || ""}`, xPos, yPos + 1, { align: "center" });
-      xPos += 22;
-      doc.text(`${ep.toLocaleString("de-DE", { minimumFractionDigits: 2 })} €`, xPos, yPos + 1, { align: "right" });
-      xPos += 18;
+      // Menge/Einheit (Spalte 3, rechtsausgerichtet)
+      const mengeText = `${menge.toLocaleString("de-DE", { minimumFractionDigits: 2 })} ${pos.einheit || ""}`;
+      doc.text(mengeText, MARGIN_LEFT + 87, shortTextStartY, { align: "right" });
+      
+      // EP (Spalte 4, rechtsausgerichtet)
+      const epText = `${ep.toLocaleString("de-DE", { minimumFractionDigits: 2 })} €`;
+      doc.text(epText, MARGIN_LEFT + 105, shortTextStartY, { align: "right" });
+      
+      // GP (Spalte 5, rechtsausgerichtet, bold)
       doc.setFont(undefined, "bold");
-      doc.text(`${gp.toLocaleString("de-DE", { minimumFractionDigits: 2 })} €`, xPos, yPos + 1, { align: "right" });
+      const gpText = `${gp.toLocaleString("de-DE", { minimumFractionDigits: 2 })} €`;
+      doc.text(gpText, pageWidth - MARGIN_RIGHT - 2, shortTextStartY, { align: "right" });
       doc.setFont(undefined, "normal");
 
-      yPos += 5;
+      yPos += 7;
 
       // Langtext (falls vorhanden) – ausgeglichen unter Beschreibung
       if (pos.long_text) {
