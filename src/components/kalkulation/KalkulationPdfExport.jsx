@@ -104,10 +104,10 @@ export async function generateKalkulationPDF(project, kalkulation, options = {})
       const ep = Number(pos.ep) || 0;
       const gp = Number(pos.gp) || 0;
 
-      // Pos-Nummer (links) – max 15mm Breite
+      // Pos-Nummer (links)
       doc.text((pos.oz || "").toString(), MARGIN_LEFT + 1, yPos + 1);
 
-      // Kurztext (Spalte 2) – mit Platz für mehrzeilig
+      // Kurztext (Spalte 2)
       const shortLines = doc.splitTextToSize(pos.short_text || "", 45);
       const shortTextStartY = yPos + 1;
       doc.text(shortLines[0] || "", MARGIN_LEFT + 27, shortTextStartY);
@@ -128,21 +128,20 @@ export async function generateKalkulationPDF(project, kalkulation, options = {})
 
       yPos += 7;
 
-      // Langtext (falls vorhanden und im textMode enthalten) – ausgeglichen unter Beschreibung
+      // Langtext (falls vorhanden und im textMode enthalten) – unter Kurztext
       if (pos.long_text && textMode === "both") {
         doc.setFontSize(8);
         doc.setTextColor(100, 100, 100);
-        const longLines = doc.splitTextToSize(pos.long_text, 70);
-        let langY = yPos;
+        const longLines = doc.splitTextToSize(pos.long_text, contentWidth - 10);
         longLines.forEach((line, idx) => {
-          if (idx < 3) { // Max 3 Zeilen Langtext
-            doc.text(line, MARGIN_LEFT + 71, langY);
-            langY += 3;
+          if (idx < 4) { // Max 4 Zeilen Langtext
+            doc.text(line, MARGIN_LEFT + 27, yPos);
+            yPos += 3;
           }
         });
-        yPos = Math.max(yPos, langY + 1);
         doc.setTextColor(0, 0, 0);
         doc.setFontSize(9);
+        yPos += 2;
       }
 
       // Pagebreak-Check
