@@ -27,6 +27,15 @@ function parseX83(xmlText) {
       const found = el.querySelector(sel);
       if (found?.textContent?.trim()) return found.textContent.trim();
     }
+    // Fallback: search for any matching tag name case-insensitively
+    for (const sel of selectors) {
+      const tagName = sel.split(" ")[0];
+      for (let child of el.childNodes) {
+        if (child.nodeType === 1 && child.tagName?.toUpperCase() === tagName.toUpperCase()) {
+          if (child.textContent?.trim()) return child.textContent.trim();
+        }
+      }
+    }
     return "";
   };
 
