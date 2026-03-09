@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2 } from "lucide-react";
+import { Loader2, Palette } from "lucide-react";
 
 export default function CompanyHeaderForm() {
   const [company, setCompany] = useState(null);
@@ -18,6 +18,7 @@ export default function CompanyHeaderForm() {
     briefkopf_email: "",
     briefkopf_website: "",
     briefkopf_logo_url: "",
+    angebot_header_farbe: "#4682B4",
   });
 
   useEffect(() => {
@@ -38,6 +39,7 @@ export default function CompanyHeaderForm() {
           briefkopf_email: companies[0].briefkopf_email || "",
           briefkopf_website: companies[0].briefkopf_website || "",
           briefkopf_logo_url: companies[0].briefkopf_logo_url || "",
+          angebot_header_farbe: companies[0].angebot_header_farbe || "#4682B4",
         });
       }
     } catch (e) {
@@ -157,7 +159,29 @@ export default function CompanyHeaderForm() {
               placeholder="z.B. www.muster-bau.de"
             />
           </div>
-        </div>
+
+          <div className="sm:col-span-2">
+            <label className="text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-2">
+              <Palette className="w-3.5 h-3.5" />
+              Angebots-Header-Farbe
+            </label>
+            <div className="flex gap-3 items-center">
+              <Input
+                type="color"
+                value={form.angebot_header_farbe}
+                onChange={e => setForm(f => ({ ...f, angebot_header_farbe: e.target.value }))}
+                className="h-10 w-16 cursor-pointer"
+              />
+              <Input
+                type="text"
+                value={form.angebot_header_farbe}
+                onChange={e => setForm(f => ({ ...f, angebot_header_farbe: e.target.value }))}
+                placeholder="#4682B4"
+                className="flex-1 font-mono text-xs"
+              />
+            </div>
+          </div>
+          </div>
 
         <div className="flex gap-2 justify-end">
           <Button onClick={handleSave} disabled={!form.name || saving}>
