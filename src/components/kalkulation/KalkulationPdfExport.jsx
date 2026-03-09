@@ -138,7 +138,7 @@ export async function generateKalkulationPDF(project, kalkulation, options = {})
       doc.text(gpText, MARGIN_LEFT + 143, yPos + 1, { align: "right" });
       doc.setFont(undefined, "normal");
 
-      yPos += Math.max(7, shortTextHeight);
+      yPos += Math.max(7, shortTextHeight) + 2; // +2 für Abstand zwischen Positionen
 
       // Langtext (falls vorhanden und im textMode "both") – unter Position
       if (pos.long_text && textMode === "both") {
