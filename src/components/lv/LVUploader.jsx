@@ -21,7 +21,6 @@ function parseX83(xmlText) {
   const doc = parser.parseFromString(xmlText, "application/xml");
   const positions = [];
 
-  // Helper: get text content of first matching selector (case-insensitive tag search)
   const getText = (el, ...selectors) => {
     for (const sel of selectors) {
       const found = el.querySelector(sel);
@@ -30,38 +29,63 @@ function parseX83(xmlText) {
     return "";
   };
 
-  // GAEB X83: BoQCtgy = Titel, Item = Position
-  // Walk the tree in document order to preserve sequence
-  const allNodes = doc.querySelectorAll("BoQCtgy, Item, DP, item");
+  // Build OZ from ancestor BoQCtgy RNoPart hierarchy + Item/BoQCtgy RNoPart
+  const buildOzFromHierarchy = (node) => {
+    const parts = [];
+    let current = node;
+    while (current) {
+      const rno = current.getAttribute?.("RNoPart");
+      if (rno) parts.unshift(rno);
+      current = current.parentElement;
+      if (!current || !["BoQCtgy", "Item", "item"].includes(current.tagName)) break;
+    }
+    return parts.join(".");
+  };
 
-  if (allNodes.length > 0) {
-    allNodes.forEach((node) => {
-      const tag = node.tagName;
-      if (tag === "BoQCtgy") {
-        // Title node
-        const oz = getText(node, "CtgyNo", "OZ", "Pos") || node.getAttribute("RNoPart") || "";
-        const shortText = getText(node, "LblTx ShortText", "LblTx", "ShortText", "KurzText", "Description") || "";
-        if (oz || shortText) {
-          positions.push({ oz, short_text: shortText, long_text: "", quantity: "", unit: "", type: "title" });
-        }
-      } else if (tag === "Item" || tag === "item") {
-        const oz = getText(node, "ItemNo", "OZ", "Pos") || node.getAttribute("RNoPart") || "";
-        const shortText = getText(node, "Description ShortText", "ShortText", "KurzText") || "";
-        const longText = getText(node, "DetailTxt Text", "CompleteText DetailTxt Text", "LongText", "LangText") || "";
-        const qty = getText(node, "Qty", "Menge") || "";
-        const unit = getText(node, "QU", "QtyUnit", "Einheit") || "";
-        if (oz || shortText) {
-          positions.push({ oz, short_text: shortText, long_text: longText, quantity: qty, unit, type: "position" });
-        }
-      } else if (tag === "DP") {
-        const oz = getText(node, "OZ", "Pos") || "";
-        const shortText = getText(node, "Kurz", "KurzText", "Text") || "";
-        const qty = getText(node, "Menge", "Qty") || "";
-        const unit = getText(node, "ME", "QU") || "";
-        const isTitle = !qty || qty === "0";
-        if (oz || shortText) {
-          positions.push({ oz, short_text: shortText, long_text: "", quantity: qty, unit, type: isTitle ? "title" : "position" });
-        }
+  // Recursively process BoQCtgy hierarchy
+  const processBoQCtgy = (ctgyNode) => {
+    const oz = buildOzFromHierarchy(ctgyNode);
+    const shortText = getText(ctgyNode, "LblTx ShortText", "LblTx", "ShortText", "KurzText", "Description") || "";
+    
+    if (oz || shortText) {
+      positions.push({ oz, short_text: shortText, long_text: "", quantity: "", unit: "", type: "title" });
+    }
+
+    // Process child Items
+    const childItems = Array.from(ctgyNode.children).filter((c) => c.tagName === "Item" || c.tagName === "item");
+    childItems.forEach((item) => {
+      const itemOz = buildOzFromHierarchy(item);
+      const itemShortText = getText(item, "Description ShortText", "ShortText", "KurzText") || "";
+      const itemLongText = getText(item, "DetailTx Text", "CompleteText DetailTx Text", "LongText", "LangText") || "";
+      const qty = getText(item, "Qty", "Menge") || "";
+      const unit = getText(item, "QU", "QtyUnit", "Einheit") || "";
+      if (itemOz || itemShortText) {
+        positions.push({ oz: itemOz, short_text: itemShortText, long_text: itemLongText, quantity: qty, unit, type: "position" });
+      }
+    });
+
+    // Process child BoQCtgy nodes
+    const childCtgys = Array.from(ctgyNode.children).filter((c) => c.tagName === "BoQCtgy");
+    childCtgys.forEach((child) => processBoQCtgy(child));
+  };
+
+  // Start from root-level BoQCtgy elements
+  const rootCtgys = Array.from(doc.querySelectorAll("BoQCtgy")).filter(
+    (node) => !node.parentElement || node.parentElement.tagName !== "BoQCtgy"
+  );
+  rootCtgys.forEach((ctgy) => processBoQCtgy(ctgy));
+
+  // Fallback for DP format
+  const dpNodes = doc.querySelectorAll("DP");
+  if (dpNodes.length > 0) {
+    dpNodes.forEach((node) => {
+      const oz = getText(node, "OZ", "Pos") || "";
+      const shortText = getText(node, "Kurz", "KurzText", "Text") || "";
+      const qty = getText(node, "Menge", "Qty") || "";
+      const unit = getText(node, "ME", "QU") || "";
+      const isTitle = !qty || qty === "0";
+      if (oz || shortText) {
+        positions.push({ oz, short_text: shortText, long_text: "", quantity: qty, unit, type: isTitle ? "title" : "position" });
       }
     });
   }
