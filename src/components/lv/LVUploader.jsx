@@ -14,15 +14,14 @@ const TRADE_KEYWORDS = {
 };
 
 /**
- * Parses a GAEB X83/X81/X82 XML file and reconstructs hierarchy from XML nesting.
- * Returns array of {oz, short_text, long_text, quantity, unit, type, parent_oz} items.
+ * Parses a GAEB X83/X81/X82 XML file and returns positions + detected trades.
  */
 function parseX83(xmlText) {
   const parser = new DOMParser();
   const doc = parser.parseFromString(xmlText, "application/xml");
   const positions = [];
 
-  // Helper: get text content of first matching selector
+  // Helper: get text content of first matching selector (case-insensitive tag search)
   const getText = (el, ...selectors) => {
     for (const sel of selectors) {
       const found = el.querySelector(sel);
@@ -31,115 +30,41 @@ function parseX83(xmlText) {
     return "";
   };
 
-  // Helper: build full OZ path from hierarchy of ancestors
-  const getFullOZ = (node, parentOZPath = []) => {
-    // RNoPart is the only source for numbering at this level
-    const rno = node.getAttribute("RNoPart") || "";
-    if (!rno) return parentOZPath.join(".");
-    return [...parentOZPath, rno].join(".");
-  };
+  // GAEB X83: BoQCtgy = Titel, Item = Position
+  // Walk the tree in document order to preserve sequence
+  const allNodes = doc.querySelectorAll("BoQCtgy, Item, DP, item");
 
-  // Recursive function to walk GAEB structure
-  // parentOZPath accumulates the hierarchy from root to current node
-  const walkStructure = (parentNode, parentOZPath = []) => {
-    const children = parentNode.children || [];
-    
-    // Count BoQCtgy siblings at this level for auto-numbering if RNoPart missing
-    let titleIndex = 0;
-    let itemIndex = 0;
-    
-    for (let i = 0; i < children.length; i++) {
-      const node = children[i];
+  if (allNodes.length > 0) {
+    allNodes.forEach((node) => {
       const tag = node.tagName;
-
       if (tag === "BoQCtgy") {
-        titleIndex++;
-        // Category/Title node — use RNoPart or auto-number from position
-        let rno = node.getAttribute("RNoPart");
-        if (!rno) {
-          rno = String(titleIndex).padStart(2, "0");
-        }
-        const oz = [...parentOZPath, rno].join(".");
+        // Title node
+        const oz = getText(node, "CtgyNo", "OZ", "Pos") || node.getAttribute("RNoPart") || "";
         const shortText = getText(node, "LblTx ShortText", "LblTx", "ShortText", "KurzText", "Description") || "";
-        
         if (oz || shortText) {
-          positions.push({
-            oz,
-            short_text: shortText,
-            long_text: "",
-            quantity: "",
-            unit: "",
-            type: "title",
-            parent_oz: parentOZPath.length > 0 ? parentOZPath.join(".") : null,
-          });
+          positions.push({ oz, short_text: shortText, long_text: "", quantity: "", unit: "", type: "title" });
         }
-
-        // Recurse into children with extended OZ path
-        walkStructure(node, [...parentOZPath, rno]);
       } else if (tag === "Item" || tag === "item") {
-        itemIndex++;
-        // Position node — use RNoPart or auto-number from position
-        let rno = node.getAttribute("RNoPart");
-        if (!rno) {
-          rno = String(itemIndex).padStart(4, "0");
-        }
-        const oz = [...parentOZPath, rno].join(".");
+        const oz = getText(node, "ItemNo", "OZ", "Pos") || node.getAttribute("RNoPart") || "";
         const shortText = getText(node, "Description ShortText", "ShortText", "KurzText") || "";
         const longText = getText(node, "DetailTxt Text", "CompleteText DetailTxt Text", "LongText", "LangText") || "";
         const qty = getText(node, "Qty", "Menge") || "";
         const unit = getText(node, "QU", "QtyUnit", "Einheit") || "";
-
         if (oz || shortText) {
-          positions.push({
-            oz,
-            short_text: shortText,
-            long_text: longText,
-            quantity: qty,
-            unit,
-            type: "position",
-            parent_oz: parentOZPath.length > 0 ? parentOZPath.join(".") : null,
-          });
+          positions.push({ oz, short_text: shortText, long_text: longText, quantity: qty, unit, type: "position" });
         }
       } else if (tag === "DP") {
-        // Alternative DP structure — count both titles and items
-        let rno = node.getAttribute("RNoPart");
-        const qty = getText(node, "Menge", "Qty") || "";
-        const isTitle = !qty || qty === "0";
-        
-        if (isTitle) {
-          titleIndex++;
-          if (!rno) rno = String(titleIndex).padStart(2, "0");
-        } else {
-          itemIndex++;
-          if (!rno) rno = String(itemIndex).padStart(4, "0");
-        }
-        
-        const oz = [...parentOZPath, rno].join(".");
+        const oz = getText(node, "OZ", "Pos") || "";
         const shortText = getText(node, "Kurz", "KurzText", "Text") || "";
+        const qty = getText(node, "Menge", "Qty") || "";
         const unit = getText(node, "ME", "QU") || "";
-
+        const isTitle = !qty || qty === "0";
         if (oz || shortText) {
-          positions.push({
-            oz,
-            short_text: shortText,
-            long_text: "",
-            quantity: qty,
-            unit,
-            type: isTitle ? "title" : "position",
-            parent_oz: parentOZPath.length > 0 ? parentOZPath.join(".") : null,
-          });
-        }
-
-        if (isTitle) {
-          walkStructure(node, [...parentOZPath, rno]);
+          positions.push({ oz, short_text: shortText, long_text: "", quantity: qty, unit, type: isTitle ? "title" : "position" });
         }
       }
-    }
-  };
-
-  // Start from root (likely BoQ or root element)
-  const root = doc.documentElement;
-  walkStructure(root, []);
+    });
+  }
 
   return positions;
 }
