@@ -263,15 +263,11 @@ export async function generateKalkulationPDF(project, kalkulation, options = {})
     });
   }
 
-  // Seitenzahlen hinzufügen
+  // Footer und Seitenzahlen hinzufügen
   const totalPages = doc.internal.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
-    doc.setFont(undefined, "normal");
-    doc.setFontSize(8);
-    doc.setTextColor(120, 120, 120);
-    doc.text(`Seite ${i}/${totalPages}`, pageWidth - MARGIN_RIGHT, pageHeight - 8, { align: "right" });
-    doc.setTextColor(0, 0, 0);
+    addFooter(doc, company, pageWidth, pageHeight, MARGIN_LEFT, MARGIN_RIGHT, totalPages, i);
   }
 
   const filename = `Angebot_${project.project_number}_${new Date().toISOString().split("T")[0]}.pdf`;
@@ -352,6 +348,45 @@ function hexToRgb(hex) {
     parseInt(result[2], 16),
     parseInt(result[3], 16)
   ] : [70, 130, 180]; // Default fallback
+}
+
+function addFooter(doc, company, pageWidth, pageHeight, marginLeft, marginRight, totalPages, currentPage) {
+  doc.setFont(undefined, "normal");
+  doc.setFontSize(7);
+  doc.setTextColor(100, 100, 100);
+  
+  const footerY = pageHeight - 18;
+  const footerLineY = pageHeight - 20;
+  
+  // Trennlinie
+  doc.setDrawColor(180, 180, 180);
+  doc.line(marginLeft, footerLineY, pageWidth - marginRight, footerLineY);
+  
+  if (company) {
+    const col1X = marginLeft;
+    const col2X = pageWidth / 3 + 10;
+    const col3X = (pageWidth * 2) / 3 + 10;
+    
+    // Footer-Text splitten (nach Zeilenumbruch)
+    const footerLeft = (company.pdf_footer_links || "").split("\n");
+    const footerMitte = (company.pdf_footer_mitte || "").split("\n");
+    const footerRechts = (company.pdf_footer_rechts || "").split("\n");
+    
+    let currentY = footerY;
+    const maxLines = Math.max(footerLeft.length, footerMitte.length, footerRechts.length);
+    
+    for (let j = 0; j < maxLines; j++) {
+      if (footerLeft[j]) doc.text(footerLeft[j], col1X, currentY);
+      if (footerMitte[j]) doc.text(footerMitte[j], col2X, currentY);
+      if (footerRechts[j]) doc.text(footerRechts[j], col3X, currentY);
+      currentY += 3.5;
+    }
+  }
+  
+  // Seitenzahl rechts unten
+  doc.setTextColor(120, 120, 120);
+  doc.text(`Seite ${currentPage}/${totalPages}`, pageWidth - marginRight - 2, pageHeight - 5, { align: "right" });
+  doc.setTextColor(0, 0, 0);
 }
 
 function groupPositionsByTitle(lvPositions, kalkulationen) {
