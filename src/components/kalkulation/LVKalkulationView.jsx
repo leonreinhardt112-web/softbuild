@@ -283,6 +283,31 @@ export default function LVKalkulationView({ project }) {
     }, 0);
   };
 
+  const toggleAllTitles = () => {
+    if (expandedTitles.size === grouped.length) {
+      setExpandedTitles(new Set());
+    } else {
+      const allTitles = new Set();
+      grouped.forEach((_, i) => allTitles.add(i));
+      setExpandedTitles(allTitles);
+    }
+  };
+
+  const toggleAllUnterTitles = () => {
+    const allUtKeys = new Set();
+    grouped.forEach((ht, htIdx) => {
+      ht.unterTitels.forEach((_, utIdx) => {
+        allUtKeys.add(`${htIdx}-${utIdx}`);
+      });
+    });
+    
+    if (expandedTitles.size === allUtKeys.size) {
+      setExpandedTitles(new Set());
+    } else {
+      setExpandedTitles(allUtKeys);
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Header */}
