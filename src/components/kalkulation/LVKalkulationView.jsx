@@ -450,7 +450,7 @@ export default function LVKalkulationView({ project }) {
                             {/* POS. */}
                             <span className="text-xs font-mono font-bold text-foreground w-24 shrink-0">{hierarchy}</span>
                             {/* BESCHREIBUNG */}
-                            <div className="flex-1 min-w-0 text-sm text-foreground truncate">{pos.long_text || <span className="text-muted-foreground/50 italic">–</span>}</div>
+                            <div className="flex-1 min-w-0 text-sm text-foreground truncate">{pos.short_text || <span className="text-muted-foreground/50 italic">–</span>}</div>
                             {/* MENGE + EINHEIT */}
                             <span className="text-xs text-muted-foreground w-20 text-right shrink-0 hidden sm:block">
                               {pos.quantity && <>{parseFloat(pos.quantity).toLocaleString("de-DE", { minimumFractionDigits: 3 })} {pos.unit}</>}
