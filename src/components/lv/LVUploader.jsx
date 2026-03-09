@@ -14,16 +14,14 @@ const TRADE_KEYWORDS = {
 };
 
 /**
- * Parses a GAEB X83/X81/X82 XML file with hierarchical grouping:
- * - Main titles: "01", "02", etc.
- * - Sub-titles: "01", "02", etc. (under each main title)
- * - Positions: "0001", "0002", etc. (reset per sub-group)
+ * Parses a GAEB X83/X81/X82 XML file and returns positions + detected trades.
  */
 function parseX83(xmlText) {
   const parser = new DOMParser();
   const doc = parser.parseFromString(xmlText, "application/xml");
   const positions = [];
 
+  // Helper: get text content of first matching selector (case-insensitive tag search)
   const getText = (el, ...selectors) => {
     for (const sel of selectors) {
       const found = el.querySelector(sel);
@@ -32,62 +30,39 @@ function parseX83(xmlText) {
     return "";
   };
 
+  // GAEB X83: BoQCtgy = Titel, Item = Position
+  // Walk the tree in document order to preserve sequence
   const allNodes = doc.querySelectorAll("BoQCtgy, Item, DP, item");
-
-  let mainTitleNum = 0;     // Counter for main titles: 01, 02, 03...
-  let subTitleNum = 0;      // Counter for sub-titles per main: 01, 02, 03...
-  let posNum = 0;           // Counter for positions: 0001, 0002...
 
   if (allNodes.length > 0) {
     allNodes.forEach((node) => {
       const tag = node.tagName;
-      let rawOz = getText(node, "CtgyNo", "OZ", "Pos", "ItemNo") || node.getAttribute("RNoPart") || "";
-      rawOz = rawOz.trim();
-
-      const shortText = getText(node, "LblTx ShortText", "LblTx", "ShortText", "KurzText", "Description") || "";
-      const longText = tag === "Item" || tag === "item" ? getText(node, "DetailTxt Text", "CompleteText DetailTxt Text", "LongText", "LangText") || "" : "";
-      const qty = getText(node, "Qty", "Menge") || "";
-      const unit = getText(node, "QU", "QtyUnit", "Einheit") || "";
-
-      // Type: BoQCtgy = title, Item/item = position, DP = depends on quantity
-      let isTitle = tag === "BoQCtgy";
-      if (tag === "DP") isTitle = !qty || qty === "0";
-      if (tag === "Item" || tag === "item") isTitle = false;
-
-      if (!rawOz && !shortText) return;
-
-      let displayOz = rawOz;
-
-      if (isTitle) {
-        // Determine if main or sub-title based on dot count
-        const dotCount = (rawOz.match(/\./g) || []).length;
-        
-        if (dotCount === 0) {
-          // Main title — increment main counter
-          mainTitleNum++;
-          subTitleNum = 0;
-          posNum = 0;
-          displayOz = String(mainTitleNum).padStart(2, "0");
-        } else {
-          // Sub-title — increment sub counter
-          subTitleNum++;
-          posNum = 0;
-          displayOz = String(subTitleNum).padStart(2, "0");
+      if (tag === "BoQCtgy") {
+        // Title node
+        const oz = getText(node, "CtgyNo", "OZ", "Pos") || node.getAttribute("RNoPart") || "";
+        const shortText = getText(node, "LblTx ShortText", "LblTx", "ShortText", "KurzText", "Description") || "";
+        if (oz || shortText) {
+          positions.push({ oz, short_text: shortText, long_text: "", quantity: "", unit: "", type: "title" });
         }
-      } else {
-        // Position — increment position counter
-        posNum++;
-        displayOz = String(posNum).padStart(4, "0");
+      } else if (tag === "Item" || tag === "item") {
+        const oz = getText(node, "ItemNo", "OZ", "Pos") || node.getAttribute("RNoPart") || "";
+        const shortText = getText(node, "Description ShortText", "ShortText", "KurzText") || "";
+        const longText = getText(node, "DetailTxt Text", "CompleteText DetailTxt Text", "LongText", "LangText") || "";
+        const qty = getText(node, "Qty", "Menge") || "";
+        const unit = getText(node, "QU", "QtyUnit", "Einheit") || "";
+        if (oz || shortText) {
+          positions.push({ oz, short_text: shortText, long_text: longText, quantity: qty, unit, type: "position" });
+        }
+      } else if (tag === "DP") {
+        const oz = getText(node, "OZ", "Pos") || "";
+        const shortText = getText(node, "Kurz", "KurzText", "Text") || "";
+        const qty = getText(node, "Menge", "Qty") || "";
+        const unit = getText(node, "ME", "QU") || "";
+        const isTitle = !qty || qty === "0";
+        if (oz || shortText) {
+          positions.push({ oz, short_text: shortText, long_text: "", quantity: qty, unit, type: isTitle ? "title" : "position" });
+        }
       }
-
-      positions.push({
-        oz: displayOz,
-        short_text: shortText,
-        long_text: longText,
-        quantity: qty,
-        unit,
-        type: isTitle ? "title" : "position"
-      });
     });
   }
 
