@@ -55,7 +55,7 @@ function StammdatenForm({ typ, item, onSave, onCancel }) {
 
   return (
     <Card className="border-primary/20">
-      <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold">{TYP_LABELS[typ]} anlegen</CardTitle></CardHeader>
+      <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold">{item ? `${TYP_LABELS[typ]} bearbeiten` : `${TYP_LABELS[typ]} anlegen`}</CardTitle></CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[
