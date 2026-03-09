@@ -46,13 +46,15 @@ export default function LVKalkulationView({ project }) {
     }
   }, [isLoading, kalkulationen.length]);
 
-  // Sync local state from DB
+  // Sync local state from DB — only on initial load, not after saves
+  const initialSyncDone = useRef(false);
   useEffect(() => {
     const kalk = kalkulationen[0];
-    if (kalk?.positions) {
+    if (kalk?.positions && !initialSyncDone.current) {
       const map = {};
       kalk.positions.forEach(p => { map[p.oz] = p.rows || []; });
       setLocalPositions(map);
+      initialSyncDone.current = true;
     }
   }, [kalkulationen]);
 
