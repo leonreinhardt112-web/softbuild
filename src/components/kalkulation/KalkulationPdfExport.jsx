@@ -70,7 +70,7 @@ export async function generateKalkulationPDF(project, kalkulation, options = {})
       doc.addPage();
       yPos = MARGIN_TOP + 10;
       addTableHeader(doc, MARGIN_LEFT, yPos, contentWidth, headerColor);
-      yPos += 6;
+      yPos += 10;
     }
 
     // Haupttitel
