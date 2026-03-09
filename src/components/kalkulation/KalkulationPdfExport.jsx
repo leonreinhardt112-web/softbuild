@@ -32,9 +32,19 @@ export async function generateKalkulationPDF(project, kalkulation, options = {})
       }
     }
     
-    // Lade Client-Stammdaten
+    // Lade Client-Stammdaten - erst by ID, dann by Name Fallback
     if (project.client_id) {
-      client = await base44.entities.Stammdatum.read(project.client_id);
+      try {
+        client = await base44.entities.Stammdatum.read(project.client_id);
+      } catch {
+        // Fallback: Suche nach Namen
+        const clients = await base44.entities.Stammdatum.filter({ typ: "auftraggeber", name: project.client }, undefined, 1);
+        client = clients?.length > 0 ? clients[0] : null;
+      }
+    } else if (project.client) {
+      // Fallback ohne client_id - suche by name
+      const clients = await base44.entities.Stammdatum.filter({ typ: "auftraggeber", name: project.client }, undefined, 1);
+      client = clients?.length > 0 ? clients[0] : null;
     }
   } catch (e) {
     console.error("Fehler beim Laden der Stammdaten:", e);
