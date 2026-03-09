@@ -540,7 +540,6 @@ export default function LVKalkulationView({ project }) {
         );
         })}
       </div>
-      </div>
     </div>
   );
 }
