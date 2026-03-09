@@ -39,13 +39,13 @@ function parseX83(xmlText) {
       const tag = node.tagName;
       if (tag === "BoQCtgy") {
         // Title node
-        const oz = getText(node, "CtgyNo", "OZ", "Pos") || node.getAttribute("RNoPart") || "";
+        const oz = getText(node, "OZ", "Pos", "CtgyNo") || node.getAttribute("RNoPart") || "";
         const shortText = getText(node, "LblTx ShortText", "LblTx", "ShortText", "KurzText", "Description") || "";
         if (oz || shortText) {
           positions.push({ oz, short_text: shortText, long_text: "", quantity: "", unit: "", type: "title" });
         }
       } else if (tag === "Item" || tag === "item") {
-        const oz = getText(node, "ItemNo", "OZ", "Pos") || node.getAttribute("RNoPart") || "";
+        const oz = getText(node, "OZ", "Pos", "ItemNo") || node.getAttribute("RNoPart") || "";
         const shortText = getText(node, "Description ShortText", "ShortText", "KurzText") || "";
         const longText = getText(node, "DetailTxt Text", "CompleteText DetailTxt Text", "LongText", "LangText") || "";
         const qty = getText(node, "Qty", "Menge") || "";
