@@ -185,13 +185,29 @@ export default function ProjectForm({ open, onOpenChange, onSave, initialData })
                     placeholder={plzLoading ? "Wird ermittelt..." : "z.B. Essen"} />
                 </div>
                 </div>
+                {duplicateClients.length > 0 && (
+                  <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
+                    <AlertTriangle className="w-3.5 h-3.5 text-amber-600 mt-0.5 shrink-0" />
+                    <div className="text-xs text-amber-800">
+                      <p className="font-semibold mb-0.5">Mögliche Duplikate gefunden:</p>
+                      {duplicateClients.map(ag => (
+                        <button key={ag.id} type="button"
+                          className="block underline hover:text-amber-900"
+                          onClick={() => { handleClientSelect(ag.id); setShowNewClient(false); }}>
+                          {ag.name} {ag.kundennummer ? `(${ag.kundennummer})` : ""}
+                        </button>
+                      ))}
+                      <p className="mt-1 text-amber-700">Bitte oben auswählen oder trotzdem neu anlegen.</p>
+                    </div>
+                  </div>
+                )}
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
                   <Info className="w-3 h-3" /> Kundennummer wird automatisch vergeben.
                 </p>
                 <div className="flex gap-2 justify-end">
                   <Button type="button" variant="outline" size="sm" onClick={() => setShowNewClient(false)}>Abbrechen</Button>
                   <Button type="button" size="sm"
-                    disabled={!newClientForm.name || !newClientForm.adresse || createClientMut.isPending}
+                    disabled={!newClientForm.name || createClientMut.isPending}
                     onClick={() => {
                         const adresse = [newClientForm.strasse, `${newClientForm.plz} ${newClientForm.ort}`.trim()].filter(Boolean).join(", ");
                         createClientMut.mutate({ ...newClientForm, adresse });
