@@ -9,7 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   FolderOpen, Plus, CheckCircle2, XCircle, Clock, ArrowRight,
-  AlertTriangle, TrendingUp, Receipt, HardHat, Euro, FileText
+  AlertTriangle, TrendingUp, Receipt, HardHat, Euro, FileText,
+  Calculator
 } from "lucide-react";
 import { format } from "date-fns";
 
