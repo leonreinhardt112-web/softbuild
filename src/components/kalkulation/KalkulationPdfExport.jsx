@@ -130,9 +130,9 @@ export async function generateKalkulationPDF(project, kalkulation, options = {})
       // Langtext (falls vorhanden und im textMode "both") – unter Position
       if (pos.long_text && textMode === "both") {
         doc.setFontSize(8);
-        doc.setTextColor(100, 100, 100);
+        doc.setTextColor(80, 80, 80);
         
-        // Entferne Kurztext vom Anfang und Ende des Langtexts
+        // Bereinige Langtext: Kurztext entfernen + Whitespace normalisieren
         let cleanedLongText = pos.long_text.trim();
         if (shortText && cleanedLongText.startsWith(shortText)) {
           cleanedLongText = cleanedLongText.substring(shortText.length).trim();
@@ -141,17 +141,44 @@ export async function generateKalkulationPDF(project, kalkulation, options = {})
           cleanedLongText = cleanedLongText.substring(0, cleanedLongText.length - shortText.length).trim();
         }
         
-        const longLines = doc.splitTextToSize(cleanedLongText, contentWidth - 10);
-        longLines.forEach((line, idx) => {
-          if (yPos > pageBottom - 10) {
-            doc.addPage();
-            yPos = MARGIN_TOP;
-            addTableHeader(doc, MARGIN_LEFT, yPos, contentWidth, headerColor);
-            yPos += 6;
+        // Zeilen bereinigen: Leerzeilen entfernen, Einrückungen normalisieren
+        const cleanedLines = cleanedLongText
+          .split("\n")
+          .map(l => l.trim())
+          .filter(l => l.length > 0);
+        
+        // Absätze zusammenführen (Zeilen die nicht mit Satzzeichen enden, gehören zum nächsten Satz)
+        const paragraphs = [];
+        let current = "";
+        cleanedLines.forEach(line => {
+          if (current) {
+            current += " " + line;
+          } else {
+            current = line;
           }
-          doc.text(line, MARGIN_LEFT + 2, yPos);
-          yPos += 3.5;
+          // Absatz-Ende: Zeile endet mit Punkt, Ausrufezeichen, Fragezeichen oder ist kurz
+          if (/[.!?]$/.test(line) || line.length < 30) {
+            paragraphs.push(current);
+            current = "";
+          }
         });
+        if (current) paragraphs.push(current);
+        
+        paragraphs.forEach(para => {
+          const wrappedLines = doc.splitTextToSize(para, contentWidth - 4);
+          wrappedLines.forEach(line => {
+            if (yPos > pageBottom - 10) {
+              doc.addPage();
+              yPos = MARGIN_TOP;
+              addTableHeader(doc, MARGIN_LEFT, yPos, contentWidth, headerColor);
+              yPos += 6;
+            }
+            doc.text(line, MARGIN_LEFT + 2, yPos);
+            yPos += 3.5;
+          });
+          yPos += 1; // kleiner Abstand zwischen Absätzen
+        });
+        
         doc.setTextColor(0, 0, 0);
         doc.setFontSize(9);
         yPos += 2;
