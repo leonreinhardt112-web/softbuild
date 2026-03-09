@@ -143,8 +143,8 @@ export default function Kalkulation() {
                     const proj = projects.find(p => p.id === k.project_id);
                     return (
                       <tr key={k.id} className="border-b border-border hover:bg-accent/30 transition-colors">
-                        <td className="px-4 py-3">
-                          <div className="font-medium text-foreground">{proj?.project_name || "–"}</div>
+                        <td className="px-4 py-3 cursor-pointer hover:text-primary" onClick={() => setDetailKalk(k)}>
+                          <div className="font-medium text-foreground hover:text-primary">{proj?.project_name || "–"}</div>
                           <div className="text-xs text-muted-foreground">{proj?.project_number || ""}</div>
                         </td>
                         <td className="px-4 py-3 text-muted-foreground">{k.version_name}</td>
