@@ -91,9 +91,9 @@ export async function generateKalkulationPDF(project, kalkulation) {
       doc.text((pos.oz || "").toString(), MARGIN_LEFT + 1, yPos + 1);
 
       // Kurztext (Spalte 2) – mit Platz für mehrzeilig
-      const shortLines = doc.splitTextToSize(pos.short_text || "", 50);
+      const shortLines = doc.splitTextToSize(pos.short_text || "", 45);
       const shortTextStartY = yPos + 1;
-      doc.text(shortLines[0] || "", MARGIN_LEFT + 22, shortTextStartY);
+      doc.text(shortLines[0] || "", MARGIN_LEFT + 27, shortTextStartY);
       
       // Menge/Einheit (Spalte 3, rechtsausgerichtet)
       const mengeText = `${menge.toLocaleString("de-DE", { minimumFractionDigits: 2 })} ${pos.einheit || ""}`;
