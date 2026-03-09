@@ -6,7 +6,8 @@ const MARGIN_LEFT = 20;
 const MARGIN_RIGHT = 20;
 const MARGIN_BOTTOM = 20;
 
-export async function generateKalkulationPDF(project, kalkulation) {
+export async function generateKalkulationPDF(project, kalkulation, options = {}) {
+  const { textMode = "short", vortext = "", schlusstext = "" } = options;
   const doc = new jsPDF({
     orientation: "portrait",
     unit: "mm",
