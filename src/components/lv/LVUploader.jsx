@@ -44,14 +44,22 @@ function parseX83(xmlText) {
   const walkStructure = (parentNode, parentOZPath = []) => {
     const children = parentNode.children || [];
     
+    // Count BoQCtgy siblings at this level for auto-numbering if RNoPart missing
+    let titleIndex = 0;
+    let itemIndex = 0;
+    
     for (let i = 0; i < children.length; i++) {
       const node = children[i];
       const tag = node.tagName;
 
       if (tag === "BoQCtgy") {
-        // Category/Title node — recursively process its children
-        const rno = node.getAttribute("RNoPart") || "";
-        const oz = rno ? [...parentOZPath, rno].join(".") : "";
+        titleIndex++;
+        // Category/Title node — use RNoPart or auto-number from position
+        let rno = node.getAttribute("RNoPart");
+        if (!rno) {
+          rno = String(titleIndex).padStart(2, "0");
+        }
+        const oz = [...parentOZPath, rno].join(".");
         const shortText = getText(node, "LblTx ShortText", "LblTx", "ShortText", "KurzText", "Description") || "";
         
         if (oz || shortText) {
@@ -67,12 +75,15 @@ function parseX83(xmlText) {
         }
 
         // Recurse into children with extended OZ path
-        const newPath = rno ? [...parentOZPath, rno] : parentOZPath;
-        walkStructure(node, newPath);
+        walkStructure(node, [...parentOZPath, rno]);
       } else if (tag === "Item" || tag === "item") {
-        // Position node — does not recurse, leaf node
-        const rno = node.getAttribute("RNoPart") || "";
-        const oz = rno ? [...parentOZPath, rno].join(".") : "";
+        itemIndex++;
+        // Position node — use RNoPart or auto-number from position
+        let rno = node.getAttribute("RNoPart");
+        if (!rno) {
+          rno = String(itemIndex).padStart(4, "0");
+        }
+        const oz = [...parentOZPath, rno].join(".");
         const shortText = getText(node, "Description ShortText", "ShortText", "KurzText") || "";
         const longText = getText(node, "DetailTxt Text", "CompleteText DetailTxt Text", "LongText", "LangText") || "";
         const qty = getText(node, "Qty", "Menge") || "";
@@ -90,13 +101,22 @@ function parseX83(xmlText) {
           });
         }
       } else if (tag === "DP") {
-        // Alternative DP structure
-        const rno = node.getAttribute("RNoPart") || "";
-        const oz = rno ? [...parentOZPath, rno].join(".") : "";
-        const shortText = getText(node, "Kurz", "KurzText", "Text") || "";
+        // Alternative DP structure — count both titles and items
+        let rno = node.getAttribute("RNoPart");
         const qty = getText(node, "Menge", "Qty") || "";
-        const unit = getText(node, "ME", "QU") || "";
         const isTitle = !qty || qty === "0";
+        
+        if (isTitle) {
+          titleIndex++;
+          if (!rno) rno = String(titleIndex).padStart(2, "0");
+        } else {
+          itemIndex++;
+          if (!rno) rno = String(itemIndex).padStart(4, "0");
+        }
+        
+        const oz = [...parentOZPath, rno].join(".");
+        const shortText = getText(node, "Kurz", "KurzText", "Text") || "";
+        const unit = getText(node, "ME", "QU") || "";
 
         if (oz || shortText) {
           positions.push({
@@ -111,8 +131,7 @@ function parseX83(xmlText) {
         }
 
         if (isTitle) {
-          const newPath = rno ? [...parentOZPath, rno] : parentOZPath;
-          walkStructure(node, newPath);
+          walkStructure(node, [...parentOZPath, rno]);
         }
       }
     }
