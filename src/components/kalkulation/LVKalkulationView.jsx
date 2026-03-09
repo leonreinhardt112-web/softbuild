@@ -52,7 +52,13 @@ export default function LVKalkulationView({ project }) {
     const kalk = kalkulationen[0];
     if (kalk?.positions && !initialSyncDone.current) {
       const lv = project?.lv_positions || [];
-      const items = lv.filter(p => p.type !== "title");
+      const items = lv.filter(p => {
+        if (p.type === "title") return false;
+        if (p.type === "position") return true;
+        const cleanOz = (p.oz || "").replace(/\s/g, "");
+        const hasNoQty = !p.quantity || p.quantity === "0" || p.quantity === "";
+        return !(hasNoQty && cleanOz.length <= 4);
+      });
       const map = {};
       items.forEach((item, idx) => {
         const saved = kalk.positions.find(p => p.oz === item.oz && p.short_text === item.short_text);
@@ -83,9 +89,14 @@ export default function LVKalkulationView({ project }) {
     );
   }
 
+  // Create unique key for each position (including group + index to handle duplicate OZ)
   const getPositionKey = (posIndex) => `${posIndex}`;
+  
   const getRows = (posIndex) => localPositions[getPositionKey(posIndex)] || [];
 
+  // Derive display short text from long_text if short_text is missing
+  // GAEB long_text often starts with "ShortText LongDescription..."
+  // Split before the first German sentence-starter word (article/preposition) after ≥5 chars
   const getDisplayText = (pos) => {
     if (pos.short_text) return pos.short_text;
     if (!pos.long_text) return "";
@@ -99,6 +110,7 @@ export default function LVKalkulationView({ project }) {
     const posKey = getPositionKey(posIndex);
     setLocalPositions(prev => ({ ...prev, [posKey]: rows }));
 
+    // Debounced save — use ref so stale closure is not an issue
     if (saveTimers.current[posKey]) clearTimeout(saveTimers.current[posKey]);
     setSavingOz(posKey);
     saveTimers.current[posKey] = setTimeout(async () => {
@@ -121,107 +133,79 @@ export default function LVKalkulationView({ project }) {
     }, 700);
   };
 
+  // Determine if a position is a title:
+  // - explicit type="title", OR
+  // - no quantity and hierarchy level < 2 (0 for Haupttitel, 1 for Untertitel)
+  const isTitle = (pos) => {
+    if (pos.type === "title") return true;
+    if (pos.type === "position") return false;
+    // Heuristic: a title has no quantity and hierarchy level < 2
+    const level = getHierarchyLevel(pos.oz);
+    const hasNoQty = !pos.quantity || pos.quantity === "0" || pos.quantity === "";
+    return hasNoQty && level < 2;
+  };
+
+  // Count dots in OZ to determine hierarchy level
   const getHierarchyLevel = (oz) => {
     const cleanOz = (oz || "").replace(/\s/g, "");
     const dotCount = (cleanOz.match(/\./g) || []).length;
-    return dotCount;
+    return dotCount; // 0 = haupttitel, 1 = untertitel, 2+ = position
   };
 
-  const isTitle = (pos) => pos.type === "title";
-
-  // Build grouped structure: Haupttitel -> Untertitel -> Positionen
-  // A Untertitel ist ein Titel mit Positionen unter sich
-  // Ein reiner Titel hat keine Positionen unter sich
+  // Group by haupttitel, untertitel, positions
   const grouped = [];
-  let i = 0;
-
-  while (i < lvPositions.length) {
-    const pos = lvPositions[i];
-    
-    if (isTitle(pos) && getHierarchyLevel(pos.oz) === 0) {
-      // Haupttitel
-      const hauptTitel = { title: pos, unterTitels: [] };
-      let j = i + 1;
-
-      // Sammle alles unter diesem Haupttitel
-      while (j < lvPositions.length && (!isTitle(lvPositions[j]) || getHierarchyLevel(lvPositions[j].oz) === 1)) {
-        if (isTitle(lvPositions[j]) && getHierarchyLevel(lvPositions[j].oz) === 1) {
-          // Untertitel
-          const unterTitelTitle = lvPositions[j];
-          const unterTitel = { title: unterTitelTitle, positions: [] };
-          let k = j + 1;
-          while (k < lvPositions.length && !isTitle(lvPositions[k])) {
-            unterTitel.positions.push(lvPositions[k]);
-            k++;
-          }
-          hauptTitel.unterTitels.push(unterTitel);
-          j = k;
-        } else if (!isTitle(lvPositions[j])) {
-          // Position direkt unter Haupttitel (kein Untertitel-Dach)
-          if (hauptTitel.unterTitels.length === 0 || hauptTitel.unterTitels[hauptTitel.unterTitels.length - 1].title !== null) {
-            hauptTitel.unterTitels.push({ title: null, positions: [] });
-          }
-          hauptTitel.unterTitels[hauptTitel.unterTitels.length - 1].positions.push(lvPositions[j]);
-          j++;
-        } else {
-          j++;
-        }
-      }
-
-      grouped.push(hauptTitel);
-      i = j;
-    } else if (!isTitle(pos)) {
-      // Orphan position ohne Haupttitel
-      if (grouped.length === 0) {
-        grouped.push({ title: null, unterTitels: [{ title: null, positions: [] }] });
-      }
-      grouped[grouped.length - 1].unterTitels[0].positions.push(pos);
-      i++;
-    } else {
-      i++;
-    }
-  }
-
-  // Konvertiere zu { pos, posIndex } und verwende echte OZ aus GAEB
-  const getDisplayOz = (oz) => {
-    if (!oz) return "00";
-    const clean = (oz || "").replace(/\s/g, "");
-    const parts = clean.split(".");
-    // Entferne führende Nullen nur von der letzten Komponente wenn sie 4-stellig ist
-    if (parts.length === 3 && parts[2].length === 4) {
-      parts[2] = String(parseInt(parts[2], 10));
-    }
-    return parts.join(".");
-  };
-
+  let currentHauptTitel = null;
+  let currentUnterTitel = null;
   let posItemIdx = 0;
-  grouped.forEach((ht) => {
-    // Haupttitel: nur erste Komponente (z.B. "01")
-    if (ht.title) {
-      const oz = (ht.title.oz || "").replace(/\s/g, "");
-      const parts = oz.split(".");
-      ht.hierarchy = parts[0] || "00";
-    }
+
+  lvPositions.forEach((pos) => {
+    const level = getHierarchyLevel(pos.oz);
     
-    ht.unterTitels.forEach((ut) => {
-      // Untertitel: erste 2 Komponenten (z.B. "01" oder ggf. "01.02")
-      if (ut.title) {
-        const oz = (ut.title.oz || "").replace(/\s/g, "");
-        const parts = oz.split(".");
-        ut.hierarchy = parts.slice(0, 2).join(".") || "00";
+    // Haupttitel (level 0)
+    if (isTitle(pos) && level === 0) {
+      currentHauptTitel = { 
+        title: pos, 
+        unterTitels: []
+      };
+      grouped.push(currentHauptTitel);
+      currentUnterTitel = null;
+    }
+    // Untertitel (level 1)
+    else if (isTitle(pos) && level === 1) {
+      if (!currentHauptTitel) {
+        currentHauptTitel = { title: null, unterTitels: [] };
+        grouped.push(currentHauptTitel);
       }
+      currentUnterTitel = { title: pos, positions: [] };
+      currentHauptTitel.unterTitels.push(currentUnterTitel);
+    }
+    // Position (level 2+)
+    else {
+      if (!currentUnterTitel) {
+        if (!currentHauptTitel) {
+          currentHauptTitel = { title: null, unterTitels: [] };
+          grouped.push(currentHauptTitel);
+        }
+        currentUnterTitel = { title: null, positions: [] };
+        currentHauptTitel.unterTitels.push(currentUnterTitel);
+      }
+      currentUnterTitel.positions.push({ pos, posIndex: posItemIdx });
+      posItemIdx++;
+    }
+  });
+
+  // Generate hierarchical numbering
+  grouped.forEach((ht, htIdx) => {
+    const htNum = String(htIdx + 1).padStart(2, "0");
+    ht.hierarchy = htNum;
+    
+    ht.unterTitels.forEach((ut, utIdx) => {
+      const utNum = String(utIdx + 1).padStart(2, "0");
+      ut.hierarchy = `${htNum}.${utNum}`;
       
-      ut.positions = ut.positions.map((pos) => {
-        // Positionen: nur die letzte Komponente (z.B. "0001" -> "1")
-        const oz = (pos.oz || "").replace(/\s/g, "");
-        const parts = oz.split(".");
-        const displayNum = parts.length > 0 ? String(parseInt(parts[parts.length - 1], 10)) : "0";
-        return {
-          pos,
-          posIndex: posItemIdx++,
-          hierarchy: displayNum,
-          fullOz: oz
-        };
+      ut.positions.forEach((item, posIdx) => {
+        const posNum = String(posIdx + 1).padStart(4, "0");
+        item.hierarchy = `${htNum}.${utNum}.${posNum}`;
       });
     });
   });
@@ -235,14 +219,11 @@ export default function LVKalkulationView({ project }) {
   }, 0);
 
   const getTitleSum = (positions) => {
-    return positions.reduce((sum, pos) => {
-      const idx = positionItems.findIndex(p => p === pos);
-      if (idx >= 0) {
-        const rows = getRows(idx);
-        const ep = rows.reduce((s, r) => s + Number(r.kosten_einheit || 0) + Number(r.zuschlag || 0), 0);
-        return sum + ep * (parseFloat(pos.quantity) || 0);
-      }
-      return sum;
+    const startIdx = positionItems.findIndex(p => positions.includes(p));
+    return positions.reduce((sum, pos, relIdx) => {
+      const rows = getRows(startIdx + relIdx);
+      const ep = rows.reduce((s, r) => s + Number(r.kosten_einheit || 0) + Number(r.zuschlag || 0), 0);
+      return sum + ep * (parseFloat(pos.quantity) || 0);
     }, 0);
   };
 
@@ -279,11 +260,9 @@ export default function LVKalkulationView({ project }) {
           <div key={htIdx} className="space-y-4">
             {/* Haupttitel */}
             {ht.title && (
-              <div className="flex items-center gap-2 px-1 py-3 border-b-2 border-foreground bg-muted/20">
-                <span className="w-4" />
-                <span className="w-3.5" />
-                <span className="text-sm font-mono font-bold text-foreground w-24">{ht.hierarchy}</span>
-                <span className="text-base font-bold text-foreground uppercase tracking-wide">{ht.title.short_text}</span>
+              <div className="flex items-center gap-2 px-1 py-2 border-b-2 border-foreground">
+                <span className="text-sm font-mono font-bold text-foreground w-16">{ht.hierarchy}</span>
+                <span className="text-base font-bold text-foreground">{ht.title.short_text}</span>
               </div>
             )}
 
@@ -295,11 +274,9 @@ export default function LVKalkulationView({ project }) {
                   <div key={utIdx} className="space-y-2">
                     {/* Untertitel */}
                     {ut.title && (
-                      <div className="flex items-center justify-between px-1 py-2 border-b border-border bg-muted/10">
+                      <div className="flex items-center justify-between px-1 py-1 border-b border-border">
                         <div className="flex items-center gap-2">
-                          <span className="w-4" />
-                          <span className="w-3.5" />
-                          <span className="text-xs font-mono font-bold text-foreground w-24">{ut.hierarchy}</span>
+                          <span className="text-xs font-mono font-bold text-foreground w-20">{ut.hierarchy}</span>
                           <span className="text-sm font-semibold text-foreground">{ut.title.short_text}</span>
                         </div>
                         {titleSum > 0 && (

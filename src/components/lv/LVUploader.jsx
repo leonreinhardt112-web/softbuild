@@ -66,35 +66,7 @@ function parseX83(xmlText) {
     });
   }
 
-  // Normalisiere OZs: Falls mehrere Titel die gleiche OZ haben, nummeriere sie hierarchisch
-  const normalized = [];
-  let lastMainOz = null;
-  let subTitleCounter = 0;
-
-  positions.forEach((pos) => {
-    if (pos.type === "title") {
-      const ozLevel = (pos.oz.match(/\./g) || []).length;
-      if (ozLevel === 0) {
-        // Haupttitel
-        lastMainOz = pos.oz;
-        subTitleCounter = 0;
-        normalized.push(pos);
-      } else if (ozLevel === 1) {
-        // Untertitel – falls gleiche OZ wie Haupttitel, nummeriere
-        if (pos.oz === lastMainOz) {
-          subTitleCounter++;
-          pos.oz = `${lastMainOz}.${String(subTitleCounter).padStart(2, "0")}`;
-        }
-        normalized.push(pos);
-      } else {
-        normalized.push(pos);
-      }
-    } else {
-      normalized.push(pos);
-    }
-  });
-
-  return normalized;
+  return positions;
 }
 
 function detectTradesFromPositions(positions) {
