@@ -16,10 +16,11 @@ const TRADE_KEYWORDS = {
 /**
  * Parses a GAEB X83/X81/X82 XML file and returns positions + detected trades.
  */
-function parseX83(xmlText) {
+function parseX83(xmlText, enableDebug = false) {
   const parser = new DOMParser();
   const doc = parser.parseFromString(xmlText, "application/xml");
   const positions = [];
+  const debugLog = [];
 
   const getText = (el, ...selectors) => {
     for (const sel of selectors) {
@@ -29,53 +30,123 @@ function parseX83(xmlText) {
     return "";
   };
 
-  // Build OZ from ancestor BoQCtgy RNoPart hierarchy + Item/BoQCtgy RNoPart
-  const buildOzFromHierarchy = (node) => {
+  // Get ancestor RNoPart path (excluding root document)
+  const getAncestorRnoParts = (node) => {
     const parts = [];
-    let current = node;
-    while (current) {
-      const rno = current.getAttribute?.("RNoPart");
+    let current = node.parentElement;
+    while (current && ["BoQCtgy", "Item", "item"].includes(current.tagName)) {
+      const rno = current.getAttribute("RNoPart");
       if (rno) parts.unshift(rno);
       current = current.parentElement;
-      if (!current || !["BoQCtgy", "Item", "item"].includes(current.tagName)) break;
     }
-    return parts.join(".");
+    return parts;
   };
 
+  // Build complete display OZ from ancestor path + current RNoPart
+  const buildDisplayOz = (rnopart, ancestorRnos) => {
+    const allParts = [...ancestorRnos, rnopart];
+    return allParts.join(".");
+  };
+
+  // Get hierarchy level (depth)
+  const getHierarchyLevel = (ancestorRnos) => ancestorRnos.length;
+
   // Recursively process BoQCtgy hierarchy
-  const processBoQCtgy = (ctgyNode) => {
-    const oz = buildOzFromHierarchy(ctgyNode);
-    const shortText = getText(ctgyNode, "LblTx ShortText", "LblTx", "ShortText", "KurzText", "Description") || "";
+  let sortIndex = 0;
+  const processBoQCtgy = (ctgyNode, parentPathRnos = []) => {
+    const currentRno = ctgyNode.getAttribute("RNoPart") || "";
+    const displayOz = buildDisplayOz(currentRno, parentPathRnos);
+    const hierarchyLevel = getHierarchyLevel(parentPathRnos);
     
-    if (oz || shortText) {
-      positions.push({ oz, short_text: shortText, long_text: "", quantity: "", unit: "", type: "title" });
+    const shortText = getText(ctgyNode, "LblTx ShortText", "LblTx", "ShortText", "KurzText", "Description") || "";
+    const longText = getText(ctgyNode, "LblTx", "Description") || "";
+
+    if (currentRno || shortText) {
+      const posObj = {
+        node_type: "category",
+        current_rnopart: currentRno,
+        parent_path_rnoparts: parentPathRnos,
+        display_oz: displayOz,
+        hierarchy_level: hierarchyLevel,
+        sort_index: sortIndex++,
+        short_text: shortText,
+        long_text: longText,
+        quantity: "",
+        unit: ""
+      };
+      positions.push(posObj);
+
+      if (enableDebug) {
+        debugLog.push({
+          node_type: "category",
+          current_rnopart: currentRno,
+          parent_rnopart_path: parentPathRnos.join(" > ") || "(root)",
+          computed_display_oz: displayOz,
+          hierarchy_level: hierarchyLevel,
+          short_text: shortText,
+          has_quantity: false,
+          has_unit: false
+        });
+      }
     }
 
     // Process child Items
     const childItems = Array.from(ctgyNode.children).filter((c) => c.tagName === "Item" || c.tagName === "item");
+    const newPath = currentRno ? [...parentPathRnos, currentRno] : parentPathRnos;
+    
     childItems.forEach((item) => {
-      const itemOz = buildOzFromHierarchy(item);
+      const itemRno = item.getAttribute("RNoPart") || "";
+      const itemDisplayOz = buildDisplayOz(itemRno, newPath);
+      const itemHierarchyLevel = getHierarchyLevel(newPath);
+      
       const itemShortText = getText(item, "Description ShortText", "ShortText", "KurzText") || "";
       const itemLongText = getText(item, "DetailTx Text", "CompleteText DetailTx Text", "LongText", "LangText") || "";
       const qty = getText(item, "Qty", "Menge") || "";
       const unit = getText(item, "QU", "QtyUnit", "Einheit") || "";
-      if (itemOz || itemShortText) {
-        positions.push({ oz: itemOz, short_text: itemShortText, long_text: itemLongText, quantity: qty, unit, type: "position" });
+
+      if (itemRno || itemShortText) {
+        const itemObj = {
+          node_type: "item",
+          current_rnopart: itemRno,
+          parent_path_rnoparts: newPath,
+          display_oz: itemDisplayOz,
+          hierarchy_level: itemHierarchyLevel,
+          sort_index: sortIndex++,
+          short_text: itemShortText,
+          long_text: itemLongText,
+          quantity: qty,
+          unit: unit
+        };
+        positions.push(itemObj);
+
+        if (enableDebug) {
+          debugLog.push({
+            node_type: "item",
+            current_rnopart: itemRno,
+            parent_rnopart_path: newPath.join(" > ") || "(root)",
+            computed_display_oz: itemDisplayOz,
+            hierarchy_level: itemHierarchyLevel,
+            short_text: itemShortText,
+            has_quantity: !!qty,
+            has_unit: !!unit
+          });
+        }
       }
     });
 
     // Process child BoQCtgy nodes
     const childCtgys = Array.from(ctgyNode.children).filter((c) => c.tagName === "BoQCtgy");
-    childCtgys.forEach((child) => processBoQCtgy(child));
+    const nextPath = currentRno ? [...parentPathRnos, currentRno] : parentPathRnos;
+    childCtgys.forEach((child) => processBoQCtgy(child, nextPath));
   };
 
   // Start from root-level BoQCtgy elements
   const rootCtgys = Array.from(doc.querySelectorAll("BoQCtgy")).filter(
     (node) => !node.parentElement || node.parentElement.tagName !== "BoQCtgy"
   );
-  rootCtgys.forEach((ctgy) => processBoQCtgy(ctgy));
+  rootCtgys.forEach((ctgy) => processBoQCtgy(ctgy, []));
 
-  // Fallback for DP format
+  // Fallback for DP format (non-GAEB)
   const dpNodes = doc.querySelectorAll("DP");
   if (dpNodes.length > 0) {
     dpNodes.forEach((node) => {
@@ -85,9 +156,25 @@ function parseX83(xmlText) {
       const unit = getText(node, "ME", "QU") || "";
       const isTitle = !qty || qty === "0";
       if (oz || shortText) {
-        positions.push({ oz, short_text: shortText, long_text: "", quantity: qty, unit, type: isTitle ? "title" : "position" });
+        positions.push({
+          node_type: isTitle ? "category" : "item",
+          current_rnopart: oz,
+          parent_path_rnoparts: [],
+          display_oz: oz,
+          hierarchy_level: 0,
+          sort_index: sortIndex++,
+          short_text: shortText,
+          long_text: "",
+          quantity: qty,
+          unit: unit
+        });
       }
     });
+  }
+
+  if (enableDebug) {
+    console.log("=== GAEB-X83 IMPORT DEBUG ===");
+    console.table(debugLog);
   }
 
   return positions;
