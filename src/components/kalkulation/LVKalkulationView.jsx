@@ -279,9 +279,11 @@ export default function LVKalkulationView({ project }) {
           <div key={htIdx} className="space-y-4">
             {/* Haupttitel */}
             {ht.title && (
-              <div className="flex items-center gap-2 px-1 py-2 border-b-2 border-foreground">
-                <span className="text-sm font-mono font-bold text-foreground w-16">{ht.hierarchy}</span>
-                <span className="text-base font-bold text-foreground">{ht.title.short_text}</span>
+              <div className="flex items-center gap-2 px-1 py-3 border-b-2 border-foreground bg-muted/20">
+                <span className="w-4" />
+                <span className="w-3.5" />
+                <span className="text-sm font-mono font-bold text-foreground w-24">{ht.hierarchy}</span>
+                <span className="text-base font-bold text-foreground uppercase tracking-wide">{ht.title.short_text}</span>
               </div>
             )}
 
