@@ -266,8 +266,11 @@ Gib eine strukturierte Liste der Widersprüche zurück.`,
           {!hasLV ? (
             <div>
               <div
-                className="border-2 border-dashed border-border rounded-lg p-5 text-center cursor-pointer hover:border-primary/40 hover:bg-accent/30 transition-all"
+                className={`border-2 border-dashed rounded-lg p-5 text-center cursor-pointer transition-all ${dragOverLV ? "border-primary bg-primary/5 scale-[1.01]" : "border-border hover:border-primary/40 hover:bg-accent/30"}`}
                 onClick={() => lvFileRef.current?.click()}
+                onDragOver={(e) => { e.preventDefault(); setDragOverLV(true); }}
+                onDragLeave={() => setDragOverLV(false)}
+                onDrop={handleLVDrop}
               >
                 {uploading ? <Loader2 className="w-5 h-5 text-primary mx-auto mb-1.5 animate-spin" /> : <Upload className="w-5 h-5 text-muted-foreground mx-auto mb-1.5" />}
                 <p className="text-sm font-medium">{uploading ? "Wird verarbeitet..." : "X83-Datei hochladen"}</p>
