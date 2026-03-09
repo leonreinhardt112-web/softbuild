@@ -337,53 +337,7 @@ export default function ProjectDetail() {
 
         {/* KALKULATION */}
         <TabsContent value="kalkulation" className="mt-6">
-          {kalkulationen.length === 0 ? (
-            <Card className="border-dashed">
-              <CardContent className="py-16 flex flex-col items-center text-center">
-                <Calculator className="w-12 h-12 text-muted-foreground/30 mb-4" />
-                <p className="text-sm font-medium text-muted-foreground">Noch keine Kalkulation für dieses Projekt</p>
-                <p className="text-xs text-muted-foreground/70 mt-1 mb-4">
-                  Lege eine neue Kalkulation über das Kalkulations-Modul an.
-                </p>
-                <Link to={createPageUrl("Kalkulation")}>
-                  <Button size="sm" className="gap-2">
-                    <Calculator className="w-3.5 h-3.5" />Zum Kalkulations-Modul
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <h2 className="text-base font-semibold">Kalkulationen für dieses Projekt</h2>
-                <Link to={createPageUrl("Kalkulation")}>
-                  <Button size="sm" variant="outline" className="gap-1.5">
-                    <Calculator className="w-3.5 h-3.5" />Vollständiger Editor
-                  </Button>
-                </Link>
-              </div>
-              {kalkulationen.map((k) => (
-                <Card key={k.id}>
-                  <CardContent className="p-4">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div>
-                        <p className="font-semibold text-sm">{k.version_name}</p>
-                        <div className="flex gap-4 mt-1 text-xs text-muted-foreground">
-                          <span>Herstellkosten: {k.kalkulierte_herstellkosten?.toLocaleString("de-DE", { style: "currency", currency: "EUR" }) || "–"}</span>
-                          <span>Angebotssumme: <span className="font-semibold text-foreground">{k.angebotsumme?.toLocaleString("de-DE", { style: "currency", currency: "EUR" }) || "–"}</span></span>
-                          <span>DB: {k.deckungsbeitrag_prozent ? `${k.deckungsbeitrag_prozent.toFixed(1)} %` : "–"}</span>
-                        </div>
-                        {k.notes && <p className="text-xs text-muted-foreground mt-1 italic">{k.notes}</p>}
-                      </div>
-                      <Badge variant="outline" className="shrink-0 text-xs">
-                        {k.status === "entwurf" ? "Entwurf" : k.status === "eingereicht" ? "Eingereicht" : k.status === "beauftragt" ? "Beauftragt" : "Abgelehnt"}
-                      </Badge>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
+          <LVKalkulationView project={project} />
         </TabsContent>
 
         {/* AFU-PRÜFUNG */}
