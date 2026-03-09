@@ -169,10 +169,10 @@ export default function Stammdaten() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
           <Input className="pl-9" placeholder="Suchen..." value={search} onChange={e => setSearch(e.target.value)} />
         </div>
-        <Button className="gap-2" onClick={() => setShowForm(true)}><Plus className="w-4 h-4" />{TYP_LABELS[activeTab]} anlegen</Button>
+        <Button className="gap-2" onClick={() => { setEditingItem(null); setShowForm(true); }}><Plus className="w-4 h-4" />{TYP_LABELS[activeTab]} anlegen</Button>
       </div>
 
-      {showForm && <StammdatenForm typ={activeTab} onSave={(d) => createMut.mutate(d)} onCancel={() => setShowForm(false)} />}
+      {showForm && <StammdatenForm typ={activeTab} item={editingItem} onSave={(d) => editingItem ? updateMut.mutate(d) : createMut.mutate(d)} onCancel={() => { setShowForm(false); setEditingItem(null); }} />}
 
       <Card>
         <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); setShowForm(false); }}>
