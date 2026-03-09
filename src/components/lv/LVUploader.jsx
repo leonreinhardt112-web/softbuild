@@ -119,9 +119,21 @@ export default function LVUploader({ project, onUpdate, onTradesDetected }) {
   };
 
   // ── Baubeschreibung Upload ─────────────────────────────────────────────────
+  const handleBauDrop = (e) => {
+    e.preventDefault();
+    setDragOverBau(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) handleBauFile(file);
+  };
+
   const handleBauSelect = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    await handleBauFile(file);
+    e.target.value = "";
+  };
+
+  const handleBauFile = async (file) => {
     setError(null);
     setUploadingBau(true);
     try {
