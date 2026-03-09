@@ -30,7 +30,28 @@ const TABS = [
 ];
 
 function StammdatenForm({ typ, onSave, onCancel }) {
-  const [form, setForm] = useState({ typ, name: "", kuerzel: "", kontakt_name: "", email: "", telefon: "", adresse: "", kategorie: "", kostensatz: "", einheit: "", qualifikation: "", aktiv: true });
+  const [form, setForm] = useState({ typ, name: "", kuerzel: "", kontakt_name: "", email: "", telefon: "", strasse: "", plz: "", ort: "", adresse: "", kategorie: "", kostensatz: "", einheit: "", qualifikation: "", aktiv: true });
+  const [plzLoading, setPlzLoading] = useState(false);
+
+  const handlePlzChange = async (plz) => {
+    setForm(f => ({ ...f, plz }));
+    if (plz.length === 5) {
+      setPlzLoading(true);
+      fetch(`https://openplzapi.org/de/Localities?postalCode=${plz}`)
+        .then(r => r.json())
+        .then(data => {
+          if (data && data.length > 0) setForm(f => ({ ...f, ort: data[0].name }));
+        })
+        .catch(() => {})
+        .finally(() => setPlzLoading(false));
+    }
+  };
+
+  const handleSave = () => {
+    const adresse = [form.strasse, `${form.plz} ${form.ort}`.trim()].filter(Boolean).join(", ");
+    onSave({ ...form, adresse });
+  };
+
   return (
     <Card className="border-primary/20">
       <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold">{TYP_LABELS[typ]} anlegen</CardTitle></CardHeader>
@@ -42,20 +63,36 @@ function StammdatenForm({ typ, onSave, onCancel }) {
             { key: "kontakt_name", label: "Ansprechpartner" },
             { key: "email", label: "E-Mail" },
             { key: "telefon", label: "Telefon" },
-            { key: "adresse", label: "Adresse" },
             { key: "kategorie", label: "Kategorie / Gewerk" },
             ...(["geraet", "material"].includes(typ) ? [{ key: "einheit", label: "Einheit" }, { key: "kostensatz", label: "Kostensatz (€)", type: "number" }] : []),
             { key: "qualifikation", label: "Bemerkung" },
-          ].map(({ key, label, required, type }) => (
+          ].map(({ key, label, type }) => (
             <div key={key}>
               <label className="text-xs font-medium text-muted-foreground mb-1.5 block">{label}</label>
               <Input type={type || "text"} value={form[key]} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} />
             </div>
           ))}
+          {/* Adressfelder */}
+          <div className="sm:col-span-3 grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="sm:col-span-3">
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Straße & Hausnummer</label>
+              <Input value={form.strasse} onChange={e => setForm(f => ({ ...f, strasse: e.target.value }))} placeholder="z.B. Musterstraße 12" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">PLZ</label>
+              <Input value={form.plz} onChange={e => handlePlzChange(e.target.value)} maxLength={5} placeholder="z.B. 45127" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Ort</label>
+              <div className="relative">
+                <Input value={form.ort} onChange={e => setForm(f => ({ ...f, ort: e.target.value }))} placeholder={plzLoading ? "Wird ermittelt..." : "z.B. Essen"} />
+              </div>
+            </div>
+          </div>
         </div>
         <div className="flex gap-2 justify-end">
           <Button variant="outline" onClick={onCancel}>Abbrechen</Button>
-          <Button onClick={() => onSave(form)} disabled={!form.name}>Speichern</Button>
+          <Button onClick={handleSave} disabled={!form.name}>Speichern</Button>
         </div>
       </CardContent>
     </Card>
