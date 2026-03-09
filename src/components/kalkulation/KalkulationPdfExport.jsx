@@ -324,30 +324,24 @@ function addHeaderSection(doc, company, project, client, kalkulation, topMargin,
     doc.text(client.name || "", leftMargin, addrY);
     addrY += 4;
     
-    // Versuche adresse Feld, sonst kombiniere briefkopf oder strasse/plz/ort
-    let addressLine = "";
+    // Versuche adresse Feld zuerst
     if (client.adresse) {
-      addressLine = client.adresse;
-    } else if (client.briefkopf_strasse) {
-      addressLine = client.briefkopf_strasse;
-    }
-    
-    if (addressLine) {
-      doc.text(addressLine, leftMargin, addrY);
-      addrY += 4;
-    }
-    
-    // PLZ und Stadt
-    let plzStadt = "";
-    if (client.briefkopf_plz || client.briefkopf_stadt) {
-      plzStadt = `${client.briefkopf_plz || ""} ${client.briefkopf_stadt || ""}`;
-    } else if (client.plz || client.ort) {
-      plzStadt = `${client.plz || ""} ${client.ort || ""}`;
-    }
-    
-    if (plzStadt.trim()) {
-      doc.text(plzStadt.trim(), leftMargin, addrY);
-      addrY += 4;
+      const addressLines = client.adresse.split(", ");
+      addressLines.forEach((line, idx) => {
+        doc.text(line, leftMargin, addrY);
+        addrY += 4;
+      });
+    } else if (client.briefkopf_strasse || client.briefkopf_plz || client.briefkopf_stadt) {
+      // Fallback zu briefkopf Feldern
+      if (client.briefkopf_strasse) {
+        doc.text(client.briefkopf_strasse, leftMargin, addrY);
+        addrY += 4;
+      }
+      const plzStadt = `${client.briefkopf_plz || ""} ${client.briefkopf_stadt || ""}`.trim();
+      if (plzStadt) {
+        doc.text(plzStadt, leftMargin, addrY);
+        addrY += 4;
+      }
     }
   } else {
     doc.text(project.client || "", leftMargin, addrY);
