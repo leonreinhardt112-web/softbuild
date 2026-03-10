@@ -31,6 +31,8 @@ function newRow() {
 }
 
 export default function PositionKalkTable({ rows = [], onRowsChange, zuschlaege = {} }) {
+  const [openUnitDropdown, setOpenUnitDropdown] = React.useState(null);
+
   const handleChange = (id, field, value) => {
     onRowsChange(rows.map(r => r.id === id ? { ...r, [field]: value } : r));
   };
