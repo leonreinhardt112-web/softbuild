@@ -75,9 +75,8 @@ const LVKalkulationView = forwardRef(function LVKalkulationView({ project }, ref
       const items = lv.filter((p) => {
         if (p.type === "title") return false;
         if (p.type === "position") return true;
-        const cleanOz = (p.oz || "").replace(/\s/g, "");
         const hasNoQty = !p.quantity || p.quantity === "0" || p.quantity === "";
-        return !(hasNoQty && cleanOz.length <= 4);
+        return !hasNoQty;
       });
       const map = {};
       items.forEach((item, idx) => {
