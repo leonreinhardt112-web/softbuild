@@ -224,11 +224,16 @@ export default function ProjectDetail() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
         <div className="flex items-start gap-3">
-          <Link to={createPageUrl("Projects")}>
-            <Button variant="ghost" size="icon" className="mt-0.5">
-              <ArrowLeft className="w-4 h-4" />
-            </Button>
-          </Link>
+          <Button variant="ghost" size="icon" className="mt-0.5" onClick={() => {
+            if (activeTab === "kalkulation" && kalkulationRef.current?.hasDirtyChanges()) {
+              setPendingNavigation(() => () => navigate(createPageUrl("Projects")));
+              setShowUnsavedDialog(true);
+            } else {
+              navigate(createPageUrl("Projects"));
+            }
+          }}>
+            <ArrowLeft className="w-4 h-4" />
+          </Button>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-xl font-bold text-foreground">{project.project_name}</h1>
