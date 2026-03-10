@@ -18,6 +18,7 @@ const LVKalkulationView = forwardRef(function LVKalkulationView({ project }, ref
   const projectId = project.id;
   const [expandedOz, setExpandedOz] = useState(null);
   const [localPositions, setLocalPositions] = useState({});
+  const [dirtyPositions, setDirtyPositions] = useState(new Set()); // unsaved keys
   const [savingOz, setSavingOz] = useState(null);
   const [expandedTitles, setExpandedTitles] = useState(new Set());
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
@@ -26,6 +27,12 @@ const LVKalkulationView = forwardRef(function LVKalkulationView({ project }, ref
     base44.entities.Stammdatum.filter({ typ: "unternehmen" }).then(setStammdaten).catch(() => {});
   }, []);
   const saveTimers = useRef({});
+
+  // Expose hasDirty for parent (tab-switch guard)
+  useImperativeHandle(ref, () => ({
+    hasDirtyChanges: () => dirtyPositions.size > 0,
+    saveAll: () => saveAllDirty(),
+  }));
 
   const { data: kalkulationen = [], isLoading } = useQuery({
     queryKey: ["kalkulation", projectId],
