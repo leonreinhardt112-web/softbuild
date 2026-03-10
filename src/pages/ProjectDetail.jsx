@@ -92,6 +92,7 @@ export default function ProjectDetail() {
   const handleSaveAndSwitch = async () => {
     await kalkulationRef.current?.saveAll();
     setShowUnsavedDialog(false);
+    setUnsavedState(prev => ({ ...prev, hasChanges: false }));
     if (pendingNavigation) {
       pendingNavigation();
       setPendingNavigation(null);
