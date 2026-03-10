@@ -77,6 +77,7 @@ Antworte NUR mit JSON, kein Text davor oder danach.`;
       kurztext_angebot: p.kurztext_angebot || '',
       ep: p.ep || 0,
       einheit: p.einheit || '',
+      kostentyp: p.kostentyp || 'Material',
       zugeordnete_oz: p.zugeordnete_oz || '',
       zugeordneter_kurztext: p.zugeordneter_kurztext || '',
       konfidenz: p.konfidenz || 0,
