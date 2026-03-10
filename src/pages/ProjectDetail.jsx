@@ -72,8 +72,13 @@ export default function ProjectDetail() {
 
   const handleDiscardAndSwitch = () => {
     setShowUnsavedDialog(false);
-    setActiveTab(pendingTab);
-    setPendingTab(null);
+    if (pendingNavigation) {
+      pendingNavigation();
+      setPendingNavigation(null);
+    } else if (pendingTab) {
+      setActiveTab(pendingTab);
+      setPendingTab(null);
+    }
   };
 
   const handleSaveAndSwitch = async () => {
