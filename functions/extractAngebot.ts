@@ -64,6 +64,7 @@ Antworte NUR mit JSON, kein Text davor oder danach.`;
     // Positionen mit IDs und Zuordnungsstatus anreichern
     const positionen = (result.positionen || []).map(p => ({
       id: crypto.randomUUID(),
+      pos_nr: p.pos_nr || '',
       kurztext_angebot: p.kurztext_angebot || '',
       ep: p.ep || 0,
       einheit: p.einheit || '',
