@@ -116,49 +116,62 @@ const LVKalkulationView = forwardRef(function LVKalkulationView({ project }, ref
 
 
 
+  const calcEp = (rows, zuschlaege) => rows.reduce((sum, r) => {
+    const kosten = Number(r.kosten_einheit || 0);
+    const keys = {
+      Lohn: { bgk: "lohn_bgk", agk: "lohn_agk", wg: "lohn_wg" },
+      Material: { bgk: "material_bgk", agk: "material_agk", wg: "material_wg" },
+      "Gerät": { bgk: "geraet_bgk", agk: "geraet_agk", wg: "geraet_wg" },
+      NU: { bgk: "nu_bgk", agk: "nu_agk", wg: "nu_wg" },
+      Sonstiges: { bgk: "sonstiges_bgk", agk: "sonstiges_agk", wg: "sonstiges_wg" }
+    };
+    const key = keys[r.kostentyp] || keys["Sonstiges"];
+    const bgk = Number(zuschlaege?.[key.bgk] ?? 10) / 100;
+    const agk = Number(zuschlaege?.[key.agk] ?? 5) / 100;
+    const wg  = Number(zuschlaege?.[key.wg]  ?? 3) / 100;
+    return sum + kosten * (1 + bgk + agk + wg);
+  }, 0);
+
+  const savePosition = async (posIndex, rows) => {
+    const currentKalk = kalkRef.current;
+    if (!currentKalk) return;
+    const pos = positionItems[posIndex];
+    if (!pos) return;
+    const posKey = getPositionKey(posIndex);
+    setSavingOz(posKey);
+    const ep = calcEp(rows, currentKalk.zuschlaege);
+    const menge = parseFloat(pos.quantity) || 0;
+    const existingPositions = currentKalk.positions || [];
+    const exists = existingPositions.find((p) => p.oz === pos.oz && p.short_text === pos.short_text);
+    const updatedPositions = exists
+      ? existingPositions.map((p) => p.oz === pos.oz && p.short_text === pos.short_text ? { ...p, rows, ep, gp: ep * menge } : p)
+      : [...existingPositions, { oz: pos.oz, short_text: pos.short_text || "", menge, einheit: pos.unit || "", ep, gp: ep * menge, rows }];
+    await updateKalkMutation.mutateAsync({ id: currentKalk.id, data: { positions: updatedPositions } });
+    setSavingOz(null);
+    setDirtyPositions((prev) => { const n = new Set(prev); n.delete(posKey); return n; });
+  };
+
+  const saveAllDirty = async () => {
+    const keys = Array.from(dirtyPositions);
+    for (const posKey of keys) {
+      const posIndex = Number(posKey);
+      const rows = localPositions[posKey] || [];
+      await savePosition(posIndex, rows);
+    }
+  };
+
   const handleRowsChange = (posIndex, rows) => {
     const posKey = getPositionKey(posIndex);
     setLocalPositions((prev) => ({ ...prev, [posKey]: rows }));
-
-    // Debounced save — use ref so stale closure is not an issue
+    setDirtyPositions((prev) => new Set([...prev, posKey]));
+    // Cancel any pending debounce timer (no auto-save anymore)
     if (saveTimers.current[posKey]) clearTimeout(saveTimers.current[posKey]);
-    setSavingOz(posKey);
-    saveTimers.current[posKey] = setTimeout(async () => {
-      const currentKalk = kalkRef.current;
-      if (!currentKalk) return;
-      const pos = positionItems[posIndex];
-      if (!pos) return;
+  };
 
-      // Calculate EP with markups (including BGK, AGK, WG)
-      const ep = rows.reduce((sum, r) => {
-        const kosten = Number(r.kosten_einheit || 0);
-        const keys = {
-          Lohn: { bgk: "lohn_bgk", agk: "lohn_agk", wg: "lohn_wg" },
-          Material: { bgk: "material_bgk", agk: "material_agk", wg: "material_wg" },
-          "Gerät": { bgk: "geraet_bgk", agk: "geraet_agk", wg: "geraet_wg" },
-          NU: { bgk: "nu_bgk", agk: "nu_agk", wg: "nu_wg" },
-          Sonstiges: { bgk: "sonstiges_bgk", agk: "sonstiges_agk", wg: "sonstiges_wg" }
-        };
-        const key = keys[r.kostentyp] || keys["Sonstiges"];
-        const bgk = Number(currentKalk.zuschlaege?.[key.bgk] ?? 10) / 100;
-        const agk = Number(currentKalk.zuschlaege?.[key.agk] ?? 5) / 100;
-        const wg = Number(currentKalk.zuschlaege?.[key.wg] ?? 3) / 100;
-        const zuschlag = kosten * (bgk + agk + wg);
-        return sum + kosten + zuschlag;
-      }, 0);
-
-      const menge = parseFloat(pos.quantity) || 0;
-      const existingPositions = currentKalk.positions || [];
-      const exists = existingPositions.find((p) => p.oz === pos.oz && p.short_text === pos.short_text);
-      let updatedPositions;
-      if (exists) {
-        updatedPositions = existingPositions.map((p) => p.oz === pos.oz && p.short_text === pos.short_text ? { ...p, rows, ep, gp: ep * menge } : p);
-      } else {
-        updatedPositions = [...existingPositions, { oz: pos.oz, short_text: pos.short_text || "", menge, einheit: pos.unit || "", ep, gp: ep * menge, rows }];
-      }
-      await updateKalkMutation.mutateAsync({ id: currentKalk.id, data: { positions: updatedPositions } });
-      setSavingOz(null);
-    }, 700);
+  const handleSavePosition = async (posIndex) => {
+    const posKey = getPositionKey(posIndex);
+    const rows = localPositions[posKey] || [];
+    await savePosition(posIndex, rows);
   };
 
   // Determine if a position is a title:
