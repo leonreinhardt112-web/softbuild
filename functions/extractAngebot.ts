@@ -1,0 +1,73 @@
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
+
+Deno.serve(async (req) => {
+  try {
+    const base44 = createClientFromRequest(req);
+    const user = await base44.auth.me();
+    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const { file_url, lv_positions } = await req.json();
+
+    if (!file_url || !lv_positions) {
+      return Response.json({ error: 'file_url und lv_positions sind erforderlich' }, { status: 400 });
+    }
+
+    // LV-Positionen als kompakten Text für den Prompt aufbereiten
+    const lvText = lv_positions
+      .map(p => `OZ: ${p.oz} | Kurztext: ${p.short_text}`)
+      .join('\n');
+
+    const prompt = `Du bist ein Experte für Bauwesen und Kalkulation. Analysiere das folgende Angebotsdokument (PDF oder Bild) und extrahiere alle Positionen mit ihrem Kurztext und Einzelpreis (EP).
+
+Dann versuche jede extrahierte Position einer der folgenden LV-Positionen zuzuordnen:
+${lvText}
+
+Regeln für die Zuordnung:
+- Ordne zu, wenn der Sinn/Inhalt übereinstimmt, auch wenn die Formulierung leicht abweicht
+- Verwende "konfidenz" zwischen 0 und 1 (1 = sehr sicher, 0 = unsicher)
+- Wenn keine passende LV-Position gefunden werden kann, lasse "zugeordnete_oz" leer und setze konfidenz auf 0
+- Extrahiere den Einzelpreis (EP) als Zahl ohne Währungssymbol
+
+Antworte NUR mit JSON, kein Text davor oder danach.`;
+
+    const result = await base44.integrations.Core.InvokeLLM({
+      prompt,
+      file_urls: [file_url],
+      response_json_schema: {
+        type: "object",
+        properties: {
+          positionen: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                kurztext_angebot: { type: "string" },
+                ep: { type: "number" },
+                einheit: { type: "string" },
+                zugeordnete_oz: { type: "string" },
+                zugeordneter_kurztext: { type: "string" },
+                konfidenz: { type: "number" }
+              }
+            }
+          }
+        }
+      }
+    });
+
+    // Positionen mit IDs und Zuordnungsstatus anreichern
+    const positionen = (result.positionen || []).map(p => ({
+      id: crypto.randomUUID(),
+      kurztext_angebot: p.kurztext_angebot || '',
+      ep: p.ep || 0,
+      einheit: p.einheit || '',
+      zugeordnete_oz: p.zugeordnete_oz || '',
+      zugeordneter_kurztext: p.zugeordneter_kurztext || '',
+      konfidenz: p.konfidenz || 0,
+      zuordnung_status: p.zugeordnete_oz && p.konfidenz >= 0.6 ? 'automatisch' : 'offen'
+    }));
+
+    return Response.json({ positionen });
+  } catch (error) {
+    return Response.json({ error: error.message }, { status: 500 });
+  }
+});
