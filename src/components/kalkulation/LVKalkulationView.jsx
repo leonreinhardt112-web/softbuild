@@ -9,6 +9,7 @@ import PositionKalkTable from "./PositionKalkTable";
 import { generateKalkulationPDF } from "./KalkulationPdfExport";
 import KalkulationPdfExportDialog from "./KalkulationPdfExportDialog";
 import AngebotImportDialog from "./AngebotImportDialog";
+import ZuschlaegeDialog from "./ZuschlaegeDialog";
 import { generateEFB221, generateEFB223 } from "./EFBExport";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 
