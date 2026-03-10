@@ -31,6 +31,21 @@ const NAV_ITEMS = [
 
 export default function Layout({ children, currentPageName }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const navigate = useNavigate();
+  const { unsavedState, setUnsavedState } = useUnsavedChanges();
+
+  const handleNavigation = (e, page) => {
+    if (unsavedState.hasChanges) {
+      e.preventDefault();
+      setUnsavedState(prev => ({
+        ...prev,
+        onConfirm: () => navigate(createPageUrl(page))
+      }));
+      return;
+    }
+    navigate(createPageUrl(page));
+    setSidebarOpen(false);
+  };
 
   return (
     <div className="min-h-screen bg-background flex">
