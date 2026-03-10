@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
 
 export default function KalkulationPdfExportDialog({ isOpen, onClose, onExport }) {
@@ -13,6 +14,7 @@ export default function KalkulationPdfExportDialog({ isOpen, onClose, onExport }
   const [vortext, setVortext] = useState("");
   const [schlusstext, setSchlusstext] = useState("");
   const [unserZeichen, setUnserZeichen] = useState("");
+  const [unserZeichenOptionen, setUnserZeichenOptionen] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -29,6 +31,7 @@ export default function KalkulationPdfExportDialog({ isOpen, onClose, onExport }
         const company = companies[0];
         setVortext(company.angebot_vortext || "");
         setSchlusstext(company.angebot_schlusstext || "");
+        setUnserZeichenOptionen(company.unser_zeichen_optionen || []);
       }
       setUnserZeichen("");
     } catch (err) {
@@ -79,12 +82,28 @@ export default function KalkulationPdfExportDialog({ isOpen, onClose, onExport }
             {/* Unser Zeichen */}
             <div className="space-y-2">
               <Label htmlFor="unserZeichen" className="text-sm font-semibold">Unser Zeichen</Label>
-              <Input
-                id="unserZeichen"
-                value={unserZeichen}
-                onChange={(e) => setUnserZeichen(e.target.value)}
-                placeholder="z.B. Initialen, Kürzel oder Projektreferenz"
-              />
+              {unserZeichenOptionen.length > 0 ? (
+                <Select value={unserZeichen} onValueChange={setUnserZeichen}>
+                  <SelectTrigger id="unserZeichen">
+                    <SelectValue placeholder="Unser Zeichen wählen..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {unserZeichenOptionen.map((zeichen, idx) => (
+                      <SelectItem key={idx} value={zeichen}>
+                        {zeichen}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input
+                  id="unserZeichen"
+                  value={unserZeichen}
+                  onChange={(e) => setUnserZeichen(e.target.value)}
+                  placeholder="Keine Optionen definiert. Bitte in Stammdaten konfigurieren."
+                  disabled
+                />
+              )}
             </div>
 
             {/* Vortext */}
