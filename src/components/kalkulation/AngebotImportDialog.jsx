@@ -196,6 +196,15 @@ export default function AngebotImportDialog({ project, kalkulation, onPositionen
                       <Badge className={imp.status === "angewendet" ? "bg-green-100 text-green-700 text-[10px]" : "bg-amber-100 text-amber-700 text-[10px]"}>
                         {imp.status === "angewendet" ? "Angewendet" : imp.status === "geprueft" ? "Geprüft" : "Extrahiert"}
                       </Badge>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                        onClick={() => handleDeleteImport(imp.id)}
+                        title="Löschen"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
                     </div>
                   </div>
                 ))}
