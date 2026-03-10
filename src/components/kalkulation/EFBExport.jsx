@@ -177,18 +177,27 @@ export async function generateEFB221(project, kalkulation, stammdaten) {
 
   // Sub-header
   const col3aW = numColW + labelColW + 10;
-  const col3bW = 40;
-  const col3cW = 25;
+  const col3bW = 38;
+  const col3cW = 23;
   const col3dW = cW - col3aW - col3bW - col3cW;
-  const s3hdrH = 14;
+  const s3hdrH = 26;
   fillRect(mL, y, cW, s3hdrH, [230, 230, 230]);
   drawRect(mL, y, col3aW, s3hdrH);
   drawRect(mL + col3aW, y, col3bW, s3hdrH);
   drawRect(mL + col3aW + col3bW, y, col3cW, s3hdrH);
   drawRect(mL + col3aW + col3bW + col3cW, y, col3dW, s3hdrH);
-  text("Einzelkosten der Teilleistungen =\nunmittelbare Herstellungskosten\n€", mL + col3aW + 2, y + 4, { size: 6.5 });
-  text("Gesamt-\nzuschläge\ngem. 2.4\n%", mL + col3aW + col3bW + 2, y + 4, { size: 6.5 });
-  text("Angebotssumme\n€", mL + col3aW + col3bW + col3cW + 2, y + 4, { size: 6.5 });
+  // Multi-line header texts rendered line by line
+  doc.setFontSize(6.5);
+  doc.setFont("helvetica", "normal");
+  [["Einzelkosten der", "Teilleistungen =", "unmittelbare Her-", "stellungskosten", "€"], ].forEach((lines) => {
+    lines.forEach((l, i) => doc.text(l, mL + col3aW + 2, y + 6 + i * 3.2));
+  });
+  [["Gesamt-", "zuschläge", "gem. 2.4", "%"]].forEach((lines) => {
+    lines.forEach((l, i) => doc.text(l, mL + col3aW + col3bW + 2, y + 8 + i * 3.2));
+  });
+  [["Angebotssumme", "€"]].forEach((lines) => {
+    lines.forEach((l, i) => doc.text(l, mL + col3aW + col3bW + col3cW + 2, y + 12 + i * 3.5));
+  });
   y += s3hdrH;
 
   // Aggregate values from kalkulation positions rows
