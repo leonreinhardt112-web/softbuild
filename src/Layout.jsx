@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { useUnsavedChanges } from "@/components/common/UnsavedChangesContext";
+import { useUnsavedChanges, UnsavedChangesProvider } from "@/components/common/UnsavedChangesContext";
 
 import {
   LayoutDashboard,
@@ -31,7 +31,7 @@ const NAV_ITEMS = [
   { name: "Stammdaten", page: "Stammdaten", icon: Database },
 ];
 
-export default function Layout({ children, currentPageName }) {
+function LayoutContent({ children, currentPageName }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
   const { unsavedState, setUnsavedState } = useUnsavedChanges();
@@ -153,3 +153,11 @@ export default function Layout({ children, currentPageName }) {
         </>
         );
         }
+
+export default function Layout({ children, currentPageName }) {
+  return (
+    <UnsavedChangesProvider>
+      <LayoutContent children={children} currentPageName={currentPageName} />
+    </UnsavedChangesProvider>
+  );
+}
