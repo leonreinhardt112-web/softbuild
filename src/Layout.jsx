@@ -52,7 +52,7 @@ export default function Layout({ children, currentPageName }) {
     <>
       {showDialog && (
         <AlertDialog open={showDialog} onOpenChange={(open) => {
-          if (!open) setLocalUnsavedState({ hasChanges: false });
+          if (!open) setUnsavedState(prev => ({ ...prev, hasChanges: false }));
         }}>
           <AlertDialogContent>
             <AlertDialogHeader>
@@ -62,16 +62,16 @@ export default function Layout({ children, currentPageName }) {
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel onClick={() => setLocalUnsavedState({ hasChanges: false })}>
+              <AlertDialogCancel onClick={() => setUnsavedState(prev => ({ ...prev, hasChanges: false }))}>
                 Abbrechen
               </AlertDialogCancel>
               <Button variant="outline" onClick={() => {
-                setLocalUnsavedState({ hasChanges: false });
-                navigate(createPageUrl(localUnsavedState.pendingPage));
+                setUnsavedState(prev => ({ ...prev, hasChanges: false }));
+                navigate(createPageUrl(unsavedState.pendingPage));
               }}>Verwerfen</Button>
               <AlertDialogAction onClick={() => {
-                setLocalUnsavedState({ hasChanges: false });
-                navigate(createPageUrl(localUnsavedState.pendingPage));
+                setUnsavedState(prev => ({ ...prev, hasChanges: false }));
+                navigate(createPageUrl(unsavedState.pendingPage));
               }}>Speichern & Fortfahren</AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
