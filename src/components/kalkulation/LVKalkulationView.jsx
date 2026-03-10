@@ -335,8 +335,18 @@ export default function LVKalkulationView({ project }) {
               <AngebotImportDialog
                 project={project}
                 kalkulation={kalk}
-                onPositionenApplied={() => {
-                  initialSyncDone.current = false;
+                onPositionenApplied={(updatedPositions) => {
+                  // Sofort localPositions aus den gespeicherten Positionen befüllen
+                  const lv = project?.lv_positions || [];
+                  const items = lv.filter((p) => !isTitle(p));
+                  const map = {};
+                  items.forEach((item, idx) => {
+                    const saved = updatedPositions.find((p) => p.oz === item.oz && p.short_text === item.short_text);
+                    if (saved) map[String(idx)] = saved.rows || [];
+                  });
+                  setLocalPositions(map);
+                  // Query neu laden für DB-Konsistenz
+                  initialSyncDone.current = true;
                   queryClient.invalidateQueries({ queryKey: ["kalkulation", projectId] });
                 }}
               />
