@@ -140,7 +140,7 @@ export default function AngebotImportDialog({ project, kalkulation, onPositionen
 
       await base44.entities.Kalkulation.update(kalkulation.id, { positions: updatedPositions });
 
-      if (onPositionenApplied) onPositionenApplied();
+      if (onPositionenApplied) onPositionenApplied(updatedPositions);
       setOpen(false);
       reset();
     } catch (e) {
