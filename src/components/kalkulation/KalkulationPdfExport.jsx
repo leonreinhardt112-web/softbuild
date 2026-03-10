@@ -126,7 +126,7 @@ export async function generateKalkulationPDF(project, kalkulation, options = {})
 
       // Kurztext (Spalte 2) – mit Umbruch bei Bedarf
       const shortText = (pos.short_text || "").split("\n")[0];
-      const shortTextWidth = 55; // Begrenzte Breite für Kurztext-Spalte
+      const shortTextWidth = 53; // Begrenzte Breite für Kurztext-Spalte
       const shortTextLines = doc.splitTextToSize(shortText, shortTextWidth);
       const shortTextHeight = shortTextLines.length * 3.5;
       
@@ -134,18 +134,21 @@ export async function generateKalkulationPDF(project, kalkulation, options = {})
         doc.text(line, MARGIN_LEFT + 27, yPos + 1 + (idx * 3.5));
       });
       
-      // Menge/Einheit (Spalte 3, rechtsausgerichtet)
-      const mengeText = `${menge.toLocaleString("de-DE", { minimumFractionDigits: 2 })} ${pos.einheit || ""}`;
-      doc.text(mengeText, MARGIN_LEFT + 105, yPos + 1, { align: "right" });
+      // Menge (Spalte 3, rechtsausgerichtet - nur Zahl)
+      const mengeNumText = menge.toLocaleString("de-DE", { minimumFractionDigits: 2 });
+      doc.text(mengeNumText, MARGIN_LEFT + 94, yPos + 1, { align: "right" });
+
+      // ME (Spalte 4, linksausgerichtet - nur Einheit)
+      doc.text(pos.einheit || "", MARGIN_LEFT + 97, yPos + 1);
       
-      // EP (Spalte 4, rechtsausgerichtet)
+      // EP (Spalte 5, rechtsausgerichtet)
       const epText = `${ep.toLocaleString("de-DE", { minimumFractionDigits: 2 })} €`;
-      doc.text(epText, MARGIN_LEFT + 123, yPos + 1, { align: "right" });
+      doc.text(epText, MARGIN_LEFT + 128, yPos + 1, { align: "right" });
       
-      // GP (Spalte 5, rechtsausgerichtet, bold)
+      // GP (Spalte 6, rechtsausgerichtet, bold)
       doc.setFont(undefined, "bold");
       const gpText = `${gp.toLocaleString("de-DE", { minimumFractionDigits: 2 })} €`;
-      doc.text(gpText, MARGIN_LEFT + 143, yPos + 1, { align: "right" });
+      doc.text(gpText, MARGIN_LEFT + 148, yPos + 1, { align: "right" });
       doc.setFont(undefined, "normal");
 
       yPos += Math.max(7, shortTextHeight) + 2; // +2 für Abstand zwischen Positionen
@@ -404,8 +407,8 @@ function addTableHeader(doc, x, y, width, colorRGB = [70, 130, 180]) {
   // Hintergrund-Rechteck
   doc.rect(x, y - 2, width, 6, "F");
   
-  const headers = ["Pos.", "Bezeichnung", "Menge", "EP", "GP"];
-  const colWidths = [15, 70, 22, 18, 20];
+  const headers = ["Pos.", "Bezeichnung", "Menge", "ME", "EP", "GP"];
+  const colWidths = [15, 65, 16, 13, 21, 20];
   
   let xPos = x;
   headers.forEach((h, i) => {
