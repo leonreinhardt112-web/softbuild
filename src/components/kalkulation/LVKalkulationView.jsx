@@ -357,14 +357,27 @@ export default function LVKalkulationView({ project }) {
                 }}
               />
             )}
-            <Button
-            onClick={() => setExportDialogOpen(true)}
-            className="gap-2 whitespace-nowrap"
-            size="sm">
-
-              <Download className="w-4 h-4" />
-              Als PDF exportieren
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button className="gap-2 whitespace-nowrap" size="sm">
+                  <Download className="w-4 h-4" />
+                  Exportieren
+                  <ChevronDownIcon className="w-3 h-3 ml-1" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setExportDialogOpen(true)}>
+                  Kalkulation (Angebot PDF)
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => generateEFB221(project, kalk, stammdaten)}>
+                  EFB 221 – Preisermittlung (Zuschlagskalkulation)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => generateEFB223(project, kalk)}>
+                  EFB 223 – Aufgliederung der Einheitspreise
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div> :
 
         <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
