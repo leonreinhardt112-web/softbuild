@@ -437,10 +437,10 @@ function addFooter(doc, company, pageWidth, pageHeight, marginLeft, marginRight,
   doc.setLineWidth(0.1);
   
   // Falzmarke 1 (105 mm)
-  doc.line(6, 105, 10, 105);
+  doc.line(0, 105, 3, 105);
   
   // Falzmarke 2 (210 mm = Seitenmitte)
-  doc.line(6, 210, 10, 210);
+  doc.line(0, 210, 3, 210);
   
   // Footer mit DIN 676-Abstand
   const footerBgY = pageHeight - 24;
