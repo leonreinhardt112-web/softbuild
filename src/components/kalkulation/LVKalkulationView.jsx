@@ -31,8 +31,8 @@ const LVKalkulationView = forwardRef(function LVKalkulationView({ project }, ref
   // Expose hasDirty for parent (tab-switch guard)
   useImperativeHandle(ref, () => ({
     hasDirtyChanges: () => dirtyPositions.size > 0,
-    saveAll: () => saveAllDirty(),
-  }));
+    saveAll: saveAllDirty,
+  }), [dirtyPositions, saveAllDirty]);
 
   const { data: kalkulationen = [], isLoading } = useQuery({
     queryKey: ["kalkulation", projectId],
@@ -70,23 +70,29 @@ const LVKalkulationView = forwardRef(function LVKalkulationView({ project }, ref
   const initialSyncDone = useRef(false);
   useEffect(() => {
     const kalk = kalkulationen[0];
-    if (kalk?.positions && !initialSyncDone.current) {
-      const lv = project?.lv_positions || [];
-      const items = lv.filter((p) => {
-        if (p.type === "title") return false;
-        if (p.type === "position") return true;
-        const hasNoQty = !p.quantity || p.quantity === "0" || p.quantity === "";
-        return !hasNoQty;
+    const lv = project?.lv_positions || [];
+    if (!kalk?.positions?.length || !lv.length || initialSyncDone.current) return;
+    const items = lv.filter((p) => {
+      if (p.type === "title") return false;
+      if (p.type === "position") return true;
+      const hasNoQty = !p.quantity || p.quantity === "0" || p.quantity === "";
+      return !hasNoQty;
+    });
+    const map = {};
+    // Index-based sync if lengths match (new save format), otherwise fall back to oz+short_text
+    if (kalk.positions.length === items.length) {
+      items.forEach((_, idx) => {
+        map[String(idx)] = kalk.positions[idx]?.rows || [];
       });
-      const map = {};
+    } else {
       items.forEach((item, idx) => {
         const saved = kalk.positions.find((p) => p.oz === item.oz && p.short_text === item.short_text);
         if (saved) map[String(idx)] = saved.rows || [];
       });
-      setLocalPositions(map);
-      initialSyncDone.current = true;
     }
-  }, [kalkulationen]);
+    setLocalPositions(map);
+    initialSyncDone.current = true;
+  }, [kalkulationen, project]);
 
   const kalk = kalkulationen[0];
   const kalkRef = useRef(kalk);
@@ -138,13 +144,14 @@ const LVKalkulationView = forwardRef(function LVKalkulationView({ project }, ref
     if (!pos) return;
     const posKey = getPositionKey(posIndex);
     setSavingOz(posKey);
-    const ep = calcEp(rows, currentKalk.zuschlaege);
-    const menge = parseFloat(pos.quantity) || 0;
-    const existingPositions = currentKalk.positions || [];
-    const exists = existingPositions.find((p) => p.oz === pos.oz && p.short_text === pos.short_text);
-    const updatedPositions = exists
-      ? existingPositions.map((p) => p.oz === pos.oz && p.short_text === pos.short_text ? { ...p, rows, ep, gp: ep * menge } : p)
-      : [...existingPositions, { oz: pos.oz, short_text: pos.short_text || "", menge, einheit: pos.unit || "", ep, gp: ep * menge, rows }];
+    // Rebuild full positions array from positionItems (index-based, no oz+short_text matching issues)
+    const currentLocal = { ...localPositions, [posKey]: rows };
+    const updatedPositions = positionItems.map((item, idx) => {
+      const itemRows = currentLocal[String(idx)] || [];
+      const ep = calcEp(itemRows, currentKalk.zuschlaege);
+      const menge = parseFloat(item.quantity) || 0;
+      return { oz: item.oz, short_text: item.short_text || "", menge, einheit: item.unit || "", ep, gp: ep * menge, rows: itemRows };
+    });
     await updateKalkMutation.mutateAsync({ id: currentKalk.id, data: { positions: updatedPositions } });
     setSavingOz(null);
     setDirtyPositions((prev) => { const n = new Set(prev); n.delete(posKey); return n; });
