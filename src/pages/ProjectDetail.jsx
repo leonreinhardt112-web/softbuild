@@ -36,13 +36,28 @@ export default function ProjectDetail() {
   const urlParams = new URLSearchParams(window.location.search);
   const projectId = urlParams.get("id");
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
   const [pendingTab, setPendingTab] = useState(null);
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState(null);
   const kalkulationRef = useRef(null);
   // AFU internal view
   const [afuView, setAfuView] = useState("setup"); // setup | review | openpoints | result
   const [activeTrade, setActiveTrade] = useState("allgemein");
+
+  // Guard navigation away from ProjectDetail
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (activeTab === "kalkulation" && kalkulationRef.current?.hasDirtyChanges()) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [activeTab]);
 
   const handleTabChange = (newTab) => {
     if (activeTab === "kalkulation" && newTab !== "kalkulation") {
