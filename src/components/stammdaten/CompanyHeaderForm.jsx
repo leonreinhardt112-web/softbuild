@@ -2,9 +2,12 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Palette, X, Plus } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Loader2 } from "lucide-react";
+import CompanyBriefkopfForm from "./CompanyBriefkopfForm";
+import AngebotSettings from "./AngebotSettings";
+import RechnungSettings from "./RechnungSettings";
+import PdfFooterSettings from "./PdfFooterSettings";
 
 export default function CompanyHeaderForm() {
   const [company, setCompany] = useState(null);
@@ -96,219 +99,37 @@ export default function CompanyHeaderForm() {
   return (
     <Card className="border-primary/20">
       <CardHeader className="pb-3">
-        <CardTitle className="text-base font-semibold">Unternehmens-Briefkopf</CardTitle>
+        <CardTitle className="text-base font-semibold">Unternehmens-Einstellungen</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Unternehmensname *</label>
-            <Input
-              value={form.name}
-              onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-              placeholder="z.B. Muster Bau GmbH"
-            />
-          </div>
-          <div>
-            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Logo-URL</label>
-            <Input
-              value={form.briefkopf_logo_url}
-              onChange={e => setForm(f => ({ ...f, briefkopf_logo_url: e.target.value }))}
-              placeholder="https://..."
-            />
-          </div>
+      <CardContent>
+        <Tabs defaultValue="briefkopf" className="w-full">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="briefkopf">Briefkopf</TabsTrigger>
+            <TabsTrigger value="angebot">Angebot</TabsTrigger>
+            <TabsTrigger value="rechnung">Rechnung</TabsTrigger>
+            <TabsTrigger value="footer">PDF-Footer</TabsTrigger>
+          </TabsList>
 
-          <div className="sm:col-span-2">
-            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Straße & Hausnummer</label>
-            <Input
-              value={form.briefkopf_strasse}
-              onChange={e => setForm(f => ({ ...f, briefkopf_strasse: e.target.value }))}
-              placeholder="z.B. Musterstraße 12"
-            />
-          </div>
+          <div className="mt-6">
+            <TabsContent value="briefkopf" className="space-y-4">
+              <CompanyBriefkopfForm form={form} setForm={setForm} />
+            </TabsContent>
 
-          <div>
-            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">PLZ</label>
-            <Input
-              value={form.briefkopf_plz}
-              onChange={e => setForm(f => ({ ...f, briefkopf_plz: e.target.value }))}
-              placeholder="z.B. 45127"
-              maxLength={5}
-            />
-          </div>
+            <TabsContent value="angebot" className="space-y-4">
+              <AngebotSettings form={form} setForm={setForm} newZeichen={newZeichen} setNewZeichen={setNewZeichen} />
+            </TabsContent>
 
-          <div>
-            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Stadt</label>
-            <Input
-              value={form.briefkopf_stadt}
-              onChange={e => setForm(f => ({ ...f, briefkopf_stadt: e.target.value }))}
-              placeholder="z.B. Essen"
-            />
-          </div>
+            <TabsContent value="rechnung" className="space-y-4">
+              <RechnungSettings form={form} setForm={setForm} />
+            </TabsContent>
 
-          <div>
-            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Telefon</label>
-            <Input
-              value={form.briefkopf_telefon}
-              onChange={e => setForm(f => ({ ...f, briefkopf_telefon: e.target.value }))}
-              placeholder="z.B. +49 (0) 201 123456"
-            />
+            <TabsContent value="footer" className="space-y-4">
+              <PdfFooterSettings form={form} setForm={setForm} />
+            </TabsContent>
           </div>
+        </Tabs>
 
-          <div>
-            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">E-Mail</label>
-            <Input
-              value={form.briefkopf_email}
-              onChange={e => setForm(f => ({ ...f, briefkopf_email: e.target.value }))}
-              placeholder="z.B. info@muster-bau.de"
-            />
-          </div>
-
-          <div>
-            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Website</label>
-            <Input
-              value={form.briefkopf_website}
-              onChange={e => setForm(f => ({ ...f, briefkopf_website: e.target.value }))}
-              placeholder="z.B. www.muster-bau.de"
-            />
-          </div>
-
-          <div className="sm:col-span-2">
-            <label className="text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-2">
-              <Palette className="w-3.5 h-3.5" />
-              Angebots-Header-Farbe
-            </label>
-            <div className="flex gap-3 items-center">
-              <Input
-                type="color"
-                value={form.angebot_header_farbe}
-                onChange={e => setForm(f => ({ ...f, angebot_header_farbe: e.target.value }))}
-                className="h-10 w-16 cursor-pointer"
-              />
-              <Input
-                type="text"
-                value={form.angebot_header_farbe}
-                onChange={e => setForm(f => ({ ...f, angebot_header_farbe: e.target.value }))}
-                placeholder="#4682B4"
-                className="flex-1 font-mono text-xs"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">PDF-Footer linke Spalte</label>
-            <Textarea
-              value={form.pdf_footer_links}
-              onChange={e => setForm(f => ({ ...f, pdf_footer_links: e.target.value }))}
-              placeholder="z.B.&#10;OWL Bau GmbH&#10;Herforder Straße 285&#10;D-33609 Bielefeld&#10;T: +49 (0)170 / 7762622"
-              rows={4}
-              className="text-xs"
-            />
-          </div>
-
-          <div>
-            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">PDF-Footer mittlere Spalte</label>
-            <Textarea
-              value={form.pdf_footer_mitte}
-              onChange={e => setForm(f => ({ ...f, pdf_footer_mitte: e.target.value }))}
-              placeholder="z.B.&#10;Geschäftsführer: Max Mustermann&#10;Bielefeld, HRB 12345&#10;Steuer-Nr. 123/456/789"
-              rows={4}
-              className="text-xs"
-            />
-          </div>
-
-          <div>
-            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">PDF-Footer rechte Spalte</label>
-            <Textarea
-              value={form.pdf_footer_rechts}
-              onChange={e => setForm(f => ({ ...f, pdf_footer_rechts: e.target.value }))}
-              placeholder="z.B.&#10;Bank: Musterbank eG&#10;IBAN: DE61 1234 5678 9012 3456 78&#10;BIC: MUSTDE33"
-              rows={4}
-              className="text-xs"
-            />
-          </div>
-
-          <div className="sm:col-span-2">
-            <label className="text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-2">
-              <Palette className="w-3.5 h-3.5" />
-              PDF-Footer Hintergrundfarbe
-            </label>
-            <div className="flex gap-3 items-center">
-              <Input
-                type="color"
-                value={form.pdf_footer_farbe}
-                onChange={e => setForm(f => ({ ...f, pdf_footer_farbe: e.target.value }))}
-                className="h-10 w-16 cursor-pointer"
-              />
-              <Input
-                type="text"
-                value={form.pdf_footer_farbe}
-                onChange={e => setForm(f => ({ ...f, pdf_footer_farbe: e.target.value }))}
-                placeholder="#666666"
-                className="flex-1 font-mono text-xs"
-              />
-            </div>
-          </div>
-
-          <div className="sm:col-span-2 space-y-2">
-            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">„Unser Zeichen" Dropdown-Optionen</label>
-            <div className="space-y-2">
-              {form.unser_zeichen_optionen && form.unser_zeichen_optionen.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {form.unser_zeichen_optionen.map((zeichen, idx) => (
-                    <div key={idx} className="flex items-center gap-1.5 bg-secondary px-2.5 py-1.5 rounded text-xs">
-                      <span className="font-medium">{zeichen}</span>
-                      <button
-                        type="button"
-                        onClick={() => setForm(f => ({
-                          ...f,
-                          unser_zeichen_optionen: f.unser_zeichen_optionen.filter((_, i) => i !== idx)
-                        }))}
-                        className="hover:text-destructive"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <div className="flex gap-2">
-                <Input
-                  value={newZeichen}
-                  onChange={e => setNewZeichen(e.target.value)}
-                  placeholder="z.B. JM, AB, Ref-123"
-                  onKeyDown={e => {
-                    if (e.key === "Enter" && newZeichen.trim()) {
-                      e.preventDefault();
-                      setForm(f => ({
-                        ...f,
-                        unser_zeichen_optionen: [...(f.unser_zeichen_optionen || []), newZeichen.trim()]
-                      }));
-                      setNewZeichen("");
-                    }
-                  }}
-                />
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    if (newZeichen.trim()) {
-                      setForm(f => ({
-                        ...f,
-                        unser_zeichen_optionen: [...(f.unser_zeichen_optionen || []), newZeichen.trim()]
-                      }));
-                      setNewZeichen("");
-                    }
-                  }}
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                </Button>
-              </div>
-            </div>
-          </div>
-          </div>
-
-          <div className="flex gap-2 justify-end">
+        <div className="flex gap-2 justify-end mt-6">
           <Button onClick={handleSave} disabled={!form.name || saving}>
             {saving ? (
               <>
