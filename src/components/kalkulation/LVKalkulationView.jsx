@@ -159,14 +159,15 @@ const LVKalkulationView = forwardRef(function LVKalkulationView({ project }, ref
     setDirtyPositions((prev) => { const n = new Set(prev); n.delete(posKey); return n; });
   };
 
-  const saveAllDirty = useCallback(async () => {
+  const saveAllDirty = async () => {
     const keys = Array.from(dirtyPositions);
     for (const posKey of keys) {
       const posIndex = Number(posKey);
       const rows = localPositions[posKey] || [];
       await savePosition(posIndex, rows);
     }
-  }, [dirtyPositions, localPositions]);
+  };
+  saveAllDirtyRef.current = saveAllDirty;
 
   const handleRowsChange = (posIndex, rows) => {
     const posKey = getPositionKey(posIndex);
