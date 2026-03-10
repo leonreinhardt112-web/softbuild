@@ -567,9 +567,9 @@ const LVKalkulationView = forwardRef(function LVKalkulationView({ project }, ref
                                 })()}
                             </span>
                             {savingOz === posKey && <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground shrink-0" />}
-                            {dirtyPositions.has(posKey) && savingOz !== posKey && (
-                              <span className="text-[10px] text-amber-500 font-medium shrink-0">ungespeichert</span>
-                            )}
+                            <span className={`text-[10px] font-medium shrink-0 w-20 ${dirtyPositions.has(posKey) && savingOz !== posKey ? "text-amber-500" : "invisible"}`}>
+                              ungespeichert
+                            </span>
                           </div>
 
                           {isExpanded &&
