@@ -34,19 +34,19 @@ const NAV_ITEMS = [
 export default function Layout({ children, currentPageName }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
-  const [localUnsavedState, setLocalUnsavedState] = useState({ hasChanges: false });
+  const { unsavedState, setUnsavedState } = useUnsavedChanges();
 
   const handleNavigation = (e, page) => {
-    if (localUnsavedState.hasChanges) {
+    if (unsavedState?.hasChanges) {
       e.preventDefault();
-      setLocalUnsavedState(prev => ({ ...prev, pendingPage: page }));
+      setUnsavedState(prev => ({ ...prev, pendingPage: page }));
       return;
     }
     navigate(createPageUrl(page));
     setSidebarOpen(false);
   };
 
-  const showDialog = localUnsavedState.hasChanges;
+  const showDialog = unsavedState?.hasChanges;
 
   return (
     <>
