@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Palette } from "lucide-react";
+import { Loader2, Palette, X, Plus } from "lucide-react";
 
 export default function CompanyHeaderForm() {
   const [company, setCompany] = useState(null);
@@ -24,7 +24,9 @@ export default function CompanyHeaderForm() {
     pdf_footer_mitte: "",
     pdf_footer_rechts: "",
     pdf_footer_farbe: "#666666",
+    unser_zeichen_optionen: [],
   });
+  const [newZeichen, setNewZeichen] = useState("");
 
   useEffect(() => {
     loadCompany();
@@ -49,6 +51,7 @@ export default function CompanyHeaderForm() {
           pdf_footer_mitte: companies[0].pdf_footer_mitte || "",
           pdf_footer_rechts: companies[0].pdf_footer_rechts || "",
           pdf_footer_farbe: companies[0].pdf_footer_farbe || "#666666",
+          unser_zeichen_optionen: companies[0].unser_zeichen_optionen || [],
         });
       }
     } catch (e) {
@@ -245,9 +248,67 @@ export default function CompanyHeaderForm() {
               />
             </div>
           </div>
+
+          <div className="sm:col-span-2 space-y-2">
+            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">„Unser Zeichen" Dropdown-Optionen</label>
+            <div className="space-y-2">
+              {form.unser_zeichen_optionen && form.unser_zeichen_optionen.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {form.unser_zeichen_optionen.map((zeichen, idx) => (
+                    <div key={idx} className="flex items-center gap-1.5 bg-secondary px-2.5 py-1.5 rounded text-xs">
+                      <span className="font-medium">{zeichen}</span>
+                      <button
+                        type="button"
+                        onClick={() => setForm(f => ({
+                          ...f,
+                          unser_zeichen_optionen: f.unser_zeichen_optionen.filter((_, i) => i !== idx)
+                        }))}
+                        className="hover:text-destructive"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="flex gap-2">
+                <Input
+                  value={newZeichen}
+                  onChange={e => setNewZeichen(e.target.value)}
+                  placeholder="z.B. JM, AB, Ref-123"
+                  onKeyDown={e => {
+                    if (e.key === "Enter" && newZeichen.trim()) {
+                      e.preventDefault();
+                      setForm(f => ({
+                        ...f,
+                        unser_zeichen_optionen: [...(f.unser_zeichen_optionen || []), newZeichen.trim()]
+                      }));
+                      setNewZeichen("");
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    if (newZeichen.trim()) {
+                      setForm(f => ({
+                        ...f,
+                        unser_zeichen_optionen: [...(f.unser_zeichen_optionen || []), newZeichen.trim()]
+                      }));
+                      setNewZeichen("");
+                    }
+                  }}
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                </Button>
+              </div>
+            </div>
+          </div>
           </div>
 
-        <div className="flex gap-2 justify-end">
+          <div className="flex gap-2 justify-end">
           <Button onClick={handleSave} disabled={!form.name || saving}>
             {saving ? (
               <>
