@@ -4,11 +4,13 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, ChevronDown, ChevronRight, Calculator, CheckCircle2, Download } from "lucide-react";
+import { Loader2, ChevronDown, ChevronRight, Calculator, CheckCircle2, Download, ChevronDown as ChevronDownIcon } from "lucide-react";
 import PositionKalkTable from "./PositionKalkTable";
 import { generateKalkulationPDF } from "./KalkulationPdfExport";
 import KalkulationPdfExportDialog from "./KalkulationPdfExportDialog";
 import AngebotImportDialog from "./AngebotImportDialog";
+import { generateEFB221, generateEFB223 } from "./EFBExport";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 
 export default function LVKalkulationView({ project }) {
   const queryClient = useQueryClient();
