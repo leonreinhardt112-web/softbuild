@@ -67,64 +67,62 @@ export default function ZuschlaegeDialog({ zuschlaege, onSave }) {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-xs border-collapse">
               <thead>
-                <tr className="border-b border-border">
-                  <th className="text-left text-xs font-medium text-muted-foreground py-2 pr-4">Kostengruppe</th>
-                  <th className="text-center text-xs font-medium text-muted-foreground py-2 px-3">BGK (%)</th>
-                  <th className="text-center text-xs font-medium text-muted-foreground py-2 px-3">AGK (%)</th>
-                  <th className="text-center text-xs font-medium text-muted-foreground py-2 px-3">W&G (%)</th>
-                  <th className="text-center text-xs font-medium text-muted-foreground py-2 px-3">Gesamt (%)</th>
+                <tr className="bg-muted/50">
+                  <th className="text-left font-medium text-muted-foreground py-2 px-2 border border-border w-6">#</th>
+                  <th className="text-left font-medium text-muted-foreground py-2 px-2 border border-border">Zuschlagsart</th>
+                  {KOSTENARTEN.map(k => (
+                    <th key={k.key} className="text-center font-medium text-muted-foreground py-2 px-1 border border-border text-[11px]">{k.label}</th>
+                  ))}
+                  <th className="text-center font-medium text-muted-foreground py-2 px-1 border border-border">Gesamt %</th>
                 </tr>
               </thead>
               <tbody>
-                {GRUPPEN.map(({ key, label, color }) => {
-                  const bgk = values[`${key}_bgk`] ?? 0;
-                  const agk = values[`${key}_agk`] ?? 0;
-                  const wg = values[`${key}_wg`] ?? 0;
-                  const gesamt = calcGesamtZuschlag(bgk, agk, wg);
-                  return (
-                    <tr key={key} className="border-b border-border/50">
-                      <td className="py-3 pr-4">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${color}`}>{label}</span>
-                      </td>
-                      {[`${key}_bgk`, `${key}_agk`, `${key}_wg`].map(k => (
-                        <td key={k} className="py-2 px-3">
+                {ZUSCHLAGZEILEN.map(({ suffix, label, nr }) => (
+                  <tr key={suffix} className="border-b border-border/50">
+                    <td className="py-2 px-2 border border-border font-medium text-muted-foreground">{nr}</td>
+                    <td className="py-2 px-2 border border-border font-medium">{label}</td>
+                    {KOSTENARTEN.map(k => {
+                      const field = `${k.key}_${suffix}`;
+                      return (
+                        <td key={k.key} className="py-1.5 px-1 border border-border">
                           <div className="relative">
                             <Input
                               type="number"
                               min="0"
                               max="100"
                               step="0.5"
-                              value={values[k] ?? 0}
-                              onChange={e => set(k, e.target.value)}
-                              className="h-8 text-center pr-7 text-sm w-24"
+                              value={values[field] ?? 0}
+                              onChange={e => set(field, e.target.value)}
+                              className="h-7 text-center pr-6 text-xs w-full"
                             />
-                            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
+                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">%</span>
                           </div>
                         </td>
-                      ))}
-                      <td className="py-2 px-3 text-center">
-                        <span className="font-semibold text-primary">+{gesamt}%</span>
+                      );
+                    })}
+                    <td className="py-2 px-2 border border-border text-center font-semibold text-primary">
+                      +{KOSTENARTEN.map(k => Number(values[`${k.key}_${suffix}`]) || 0).reduce((a, b) => a + b, 0).toFixed(1)}%
+                    </td>
+                  </tr>
+                ))}
+                {/* Gesamtzeile */}
+                <tr className="bg-muted/40 font-semibold">
+                  <td className="py-2 px-2 border border-border text-muted-foreground">2.4</td>
+                  <td className="py-2 px-2 border border-border">Gesamtzuschläge</td>
+                  {KOSTENARTEN.map(k => {
+                    const gesamt = ZUSCHLAGZEILEN.map(z => Number(values[`${k.key}_${z.suffix}`]) || 0).reduce((a, b) => a + b, 0);
+                    return (
+                      <td key={k.key} className="py-2 px-2 border border-border text-center text-primary">
+                        +{gesamt.toFixed(1)}%
                       </td>
-                    </tr>
-                  );
-                })}
+                    );
+                  })}
+                  <td className="py-2 px-2 border border-border" />
+                </tr>
               </tbody>
             </table>
-          </div>
-
-          {/* Zusammenfassung */}
-          <div className="bg-muted/30 rounded-lg p-3 text-xs space-y-1">
-            <p className="font-medium text-foreground">Vorschau Gesamtzuschläge</p>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
-              {GRUPPEN.map(({ key, label }) => (
-                <div key={key} className="flex justify-between gap-2">
-                  <span className="text-muted-foreground">{label}:</span>
-                  <span className="font-medium">+{calcGesamtZuschlag(values[`${key}_bgk`] ?? 0, values[`${key}_agk`] ?? 0, values[`${key}_wg`] ?? 0)}%</span>
-                </div>
-              ))}
-            </div>
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
