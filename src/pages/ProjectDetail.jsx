@@ -272,7 +272,7 @@ export default function ProjectDetail() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => { setShowUnsavedDialog(false); setPendingTab(null); }}>
+            <AlertDialogCancel onClick={() => { setShowUnsavedDialog(false); setPendingTab(null); setPendingNavigation(null); }}>
               Abbrechen
             </AlertDialogCancel>
             <Button variant="outline" onClick={handleDiscardAndSwitch}>Verwerfen</Button>
