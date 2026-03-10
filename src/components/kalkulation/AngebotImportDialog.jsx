@@ -139,7 +139,6 @@ export default function AngebotImportDialog({ project, kalkulation, onPositionen
       }
 
       await base44.entities.Kalkulation.update(kalkulation.id, { positions: updatedPositions });
-      qc.invalidateQueries({ queryKey: ["kalkulation", project.id] });
 
       if (onPositionenApplied) onPositionenApplied();
       setOpen(false);
