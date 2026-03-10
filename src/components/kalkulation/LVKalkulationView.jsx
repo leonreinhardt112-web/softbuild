@@ -612,4 +612,6 @@ const LVKalkulationView = forwardRef(function LVKalkulationView({ project }, ref
       </div>
     </div>);
 
-}
+});
+
+export default LVKalkulationView;
