@@ -8,6 +8,7 @@ import { Loader2, ChevronDown, ChevronRight, Calculator, CheckCircle2, Download 
 import PositionKalkTable from "./PositionKalkTable";
 import { generateKalkulationPDF } from "./KalkulationPdfExport";
 import KalkulationPdfExportDialog from "./KalkulationPdfExportDialog";
+import AngebotImportDialog from "./AngebotImportDialog";
 
 export default function LVKalkulationView({ project }) {
   const queryClient = useQueryClient();
