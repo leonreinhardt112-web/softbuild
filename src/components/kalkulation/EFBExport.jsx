@@ -306,11 +306,54 @@ export async function generateEFB221(project, kalkulation, stammdaten) {
 
   let angebotssumme = 0;
   sec3Rows.forEach((row) => {
-    const rh = row.nr === "3.1" ? 18 : 14;
     const ekX = mL + s3numW + s3labelW;
     const zX  = ekX + s3ekW;
     const asX = zX + s3zW;
 
+    if (row.nr === "3.1") {
+      // ── Zeile A: Label + Subtext + Felder ──────────────────────────────
+      const rhA = 14;
+      doc.rect(mL, y, s3numW, rhA);
+      doc.rect(mL + s3numW, y, s3labelW, rhA);
+      doc.rect(ekX, y, s3ekW, rhA);
+      doc.rect(zX, y, s3zW, rhA);
+      doc.rect(asX, y, s3asW, rhA);
+      text("3.1", mL + 2, y + 5, { bold: true, size: 9 });
+      text("Eigene Lohnkosten", mL + s3numW + 2, y + 5, { bold: true, size: 9 });
+      text("Verrechnungslohn (1.6)  \u00d7  Gesamtstunden", mL + s3numW + 2, y + 10, { size: 7.5 });
+      // Kreuzschraffur
+      doc.setLineWidth(0.25);
+      doc.line(asX, y, asX + s3asW, y + rhA);
+      doc.line(asX, y + rhA, asX + s3asW, y);
+      doc.setLineWidth(0.3);
+      // Werte
+      const ek31 = sumByType["Lohn"] || 0;
+      const pct31 = typeZuschlaege["Lohn"] || 0;
+      if (ek31 > 0) {
+        text(fmt(ek31), ekX + s3ekW - 2, y + 8, { size: 8, align: "right" });
+        text(fmtPct(pct31), zX + s3zW - 2, y + 8, { size: 8, align: "right" });
+      }
+      y += rhA;
+
+      // ── Zeile B: VL | × | Gesamtstunden ───────────────────────────────
+      const rhB = 10;
+      doc.rect(mL, y, s3numW, rhB);
+      doc.rect(mL + s3numW, y, s3labelW, rhB);
+      doc.rect(ekX, y, s3ekW, rhB);
+      doc.rect(zX, y, s3zW, rhB);
+      doc.rect(asX, y, s3asW, rhB);
+      // "x" zentriert in Label-Spalte
+      text("x", mL + s3numW + s3labelW / 2, y + 6.5, { size: 9, align: "center" });
+      // Kreuzschraffur
+      doc.setLineWidth(0.25);
+      doc.line(asX, y, asX + s3asW, y + rhB);
+      doc.line(asX, y + rhB, asX + s3asW, y);
+      doc.setLineWidth(0.3);
+      y += rhB;
+      return;
+    }
+
+    const rh = 14;
     doc.rect(mL, y, s3numW, rh);
     doc.rect(mL + s3numW, y, s3labelW, rh);
     doc.rect(ekX, y, s3ekW, rh);
@@ -319,32 +362,17 @@ export async function generateEFB221(project, kalkulation, stammdaten) {
 
     text(row.nr, mL + 2, y + 5, { bold: true, size: 9 });
     text(row.label, mL + s3numW + 2, y + 5, { bold: true, size: 9 });
-    if (row.sub) text(row.sub, mL + s3numW + 2, y + 9.5, { size: 7 });
-
-    if (row.nr === "3.1") {
-      // "x" Zeile in der Mitte
-      text("x", mL + s3numW + s3labelW / 2, y + 14, { size: 9, align: "center" });
-      // Kreuzschraffur in Angebotssumme-Spalte
-      doc.setLineWidth(0.25);
-      doc.line(asX, y, asX + s3asW, y + rh);
-      doc.line(asX, y + rh, asX + s3asW, y);
-      doc.setLineWidth(0.3);
-    }
+    if (row.sub) text(row.sub, mL + s3numW + 2, y + 10, { size: 7.5 });
 
     const ek = sumByType[row.type] || 0;
     const pct = typeZuschlaege[row.type] || 0;
     const as = ek * (1 + pct / 100);
-    if (row.nr !== "3.1") angebotssumme += as;
+    angebotssumme += as;
 
     if (ek > 0) {
-      text(fmt(ek), ekX + s3ekW - 2, y + 7, { size: 8, align: "right" });
-      text(fmtPct(pct), zX + s3zW - 2, y + 7, { size: 8, align: "right" });
-      if (row.nr !== "3.1") text(fmt(as), asX + s3asW - 2, y + 7, { size: 8, align: "right" });
-    }
-    // 3.1 Lohn: EK und % immer anzeigen
-    if (row.nr === "3.1" && ek > 0) {
-      text(fmt(ek), ekX + s3ekW - 2, y + 7, { size: 8, align: "right" });
-      text(fmtPct(pct), zX + s3zW - 2, y + 7, { size: 8, align: "right" });
+      text(fmt(ek), ekX + s3ekW - 2, y + 8, { size: 8, align: "right" });
+      text(fmtPct(pct), zX + s3zW - 2, y + 8, { size: 8, align: "right" });
+      text(fmt(as), asX + s3asW - 2, y + 8, { size: 8, align: "right" });
     }
     y += rh;
   });
