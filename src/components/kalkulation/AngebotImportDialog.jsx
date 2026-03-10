@@ -139,6 +139,7 @@ export default function AngebotImportDialog({ project, kalkulation, onPositionen
         const idx = updatedPositions.findIndex(p => p.oz === ap.zugeordnete_oz);
         const newRow = {
           id: crypto.randomUUID(),
+          angebot_import_id: currentImportId,
           name: ap.kurztext_angebot,
           beschreibung: `Angebot ${lieferantName}`,
           kostentyp: ap.kostentyp || "Material",
