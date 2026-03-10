@@ -232,8 +232,27 @@ export default function ProjectDetail() {
         </div>
       </div>
 
+      {/* Unsaved-changes guard */}
+      <AlertDialog open={showUnsavedDialog} onOpenChange={setShowUnsavedDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Ungespeicherte Änderungen</AlertDialogTitle>
+            <AlertDialogDescription>
+              Es gibt ungespeicherte Kalkulations-Änderungen. Möchten Sie diese speichern, bevor Sie den Tab wechseln?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => { setShowUnsavedDialog(false); setPendingTab(null); }}>
+              Abbrechen
+            </AlertDialogCancel>
+            <Button variant="outline" onClick={handleDiscardAndSwitch}>Verwerfen</Button>
+            <AlertDialogAction onClick={handleSaveAndSwitch}>Speichern & Wechseln</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs value={activeTab} onValueChange={handleTabChange}>
         <TabsList className="flex flex-wrap h-auto gap-1">
           <TabsTrigger value="overview" className="gap-1.5 text-xs">
             <FolderOpen className="w-3.5 h-3.5" />Übersicht
