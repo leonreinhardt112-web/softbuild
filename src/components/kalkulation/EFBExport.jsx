@@ -277,11 +277,21 @@ export async function generateEFB221(project, kalkulation, stammdaten) {
   text(fmt(angebotssumme), mL + cW - 2, y + 6, { align: "right", size: 9, bold: true });
   y += fh + 8;
 
-  // Footer note
+  // Fußnote Seite 2
+  y += 4;
+  doc.setLineWidth(0.2);
+  doc.line(mL, y, mL + 80, y);
+  y += 3;
+  doc.setFontSize(6.5);
+  doc.setFont("helvetica", "normal");
+  doc.text("3  Auf Verlangen sind für diese Leistungen die Angaben zur Kalkulation der(s) Nachunternehmer(s) dem Auftraggeber vorzulegen.", mL, y);
+  y += 10;
+  doc.text("eventuelle Erläuterungen des Bieters:", mL, y);
+  // Footer Seite 2
   doc.setFontSize(6.5);
   doc.setFont("helvetica", "normal");
   doc.text("© VHB - Bund - Ausgabe 2017", mL, 288);
-  doc.text("Seite 1 von 1", mR, 288, { align: "right" });
+  doc.text("Seite 2 von 2", mR, 288, { align: "right" });
 
   doc.save(`EFB_221_${project?.project_number || "Kalkulation"}.pdf`);
 }
