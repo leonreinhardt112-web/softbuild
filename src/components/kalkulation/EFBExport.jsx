@@ -227,23 +227,38 @@ export async function generateEFB221(project, kalkulation, stammdaten) {
 
   let angebotssumme = 0;
   sec3Rows.forEach((row) => {
-    const rh = 10;
+    const rh = 13;
     drawRect(mL, y, col3aW, rh);
     drawRect(mL + col3aW, y, col3bW, rh);
     drawRect(mL + col3aW + col3bW, y, col3cW, rh);
     drawRect(mL + col3aW + col3bW + col3cW, y, col3dW, rh);
     text(row.nr, mL + 1, y + 5, { bold: true });
     text(row.label, mL + 10, y + 5, { bold: true, size: 8 });
-    if (row.sub) text(row.sub, mL + 10, y + 9, { size: 6.5 });
+    if (row.sub) text(row.sub, mL + 10, y + 10, { size: 6.5 });
     const ek = sumByType[row.type] || 0;
     const pct = typeZuschlaege[row.type] || 0;
     const as = ek * (1 + pct / 100);
     angebotssumme += as;
-    if (ek > 0) {
-      text(fmt(ek), mL + col3aW + col3bW - 2, y + 6, { align: "right", size: 8 });
-      text(fmtPct(pct), mL + col3aW + col3bW + col3cW - 2, y + 6, { align: "right", size: 8 });
-      text(fmt(as), mL + cW - 2, y + 6, { align: "right", size: 8 });
+    // Row 3.1 (Lohn): Angebotssumme-Spalte mit Kreuzschraffur (wird über VL × h berechnet, nicht direkt)
+    if (row.nr === "3.1") {
+      // Diagonal cross hatch in Angebotssumme column
+      const x1 = mL + col3aW + col3bW + col3cW;
+      const y1 = y;
+      const x2 = x1 + col3dW;
+      const y2 = y + rh;
+      doc.setLineWidth(0.25);
+      doc.line(x1, y1, x2, y2);
+      doc.line(x1, y2, x2, y1);
+      doc.setLineWidth(0.3);
     }
+    if (ek > 0) {
+      text(fmt(ek), mL + col3aW + col3bW - 2, y + 7, { align: "right", size: 8 });
+      text(fmtPct(pct), mL + col3aW + col3bW + col3cW - 2, y + 7, { align: "right", size: 8 });
+      if (row.nr !== "3.1") {
+        text(fmt(as), mL + cW - 2, y + 7, { align: "right", size: 8 });
+      }
+    }
+    angebotssumme += row.nr === "3.1" ? 0 : 0; // already accumulated above, reset double-add
     y += rh;
   });
 
