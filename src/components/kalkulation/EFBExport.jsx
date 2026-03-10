@@ -116,6 +116,14 @@ export async function generateEFB221(project, kalkulation, stammdaten) {
     { nr: "1.6", label: "Verrechnungslohn VL", sub: "(Summe 1.4 und 1.5, VL im Formblatt 223 berücksichtigen)" },
   ];
 
+  // Verrechnungslohn-Berechnungen
+  const ml     = Number(z.ml_euro)  || 0;
+  const lgkPct = Number(z.lgk_pct) || 0;
+  const lnkPct = Number(z.lnk_pct) || 0;
+  const kl     = ml * (1 + lgkPct / 100 + lnkPct / 100);
+  const totalLohnZ = (Number(z.lohn_bgk) || 0) + (Number(z.lohn_agk) || 0) + (Number(z.lohn_wg) || 0);
+  const vl     = kl * (1 + totalLohnZ / 100);
+
   lohnRows.forEach((row) => {
     const rh = 13;
     doc.rect(mL, y, s1numW, rh);
@@ -125,10 +133,15 @@ export async function generateEFB221(project, kalkulation, stammdaten) {
     text(row.nr, mL + 2, y + 5, { bold: true, size: 9 });
     text(row.label, mL + s1numW + 2, y + 5, { bold: true, size: 9 });
     if (row.sub) text(row.sub, mL + s1numW + 2, y + 9.5, { size: 6.5 });
-    if (row.nr === "1.5") {
-      const totalLohnZ = (Number(z.lohn_bgk) || 0) + (Number(z.lohn_agk) || 0) + (Number(z.lohn_wg) || 0);
-      text(fmtPct(totalLohnZ), mL + s1numW + s1labelW + s1col2W - 2, y + 7, { size: 8, align: "right" });
-    }
+
+    const pctX = mL + s1numW + s1labelW + s1col2W - 2;
+    const eurX = mL + s1numW + s1labelW + s1col2W + s1col3W - 2;
+    if (row.nr === "1.1" && ml > 0)  text(fmt(ml, 2),  eurX, y + 7, { size: 8, align: "right" });
+    if (row.nr === "1.2" && lgkPct > 0) { text(fmtPct(lgkPct), pctX, y + 7, { size: 8, align: "right" }); if (ml > 0) text(fmt(ml * lgkPct / 100, 2), eurX, y + 7, { size: 8, align: "right" }); }
+    if (row.nr === "1.3" && lnkPct > 0) { text(fmtPct(lnkPct), pctX, y + 7, { size: 8, align: "right" }); if (ml > 0) text(fmt(ml * lnkPct / 100, 2), eurX, y + 7, { size: 8, align: "right" }); }
+    if (row.nr === "1.4" && kl > 0)  text(fmt(kl, 2),  eurX, y + 7, { size: 8, align: "right" });
+    if (row.nr === "1.5") { text(fmtPct(totalLohnZ), pctX, y + 7, { size: 8, align: "right" }); if (kl > 0) text(fmt(kl * totalLohnZ / 100, 2), eurX, y + 7, { size: 8, align: "right" }); }
+    if (row.nr === "1.6" && vl > 0)  text(fmt(vl, 2),  eurX, y + 7, { size: 8, align: "right" });
     y += rh;
   });
 
