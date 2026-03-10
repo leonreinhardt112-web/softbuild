@@ -11,6 +11,10 @@ const DEFAULT_ZUSCHLAEGE = {
   geraet_bgk: 8, geraet_agk: 4, geraet_wg: 2,
   nu_bgk: 5, nu_agk: 3, nu_wg: 2,
   sonstiges_bgk: 5, sonstiges_agk: 3, sonstiges_wg: 2,
+  // Verrechnungslohn
+  ml_euro: 0,        // 1.1 Mittellohn ML (€/h)
+  lgk_pct: 0,        // 1.2 Lohngebundene Kosten (%)
+  lnk_pct: 0,        // 1.3 Lohnnebenkosten (%)
 };
 
 const KOSTENARTEN = [
