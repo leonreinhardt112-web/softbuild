@@ -166,7 +166,17 @@ export async function generateEFB221(project, kalkulation, stammdaten) {
     y += rh;
   });
 
-  y += 6;
+  // Footer Seite 1
+  doc.setFontSize(6.5);
+  doc.setFont("helvetica", "normal");
+  doc.text("© VHB - Bund - Ausgabe 2017", mL, 288);
+  doc.text("Seite 1 von 2", mR, 288, { align: "right" });
+
+  // ── Seite 2 ─────────────────────────────────
+  doc.addPage();
+  text("221", mR, 14, { bold: true, size: 14 });
+  text("(Preisermittlung bei Zuschlagskalkulation)", mR, 19, { size: 7, align: "right" });
+  y = 25;
 
   // ── Section 3: Angebotssumme ─────────────────
   fillRect(mL, y, cW, 7, [230, 230, 230]);
