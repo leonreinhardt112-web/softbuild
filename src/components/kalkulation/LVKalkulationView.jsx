@@ -310,6 +310,25 @@ export default function LVKalkulationView({ project }) {
     }
   };
 
+  // Merge localPositions (React-State) mit kalk.positions für den Export
+  const buildKalkWithLocalPositions = () => {
+    if (!kalk) return kalk;
+    const updatedPositions = positionItems.map((pos, idx) => {
+      const rows = getRows(idx);
+      const existing = (kalk.positions || []).find(p => p.oz === pos.oz && p.short_text === pos.short_text);
+      return {
+        oz: pos.oz,
+        short_text: pos.short_text || "",
+        menge: parseFloat(pos.quantity) || 0,
+        einheit: pos.unit || "",
+        ep: existing?.ep || 0,
+        gp: existing?.gp || 0,
+        rows,
+      };
+    });
+    return { ...kalk, positions: updatedPositions };
+  };
+
   const handleExportWithOptions = async (options) => {
     await generateKalkulationPDF(project, kalk, options);
   };
