@@ -129,7 +129,7 @@ export default function AngebotImportDialog({ project, kalkulation, onPositionen
           id: crypto.randomUUID(),
           name: ap.kurztext_angebot,
           beschreibung: `Angebot ${lieferantName}`,
-          kostentyp: "Material",
+          kostentyp: ap.kostentyp || "Material",
           menge: 1,
           einheit: ap.einheit || lvPos.unit || "pauschal",
           kosten_einheit: ap.ep
