@@ -23,11 +23,16 @@ export default function AngebotImportDialog({ project, kalkulation, onPositionen
   const [error, setError] = useState(null);
   const qc = useQueryClient();
 
-  const { data: vorhandeneImports = [] } = useQuery({
+  const { data: vorhandeneImports = [], refetch: refetchImports } = useQuery({
     queryKey: ["angebot-imports", kalkulation?.id],
     queryFn: () => base44.entities.AngebotImport.filter({ kalkulation_id: kalkulation.id }),
     enabled: open && !!kalkulation?.id
   });
+
+  const handleDeleteImport = async (id) => {
+    await base44.entities.AngebotImport.delete(id);
+    refetchImports();
+  };
 
   const lvPositions = (project?.lv_positions || []).filter(p => {
     if (p.type === "title") return false;
