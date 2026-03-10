@@ -267,8 +267,11 @@ export default function AngebotImportDialog({ project, kalkulation, onPositionen
                   <tbody>
                     {positionen.map(pos => (
                       <tr key={pos.id} className={`border-b border-border/50 ${pos.zuordnung_status === "ignoriert" ? "opacity-40" : ""}`}>
+                        <td className="px-3 py-2 text-muted-foreground font-mono text-[11px] whitespace-nowrap">
+                         {pos.pos_nr || "–"}
+                        </td>
                         <td className="px-3 py-2 text-foreground max-w-[200px]">
-                          <span className="line-clamp-2">{pos.kurztext_angebot}</span>
+                         <span className="line-clamp-2">{pos.kurztext_angebot}</span>
                         </td>
                         <td className="px-3 py-2 text-right font-semibold tabular-nums">
                           {pos.ep?.toLocaleString("de-DE", { minimumFractionDigits: 2 })}
