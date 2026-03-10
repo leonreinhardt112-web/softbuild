@@ -311,23 +311,7 @@ function addHeaderSection(doc, company, project, client, kalkulation, topMargin,
     doc.text(headerLine, leftMargin, topMargin + 3);
   }
   
-  // Rechts: Beschreibung/Tätigkeitsbereich (falls vorhanden)
-  doc.setFontSize(8);
-  doc.setFont(undefined, "normal");
-  doc.setTextColor(100, 100, 100);
-  const descX = pageWidth - rightMargin - 50;
-  const descriptions = [
-    "Verkauf & Vermietung von",
-    "Baumaschinen / Anbaugeräten",
-    "Hoch- / Tiefbau, GaLaBau",
-    "Beratung, Seminare & Coaching"
-  ];
-  let descY = topMargin + 2;
-  descriptions.forEach((desc) => {
-    doc.text(desc, descX, descY);
-    descY += 3;
-  });
-  doc.setTextColor(0, 0, 0);
+
   
   // 2. Empfängeradresse links (aus Stammdaten)
   let addrY = topMargin + 16;
@@ -361,18 +345,18 @@ function addHeaderSection(doc, company, project, client, kalkulation, topMargin,
     addrY += 4;
   }
   
-  // 3. Rechts: Titel "Kalkuliertes Angebot" + Projekt-Details
+  // 3. Rechts: Titel "Angebot" + Projekt-Details
   const titleX = pageWidth - rightMargin - 40;
   doc.setFontSize(14);
   doc.setFont(undefined, "bold");
-  doc.text("Kalkuliertes Angebot", titleX, topMargin + 18);
+  doc.text("Angebot", titleX, topMargin + 18);
   
   doc.setFontSize(9);
   doc.setFont(undefined, "normal");
   let detailY = topMargin + 28;
   doc.text(`Projekt-Nr.: ${project.project_number || ""}`, titleX, detailY);
   detailY += 4;
-  doc.text(`Angebots-Nr.: ${kalkulation.version_name || ""}`, titleX, detailY);
+  doc.text(`Angebots-Nr.: ${kalkulation.id || ""}`, titleX, detailY);
   detailY += 4;
   doc.text(`Datum: ${new Date().toLocaleDateString("de-DE")}`, titleX, detailY);
   
