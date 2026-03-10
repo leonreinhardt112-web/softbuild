@@ -91,9 +91,20 @@ export default function ProjectForm({ open, onOpenChange, onSave, initialData })
     if (ag) setForm(f => ({ ...f, client_id: id, client: ag.name }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.client_id) return;
+    
+    // Generate project number if not editing
+    if (!initialData) {
+      try {
+        const response = await base44.functions.invoke('generateProjeknummer', {});
+        form.project_number = response.data.projektNummer;
+      } catch (error) {
+        console.error('Fehler bei Projektnummernvergabe:', error);
+      }
+    }
+    
     onSave(form);
   };
 
@@ -121,7 +132,9 @@ export default function ProjectForm({ open, onOpenChange, onSave, initialData })
               <Label htmlFor="project_number">Projektnummer *</Label>
               <Input id="project_number" value={form.project_number}
                 onChange={e => handleChange("project_number", e.target.value)}
-                placeholder="z.B. 2024-KB-0042" required />
+                placeholder={initialData ? "z.B. 2024-KB-0042" : "wird automatisch generiert"}
+                disabled={!initialData}
+                required />
             </div>
           </div>
 
