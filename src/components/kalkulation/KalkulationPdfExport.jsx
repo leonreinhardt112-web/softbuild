@@ -356,7 +356,7 @@ function addHeaderSection(doc, company, project, client, kalkulation, topMargin,
   let detailY = topMargin + 28;
   doc.text(`Projekt-Nr.: ${project.project_number || ""}`, titleX, detailY);
   detailY += 4;
-  doc.text(`Angebots-Nr.: ${kalkulation.id || ""}`, titleX, detailY);
+  doc.text(`Angebots-Nr.: ${kalkulation.angebot_nummer || ""}`, titleX, detailY);
   detailY += 4;
   doc.text(`Datum: ${new Date().toLocaleDateString("de-DE")}`, titleX, detailY);
   
