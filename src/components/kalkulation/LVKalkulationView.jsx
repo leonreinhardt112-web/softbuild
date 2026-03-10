@@ -24,6 +24,9 @@ const LVKalkulationView = forwardRef(function LVKalkulationView({ project }, ref
   const [expandedTitles, setExpandedTitles] = useState(new Set());
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [stammdaten, setStammdaten] = useState([]);
+  const [unsavedDialogOpen, setUnsavedDialogOpen] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState(null);
+
   useEffect(() => {
     base44.entities.Stammdatum.filter({ typ: "unternehmen" }).then(setStammdaten).catch(() => {});
   }, []);
@@ -35,6 +38,15 @@ const LVKalkulationView = forwardRef(function LVKalkulationView({ project }, ref
   useImperativeHandle(ref, () => ({
     hasDirtyChanges: () => dirtyPositions.size > 0,
     saveAll: () => saveAllDirtyRef.current?.(),
+    requestNavigation: (callback) => {
+      if (dirtyPositions.size > 0) {
+        setPendingNavigation(() => callback);
+        setUnsavedDialogOpen(true);
+        return false;
+      }
+      callback();
+      return true;
+    }
   }), [dirtyPositions]);
 
   const { data: kalkulationen = [], isLoading } = useQuery({
