@@ -32,6 +32,12 @@ function newRow() {
 
 export default function PositionKalkTable({ rows = [], onRowsChange, zuschlaege = {} }) {
   const [openUnitDropdown, setOpenUnitDropdown] = useState(null);
+  const [unitInput, setUnitInput] = useState({});
+
+  const getFilteredUnits = (input) => {
+    const lower = (input || "").toLowerCase();
+    return UNITS.filter(u => u.toLowerCase().includes(lower));
+  };
 
   const handleChange = (id, field, value) => {
     onRowsChange(rows.map(r => r.id === id ? { ...r, [field]: value } : r));
