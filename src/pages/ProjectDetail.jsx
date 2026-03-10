@@ -384,7 +384,7 @@ export default function ProjectDetail() {
 
         {/* KALKULATION */}
         <TabsContent value="kalkulation" className="mt-6">
-          <LVKalkulationView project={project} />
+          <LVKalkulationView ref={kalkulationRef} project={project} />
         </TabsContent>
 
         {/* AFU-PRÜFUNG */}
