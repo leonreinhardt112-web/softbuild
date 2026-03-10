@@ -20,6 +20,10 @@ export default function LVKalkulationView({ project }) {
   const [savingOz, setSavingOz] = useState(null);
   const [expandedTitles, setExpandedTitles] = useState(new Set());
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [stammdaten, setStammdaten] = useState([]);
+  useEffect(() => {
+    base44.entities.Stammdatum.filter({ typ: "unternehmen" }).then(setStammdaten).catch(() => {});
+  }, []);
   const saveTimers = useRef({});
 
   const { data: kalkulationen = [], isLoading } = useQuery({
