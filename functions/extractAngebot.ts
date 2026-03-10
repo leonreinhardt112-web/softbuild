@@ -33,6 +33,7 @@ Regeln für die Zuordnung:
 - Verwende "konfidenz" zwischen 0 und 1 (1 = sehr sicher, 0 = unsicher)
 - Wenn keine passende LV-Position gefunden werden kann, lasse "zugeordnete_oz" leer und setze konfidenz auf 0
 - Extrahiere den Einzelpreis (EP) als Zahl ohne Währungssymbol
+- Extrahiere die Positionsnummer aus dem Angebot (z.B. "01.", "1.1", "Pos. 3" etc.) in das Feld "pos_nr". Falls keine Positionsnummer erkennbar ist, lasse das Feld leer
 
 Antworte NUR mit JSON, kein Text davor oder danach.`;
 
