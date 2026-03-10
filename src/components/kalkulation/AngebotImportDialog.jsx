@@ -20,6 +20,7 @@ export default function AngebotImportDialog({ project, kalkulation, onPositionen
   const [file, setFile] = useState(null);
   const [step, setStep] = useState("upload"); // upload | extracting | review | applying
   const [positionen, setPositionen] = useState([]);
+  const [currentImportId, setCurrentImportId] = useState(null);
   const [error, setError] = useState(null);
   const qc = useQueryClient();
 
