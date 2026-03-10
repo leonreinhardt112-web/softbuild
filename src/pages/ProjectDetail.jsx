@@ -25,7 +25,7 @@ import {
 } from "@/components/checklistData";
 import {
   ArrowLeft, ClipboardCheck, Settings, BarChart3, AlertTriangle, Play, Save,
-  Building2, MapPin, Calendar, User, Calculator, Receipt, HardHat, FileText,
+  Building2, MapPin, Calendar, User, Calculator, Receipt, HardHat,
   Euro, Clock, Lock, ChevronRight, FolderOpen,
 } from "lucide-react";
 import { format } from "date-fns";
