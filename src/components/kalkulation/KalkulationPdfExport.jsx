@@ -7,7 +7,7 @@ const MARGIN_RIGHT = 20;
 const MARGIN_BOTTOM = 20;
 
 export async function generateKalkulationPDF(project, kalkulation, options = {}) {
-  const { textMode = "short", vortext = "", schlusstext = "" } = options;
+  const { textMode = "short", vortext = "", schlusstext = "", unserZeichen = "" } = options;
   const doc = new jsPDF({
     orientation: "portrait",
     unit: "mm",
@@ -364,6 +364,12 @@ function addHeaderSection(doc, company, project, client, kalkulation, topMargin,
   if (client?.kundennummer) {
     detailY += 4;
     doc.text(`Kunden-Nr.: ${client.kundennummer}`, titleX, detailY);
+  }
+
+  // Unser Zeichen (falls vorhanden)
+  if (unserZeichen) {
+    detailY += 4;
+    doc.text(`Unser Zeichen: ${unserZeichen}`, titleX, detailY);
   }
   
   // 4. Projektname mit Umbruch
