@@ -82,7 +82,14 @@ export default function PositionKalkTable({ rows = [], onRowsChange, zuschlaege 
                     </Select>
                   </td>
                   <td className="px-1 py-1">
-                    <Input value={row.einheit} onChange={e => handleChange(row.id, "einheit", e.target.value)} className="h-7 text-xs w-14 border-0 bg-transparent focus:bg-background focus:border focus:border-input text-center" placeholder="h" />
+                    <Select value={row.einheit} onValueChange={v => handleChange(row.id, "einheit", v)}>
+                      <SelectTrigger className="h-7 text-xs w-20">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {UNITS.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
                   </td>
                   <td className="px-1 py-1">
                     <Input type="number" value={row.menge} onChange={e => handleChange(row.id, "menge", parseFloat(e.target.value) || 0)} className="h-7 text-xs w-20 text-right border-0 bg-transparent focus:bg-background focus:border focus:border-input" />
