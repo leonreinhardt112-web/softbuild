@@ -106,15 +106,15 @@ export default function ZuschlaegeDialog({ zuschlaege, onSave }) {
                         {KOSTENARTEN.map(k => {
                           const field = `${k.key}_${suffix}`;
                           return (
-                            <td key={k.key} className="py-1.5 px-1 border border-border">
-                              <div className="relative">
+                            <td key={k.key} className="py-1.5 px-2 border border-border">
+                              <div className="relative flex items-center">
                                 <Input
                                   type="number" min="0" max="100" step="0.5"
                                   value={values[field] ?? 0}
                                   onChange={e => set(field, e.target.value)}
-                                  className="h-7 text-right pr-7 text-xs w-full min-w-[60px]"
+                                  className="h-7 text-right pr-6 text-xs w-full"
                                 />
-                                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">%</span>
+                                <span className="absolute right-1.5 text-[10px] text-muted-foreground pointer-events-none">%</span>
                               </div>
                             </td>
                           );
