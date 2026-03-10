@@ -389,10 +389,10 @@ export default function LVKalkulationView({ project }) {
                   Kalkulation (Angebot PDF)
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => generateEFB221(project, kalk, stammdaten)}>
+                <DropdownMenuItem onClick={() => generateEFB221(project, buildKalkWithLocalPositions(), stammdaten)}>
                   EFB 221 – Preisermittlung (Zuschlagskalkulation)
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => generateEFB223(project, kalk)}>
+                <DropdownMenuItem onClick={() => generateEFB223(project, buildKalkWithLocalPositions())}>
                   EFB 223 – Aufgliederung der Einheitspreise
                 </DropdownMenuItem>
               </DropdownMenuContent>
