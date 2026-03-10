@@ -82,7 +82,7 @@ export default function AngebotImportDialog({ project, kalkulation, onPositionen
       const extracted = res.data?.positionen || [];
 
       // AngebotImport-Datensatz speichern
-      await base44.entities.AngebotImport.create({
+      const importRecord = await base44.entities.AngebotImport.create({
         project_id: project.id,
         kalkulation_id: kalkulation.id,
         lieferant_name: lieferantName,
@@ -92,6 +92,7 @@ export default function AngebotImportDialog({ project, kalkulation, onPositionen
         extrahierte_positionen: extracted
       });
 
+      setCurrentImportId(importRecord.id);
       setPositionen(extracted);
       setStep("review");
     } catch (e) {
