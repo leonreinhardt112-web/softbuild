@@ -34,6 +34,13 @@ Regeln für die Zuordnung:
 - Wenn keine passende LV-Position gefunden werden kann, lasse "zugeordnete_oz" leer und setze konfidenz auf 0
 - Extrahiere den Einzelpreis (EP) als Zahl ohne Währungssymbol
 - Extrahiere die Positionsnummer aus dem Angebot (z.B. "01.", "1.1", "Pos. 3" etc.) in das Feld "pos_nr". Falls keine Positionsnummer erkennbar ist, lasse das Feld leer
+- Bestimme den Kostentyp der Position anhand des Angebotsinhalts und des Anbieters:
+  * "Material" – wenn es sich um Materiallieferungen, Produkte, Baustoffe handelt (z.B. Rohre, Schächte, Betonelement)
+  * "NU" (Nachunternehmer) – wenn es sich um eine Leistung/Dienstleistung eines Subunternehmers handelt (z.B. Erdarbeiten, Verlegung, Montage durch Dritte)
+  * "Lohn" – wenn es sich um eigene Lohnleistungen handelt
+  * "Gerät" – wenn es sich um Geräteeinsatz handelt
+  * "Sonstiges" – wenn keiner der obigen Typen passt
+  Trage den Kostentyp in das Feld "kostentyp" ein.
 
 Antworte NUR mit JSON, kein Text davor oder danach.`;
 
