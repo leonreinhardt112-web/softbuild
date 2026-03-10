@@ -17,8 +17,12 @@ export function UnsavedChangesProvider({ children }) {
 
 export function useUnsavedChanges() {
   const context = useContext(UnsavedChangesContext);
+  // Return default state if provider is not present
   if (!context) {
-    throw new Error('useUnsavedChanges must be used within UnsavedChangesProvider');
+    return {
+      unsavedState: { hasChanges: false, onConfirm: null },
+      setUnsavedState: () => {}
+    };
   }
   return context;
 }
