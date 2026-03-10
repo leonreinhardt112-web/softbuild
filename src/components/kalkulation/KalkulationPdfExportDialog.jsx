@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Loader2 } from "lucide-react";
@@ -11,6 +12,7 @@ export default function KalkulationPdfExportDialog({ isOpen, onClose, onExport }
   const [textMode, setTextMode] = useState("short");
   const [vortext, setVortext] = useState("");
   const [schlusstext, setSchlusstext] = useState("");
+  const [unserZeichen, setUnserZeichen] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -28,6 +30,7 @@ export default function KalkulationPdfExportDialog({ isOpen, onClose, onExport }
         setVortext(company.angebot_vortext || "");
         setSchlusstext(company.angebot_schlusstext || "");
       }
+      setUnserZeichen("");
     } catch (err) {
       console.error("Fehler beim Laden der Stammdaten:", err);
     } finally {
@@ -39,7 +42,8 @@ export default function KalkulationPdfExportDialog({ isOpen, onClose, onExport }
     onExport({
       textMode,
       vortext,
-      schlusstext
+      schlusstext,
+      unserZeichen
     });
     onClose();
   };
@@ -70,6 +74,17 @@ export default function KalkulationPdfExportDialog({ isOpen, onClose, onExport }
                   <Label htmlFor="both" className="font-normal cursor-pointer">Kurztext und Langtext</Label>
                 </div>
               </RadioGroup>
+            </div>
+
+            {/* Unser Zeichen */}
+            <div className="space-y-2">
+              <Label htmlFor="unserZeichen" className="text-sm font-semibold">Unser Zeichen</Label>
+              <Input
+                id="unserZeichen"
+                value={unserZeichen}
+                onChange={(e) => setUnserZeichen(e.target.value)}
+                placeholder="z.B. Initialen, Kürzel oder Projektreferenz"
+              />
             </div>
 
             {/* Vortext */}
