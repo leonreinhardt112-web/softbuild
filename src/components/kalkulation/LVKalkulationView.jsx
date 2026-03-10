@@ -221,16 +221,18 @@ const LVKalkulationView = forwardRef(function LVKalkulationView({ project }, ref
     }
     // Position (level 2+)
     else {
-      if (!currentUnterTitel) {
-        if (!currentHauptTitel) {
-          currentHauptTitel = { title: null, unterTitels: [] };
-          grouped.push(currentHauptTitel);
+      if (!isTitle(pos)) {
+        if (!currentUnterTitel) {
+          if (!currentHauptTitel) {
+            currentHauptTitel = { title: null, unterTitels: [] };
+            grouped.push(currentHauptTitel);
+          }
+          currentUnterTitel = { title: null, positions: [] };
+          currentHauptTitel.unterTitels.push(currentUnterTitel);
         }
-        currentUnterTitel = { title: null, positions: [] };
-        currentHauptTitel.unterTitels.push(currentUnterTitel);
+        currentUnterTitel.positions.push({ pos, posIndex: posItemIdx });
+        posItemIdx++;
       }
-      currentUnterTitel.positions.push({ pos, posIndex: posItemIdx });
-      posItemIdx++;
     }
   });
 
