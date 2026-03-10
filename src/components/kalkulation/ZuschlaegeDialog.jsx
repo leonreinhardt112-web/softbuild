@@ -112,7 +112,7 @@ export default function ZuschlaegeDialog({ zuschlaege, onSave }) {
                                   type="number" min="0" max="100" step="0.5"
                                   value={values[field] ?? 0}
                                   onChange={e => set(field, e.target.value)}
-                                  className="h-7 text-center pr-6 text-xs w-full"
+                                  className="h-7 text-right pr-7 text-xs w-full min-w-[60px]"
                                 />
                                 <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">%</span>
                               </div>
