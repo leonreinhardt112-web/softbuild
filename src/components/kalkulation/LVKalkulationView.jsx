@@ -335,7 +335,10 @@ export default function LVKalkulationView({ project }) {
               <AngebotImportDialog
                 project={project}
                 kalkulation={kalk}
-                onPositionenApplied={() => { initialSyncDone.current = false; queryClient.invalidateQueries({ queryKey: ["kalkulation", projectId] }); }}
+                onPositionenApplied={() => {
+                  initialSyncDone.current = false;
+                  queryClient.invalidateQueries({ queryKey: ["kalkulation", projectId] });
+                }}
               />
             )}
             <Button
