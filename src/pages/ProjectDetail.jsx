@@ -79,8 +79,13 @@ export default function ProjectDetail() {
   const handleSaveAndSwitch = async () => {
     await kalkulationRef.current?.saveAll();
     setShowUnsavedDialog(false);
-    setActiveTab(pendingTab);
-    setPendingTab(null);
+    if (pendingNavigation) {
+      pendingNavigation();
+      setPendingNavigation(null);
+    } else if (pendingTab) {
+      setActiveTab(pendingTab);
+      setPendingTab(null);
+    }
   };
 
   const { data: project, isLoading: projectLoading } = useQuery({
