@@ -270,177 +270,213 @@ export async function generateEFB223(project, kalkulation) {
   const text = (txt, x, y, opts = {}) => {
     doc.setFontSize(opts.size || 8);
     doc.setFont("helvetica", opts.bold ? "bold" : "normal");
-    if (opts.align === "right") {
-      doc.text(String(txt ?? ""), x, y, { align: "right" });
-    } else if (opts.align === "center") {
-      doc.text(String(txt ?? ""), x, y, { align: "center" });
-    } else {
-      doc.text(String(txt ?? ""), x, y);
-    }
+    if (opts.align === "right") doc.text(String(txt ?? ""), x, y, { align: "right" });
+    else if (opts.align === "center") doc.text(String(txt ?? ""), x, y, { align: "center" });
+    else doc.text(String(txt ?? ""), x, y);
   };
 
+  // Kostentyp → Zuschlag-Keys (NU fließt in Sonstiges)
   const COST_KEYS = {
-    Lohn: { bgk: "lohn_bgk", agk: "lohn_agk", wg: "lohn_wg" },
-    Material: { bgk: "material_bgk", agk: "material_agk", wg: "material_wg" },
-    "Gerät": { bgk: "geraet_bgk", agk: "geraet_agk", wg: "geraet_wg" },
-    NU: { bgk: "nu_bgk", agk: "nu_agk", wg: "nu_wg" },
+    Lohn:      { bgk: "lohn_bgk",      agk: "lohn_agk",      wg: "lohn_wg" },
+    Material:  { bgk: "material_bgk",  agk: "material_agk",  wg: "material_wg" },
+    "Gerät":   { bgk: "geraet_bgk",    agk: "geraet_agk",    wg: "geraet_wg" },
+    NU:        { bgk: "nu_bgk",        agk: "nu_agk",        wg: "nu_wg" },
     Sonstiges: { bgk: "sonstiges_bgk", agk: "sonstiges_agk", wg: "sonstiges_wg" },
   };
 
-  const calcEPWithMarkup = (rows, zuschlaege) => {
-    return rows.reduce((sum, r) => {
-      const kosten = Number(r.kosten_einheit || 0);
-      const key = COST_KEYS[r.kostentyp] || COST_KEYS["Sonstiges"];
-      const bgk = Number(zuschlaege[key.bgk] ?? 10) / 100;
-      const agk = Number(zuschlaege[key.agk] ?? 5) / 100;
-      const wg = Number(zuschlaege[key.wg] ?? 3) / 100;
-      return sum + kosten * (1 + bgk + agk + wg);
-    }, 0);
+  const applyMarkup = (ek, kostentyp) => {
+    const key = COST_KEYS[kostentyp] || COST_KEYS["Sonstiges"];
+    const bgk = Number(z[key.bgk] ?? 0) / 100;
+    const agk = Number(z[key.agk] ?? 0) / 100;
+    const wg  = Number(z[key.wg]  ?? 0) / 100;
+    return ek * (1 + bgk) * (1 + agk) * (1 + wg);
   };
 
-  const getEKByType = (rows) => {
-    const res = { Lohn: 0, Material: 0, "Gerät": 0, NU: 0, Sonstiges: 0 };
+  // Aggregiert EK+Zuschläge je Anzeigespalte (Lohn, Stoffe, Geräte, Sonstiges inkl. NU)
+  const getColValues = (rows) => {
+    const res = { Lohn: 0, Material: 0, "Gerät": 0, Sonstiges: 0 };
     rows.forEach((r) => {
-      const t = r.kostentyp in res ? r.kostentyp : "Sonstiges";
-      res[t] += Number(r.kosten_einheit || 0);
+      const ek = Number(r.kosten_einheit || 0);
+      const typ = r.kostentyp;
+      const withMarkup = applyMarkup(ek, typ);
+      if (typ === "Lohn") res.Lohn += withMarkup;
+      else if (typ === "Material") res.Material += withMarkup;
+      else if (typ === "Gerät") res["Gerät"] += withMarkup;
+      else res.Sonstiges += withMarkup; // NU + Sonstiges → Sonstiges
     });
     return res;
   };
 
   const positions = (kalkulation?.positions || []).filter((p) => (p.rows || []).length > 0);
 
-  let pageNum = 1;
-  const drawPageHeader = (y0) => {
-    text("223", mR, 10, { bold: true, size: 14 });
-    text("(Aufgliederung der Einheitspreise)", mR, 15, { size: 7, align: "right" });
-    const firm = "";
-    // Meta row
-    doc.setLineWidth(0.3);
-    const metaY = 18;
-    doc.rect(mL, metaY, cW * 0.4, 10);
-    doc.rect(mL + cW * 0.4, metaY, cW * 0.35, 10);
-    doc.rect(mL + cW * 0.75, metaY, cW * 0.25, 10);
-    text("Bieter", mL + 1, metaY + 4, { size: 6.5 });
-    text("Vergabenummer", mL + cW * 0.4 + 1, metaY + 4, { size: 6.5 });
-    text(project?.project_number || "", mL + cW * 0.4 + 1, metaY + 8, { size: 8 });
-    text("Baumaßnahme / Leistung", mL + cW * 0.75 + 1, metaY + 4, { size: 6.5 });
-    text(project?.project_name || "", mL + cW * 0.75 + 1, metaY + 8, { size: 7 });
-    return metaY + 12;
-  };
+  // ── Column layout ──────────────────────────────
+  // Sp. 1=OZ, 2=Kurztext, 3=Menge, 4=Einh., 5=Zeitansatz, 6=Löhne, 7=Stoffe, 8=Geräte, 9=Sonstiges, 10=EP
+  const colOZ   = 20;
+  const colKT   = 62;
+  const colMge  = 18;
+  const colEinh = 13;
+  const colZeit = 16;
+  const remaining = cW - colOZ - colKT - colMge - colEinh - colZeit;
+  const colVal  = remaining / 5; // 5 Wertspalten
 
-  // Column layout
-  const colOZ = 22;
-  const colKT = 58;
-  const colMge = 18;
-  const colEinh = 14;
-  const remaining = cW - colOZ - colKT - colMge - colEinh;
-  const colEP = remaining / 7; // EP gesamt + 5 types + zuschlag
-
-  let y = drawPageHeader(18);
-
-  // Table header
-  const thH = 16;
   const cols = [
-    { label: "Pos.-Nr.", w: colOZ },
-    { label: "Kurztext", w: colKT },
-    { label: "Menge", w: colMge },
-    { label: "Einh.", w: colEinh },
-    { label: "Lohn-\nkosten\n€/Einh.", w: colEP },
-    { label: "Stoff-\nkosten\n€/Einh.", w: colEP },
-    { label: "Geräte-\nkosten\n€/Einh.", w: colEP },
-    { label: "NU-\nLeistungen\n€/Einh.", w: colEP },
-    { label: "Sonstige\nKosten\n€/Einh.", w: colEP },
-    { label: "Zuschläge\ngesamt\n€/Einh.", w: colEP },
-    { label: "EP\ngesamt\n€", w: colEP },
+    { label: "OZ\ndes\nLV ¹", w: colOZ },
+    { label: "Kurzbezeichnung d. Teilleistung ¹", w: colKT },
+    { label: "Menge ¹", w: colMge },
+    { label: "Mengen-\neinheit", w: colEinh },
+    { label: "Zeitan-\nsatz ²", w: colZeit },
+    { label: "Löhne ²,³", w: colVal },
+    { label: "Stoffe ²", w: colVal },
+    { label: "Geräte ²,⁴", w: colVal },
+    { label: "Sonstiges ²", w: colVal },
+    { label: "Angebotener\nEinheitspreis\n(Sp. 6+7+8+9)", w: colVal },
   ];
 
-  doc.setFillColor(220, 220, 220);
-  doc.rect(mL, y, cW, thH, "F");
-  let cx = mL;
-  cols.forEach((c) => {
-    doc.rect(cx, y, c.w, thH);
-    text(c.label, cx + c.w / 2, y + 5, { size: 6, align: "center" });
-    cx += c.w;
-  });
-  y += thH;
+  let pageNum = 1;
 
-  // Rows
+  const drawPageHeader = () => {
+    // Kennnummer
+    text("223", mR, 10, { bold: true, size: 14 });
+    text("(Aufgliederung der Einheitspreise)", mR, 15, { size: 7, align: "right" });
+
+    doc.setLineWidth(0.3);
+    const metaY = 18;
+    // Bieter | Vergabenummer | Datum
+    doc.rect(mL, metaY, cW * 0.45, 8);
+    doc.rect(mL + cW * 0.45, metaY, cW * 0.33, 8);
+    doc.rect(mL + cW * 0.78, metaY, cW * 0.22, 8);
+    text("Bieter", mL + 1, metaY + 3.5, { size: 6 });
+    text("Vergabenummer", mL + cW * 0.45 + 1, metaY + 3.5, { size: 6 });
+    text(project?.project_number || "", mL + cW * 0.45 + 1, metaY + 7, { size: 7.5, bold: true });
+    text("Datum", mL + cW * 0.78 + 1, metaY + 3.5, { size: 6 });
+
+    // Baumaßnahme
+    const bauY = metaY + 8;
+    doc.rect(mL, bauY, cW, 12);
+    text("Baumaßnahme", mL + 1, bauY + 4, { size: 6 });
+    text(project?.project_name || "", mL + 1, bauY + 10, { size: 8, bold: true });
+
+    // Leistung
+    const lY = bauY + 12;
+    doc.rect(mL, lY, cW, 10);
+    text("Leistung", mL + 1, lY + 4, { size: 6 });
+    const leistung = (project?.selected_trades || []).join(", ") || (project?.location || "");
+    text(leistung, mL + 1, lY + 9, { size: 8, bold: true });
+
+    const titleY = lY + 14;
+    text("Aufgliederung der Einheitspreise", mL, titleY, { bold: true, size: 9 });
+
+    return titleY + 5;
+  };
+
+  const drawTableHeader = (y) => {
+    // Oberer Subheader: "Teilkosten einschl. Zuschläge..."
+    const thH1 = 8;
+    const valStart = mL + colOZ + colKT + colMge + colEinh + colZeit;
+    const valTotal = colVal * 5;
+    doc.setFillColor(235, 235, 235);
+    doc.rect(valStart, y, valTotal, thH1, "F");
+    doc.rect(valStart, y, valTotal, thH1);
+    text("Teilkosten einschl. Zuschläge in €", valStart + valTotal / 2, y + 3.5, { size: 6, align: "center" });
+    text("(ohne Umsatzsteuer) je Mengeneinheit ²", valStart + valTotal / 2, y + 7, { size: 6, align: "center" });
+
+    const thH2 = 12;
+    const y2 = y + thH1;
+    doc.setFillColor(235, 235, 235);
+    doc.rect(mL, y2, cW, thH2, "F");
+    let cx = mL;
+    cols.forEach((c, i) => {
+      doc.rect(cx, y2, c.w, thH2);
+      text(c.label, cx + c.w / 2, y2 + 4.5, { size: 5.5, align: "center" });
+      cx += c.w;
+    });
+
+    // Spaltennummern
+    const numH = 5;
+    const y3 = y2 + thH2;
+    doc.setFillColor(235, 235, 235);
+    doc.rect(mL, y3, cW, numH, "F");
+    cx = mL;
+    cols.forEach((c, i) => {
+      doc.rect(cx, y3, c.w, numH);
+      text(String(i + 1), cx + c.w / 2, y3 + 3.5, { size: 5.5, align: "center" });
+      cx += c.w;
+    });
+
+    return y3 + numH;
+  };
+
+  let y = drawPageHeader();
+  y = drawTableHeader(y);
+
+  // ── Positionen ──────────────────────────────
   positions.forEach((pos) => {
     if (y > 185) {
       doc.addPage("a4", "landscape");
       pageNum++;
-      y = drawPageHeader(18);
-      // Re-draw header
-      let cxx = mL;
-      doc.setFillColor(220, 220, 220);
-      doc.rect(mL, y, cW, thH, "F");
-      cols.forEach((c) => {
-        doc.rect(cxx, y, c.w, thH);
-        text(c.label, cxx + c.w / 2, y + 5, { size: 6, align: "center" });
-        cxx += c.w;
-      });
-      y += thH;
+      y = drawPageHeader();
+      y = drawTableHeader(y);
     }
 
     const rows = pos.rows || [];
-    const ek = getEKByType(rows);
-    const zuschlagGesamt = Object.entries(ek).reduce((sum, [type, val]) => {
-      const key = COST_KEYS[type] || COST_KEYS["Sonstiges"];
-      const pct = (Number(z[key.bgk] ?? 0) + Number(z[key.agk] ?? 0) + Number(z[key.wg] ?? 0)) / 100;
-      return sum + val * pct;
-    }, 0);
-    const epGesamt = calcEPWithMarkup(rows, z);
-    const rh = 8;
+    const colVals = getColValues(rows);
+    const epGesamt = colVals.Lohn + colVals.Material + colVals["Gerät"] + colVals.Sonstiges;
+    const rh = 9;
 
     const vals = [
       pos.oz || "",
-      (pos.short_text || "").substring(0, 35),
+      (pos.short_text || "").substring(0, 38),
       fmt(pos.menge, 3),
       pos.einheit || "",
-      ek.Lohn > 0 ? fmt(ek.Lohn) : "",
-      ek.Material > 0 ? fmt(ek.Material) : "",
-      ek["Gerät"] > 0 ? fmt(ek["Gerät"]) : "",
-      ek.NU > 0 ? fmt(ek.NU) : "",
-      ek.Sonstiges > 0 ? fmt(ek.Sonstiges) : "",
-      zuschlagGesamt > 0 ? fmt(zuschlagGesamt) : "",
-      epGesamt > 0 ? fmt(epGesamt) : "",
+      "", // Zeitansatz – leer lassen
+      colVals.Lohn > 0     ? fmt(colVals.Lohn)       : "",
+      colVals.Material > 0 ? fmt(colVals.Material)    : "",
+      colVals["Gerät"] > 0 ? fmt(colVals["Gerät"])    : "",
+      colVals.Sonstiges > 0? fmt(colVals.Sonstiges)   : "",
+      epGesamt > 0         ? fmt(epGesamt)             : "",
     ];
 
-    cx = mL;
+    let cx = mL;
     cols.forEach((c, i) => {
       doc.rect(cx, y, c.w, rh);
-      const isNum = i >= 2;
-      if (isNum && i > 3) {
-        text(vals[i], cx + c.w - 1, y + 5.5, { size: 7, align: "right" });
+      if (i >= 5) {
+        // Zahlenspalten rechtsbündig
+        text(vals[i], cx + c.w - 1, y + 6, { size: 7, align: "right" });
+      } else if (i === 2 || i === 3) {
+        text(vals[i], cx + c.w - 1, y + 6, { size: 7, align: "right" });
       } else {
-        const maxChars = Math.floor(c.w / 1.8);
+        const maxChars = Math.floor(c.w / 1.7);
         const label = vals[i].length > maxChars ? vals[i].substring(0, maxChars) + "…" : vals[i];
-        text(label, cx + 1, y + 5.5, { size: 7 });
+        text(label, cx + 1, y + 6, { size: 7 });
       }
       cx += c.w;
     });
     y += rh;
   });
 
-  // Total row
-  const totalEP = positions.reduce((sum, pos) => {
-    return sum + calcEPWithMarkup(pos.rows || [], z) * (parseFloat(pos.menge) || 0);
-  }, 0);
-  const totalRH = 9;
-  doc.setFillColor(220, 220, 220);
-  doc.rect(mL, y, cW, totalRH, "F");
-  doc.rect(mL, y, cW, totalRH);
-  text("Angebotssumme ohne Umsatzsteuer", mL + 2, y + 6, { bold: true, size: 8 });
-  text(fmt(totalEP) + " €", mL + cW - 2, y + 6, { bold: true, size: 8, align: "right" });
-  y += totalRH + 5;
+  // ── Fußnoten ────────────────────────────────
+  y += 4;
+  const footnotes = [
+    "¹  Wird vom Auftraggeber vorgegeben.",
+    "²  Ist bei allen Teilleistungen anzugeben, unabhängig davon ob sie der Auftragnehmer oder ein Nachunternehmer erbringen wird.",
+    "³  Sofern der zugrunde gelegte Verrechnungslohn nicht mit den Angaben in den Formblättern 221 oder 222 übereinstimmt, hat der Bieter dies offenzulegen.",
+    "⁴  Für Gerätekosten einschl. der Betriebsstoffkosten, soweit diese den Einzelkosten der angegebenen Ordnungszahlen zugerechnet worden sind.",
+  ];
+  doc.setLineWidth(0.2);
+  doc.line(mL, y, mL + 80, y);
+  y += 3;
+  footnotes.forEach((fn) => {
+    text(fn, mL, y, { size: 5.5 });
+    y += 3.5;
+  });
 
   // Footer
   doc.setFontSize(6.5);
   doc.setFont("helvetica", "normal");
   for (let p = 1; p <= pageNum; p++) {
     doc.setPage(p);
-    doc.text("© VHB - Bund - Ausgabe 2017", mL, 200);
-    doc.text(`Seite ${p} von ${pageNum}`, mR, 200, { align: "right" });
+    doc.text("© VHB - Bund - Ausgabe 2017", mL, 203);
+    doc.text(`Seite ${p} von ${pageNum}`, mR, 203, { align: "right" });
   }
 
   doc.save(`EFB_223_${project?.project_number || "Kalkulation"}.pdf`);
