@@ -239,16 +239,13 @@ export async function generateEFB221(project, kalkulation, stammdaten) {
     const pct = typeZuschlaege[row.type] || 0;
     const as = ek * (1 + pct / 100);
     angebotssumme += as;
-    // Row 3.1 (Lohn): Angebotssumme-Spalte mit Kreuzschraffur (wird über VL × h berechnet, nicht direkt)
+    // Row 3.1: Angebotssumme-Spalte mit Kreuzschraffur (VL × h Berechnung)
     if (row.nr === "3.1") {
-      // Diagonal cross hatch in Angebotssumme column
       const x1 = mL + col3aW + col3bW + col3cW;
-      const y1 = y;
       const x2 = x1 + col3dW;
-      const y2 = y + rh;
       doc.setLineWidth(0.25);
-      doc.line(x1, y1, x2, y2);
-      doc.line(x1, y2, x2, y1);
+      doc.line(x1, y, x2, y + rh);
+      doc.line(x1, y + rh, x2, y);
       doc.setLineWidth(0.3);
     }
     if (ek > 0) {
@@ -258,7 +255,6 @@ export async function generateEFB221(project, kalkulation, stammdaten) {
         text(fmt(as), mL + cW - 2, y + 7, { align: "right", size: 8 });
       }
     }
-    angebotssumme += row.nr === "3.1" ? 0 : 0; // already accumulated above, reset double-add
     y += rh;
   });
 
