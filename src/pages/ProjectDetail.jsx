@@ -37,9 +37,36 @@ export default function ProjectDetail() {
   const projectId = urlParams.get("id");
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("overview");
+  const [pendingTab, setPendingTab] = useState(null);
+  const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
+  const kalkulationRef = useRef(null);
   // AFU internal view
   const [afuView, setAfuView] = useState("setup"); // setup | review | openpoints | result
   const [activeTrade, setActiveTrade] = useState("allgemein");
+
+  const handleTabChange = (newTab) => {
+    if (activeTab === "kalkulation" && newTab !== "kalkulation") {
+      if (kalkulationRef.current?.hasDirtyChanges()) {
+        setPendingTab(newTab);
+        setShowUnsavedDialog(true);
+        return;
+      }
+    }
+    setActiveTab(newTab);
+  };
+
+  const handleDiscardAndSwitch = () => {
+    setShowUnsavedDialog(false);
+    setActiveTab(pendingTab);
+    setPendingTab(null);
+  };
+
+  const handleSaveAndSwitch = async () => {
+    await kalkulationRef.current?.saveAll();
+    setShowUnsavedDialog(false);
+    setActiveTab(pendingTab);
+    setPendingTab(null);
+  };
 
   const { data: project, isLoading: projectLoading } = useQuery({
     queryKey: ["project", projectId],
