@@ -232,8 +232,8 @@ export async function generateKalkulationPDF(project, kalkulation, options = {})
     }
   }
 
-  // Abschlusseite mit Summen
-  if (yPos > pageBottom - 20) {
+  // Abschlusseite mit Summen - genug Platz für Zusammenfassung + Footer benötigt
+  if (yPos > pageBottom - 50) {
     doc.addPage();
     yPos = MARGIN_TOP;
   }
