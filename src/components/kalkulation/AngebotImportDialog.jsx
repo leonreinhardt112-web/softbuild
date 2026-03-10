@@ -30,8 +30,17 @@ export default function AngebotImportDialog({ project, kalkulation, onPositionen
     enabled: open && !!kalkulation?.id
   });
 
-  const handleDeleteImport = async (id) => {
-    await base44.entities.AngebotImport.delete(id);
+  const handleDeleteImport = async (imp) => {
+    // Alle Kalkulationszeilen aus diesem Import entfernen
+    const currentPositions = kalkulation.positions || [];
+    const updatedPositions = currentPositions.map(pos => ({
+      ...pos,
+      rows: (pos.rows || []).filter(row => row.angebot_import_id !== imp.id)
+    }));
+    await base44.entities.Kalkulation.update(kalkulation.id, { positions: updatedPositions });
+    if (onPositionenApplied) onPositionenApplied(updatedPositions);
+
+    await base44.entities.AngebotImport.delete(imp.id);
     refetchImports();
   };
 
