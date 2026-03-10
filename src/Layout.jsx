@@ -33,7 +33,6 @@ const NAV_ITEMS = [
 export default function Layout({ children, currentPageName }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
-  const { unsavedState, setUnsavedState } = useUnsavedChanges();
   const [localUnsavedState, setLocalUnsavedState] = useState({ hasChanges: false });
 
   const handleNavigation = (e, page) => {
