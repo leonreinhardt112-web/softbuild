@@ -27,8 +27,7 @@ const ZUSCHLAGZEILEN = [
 ];
 
 function calcGesamtZuschlag(bgk, agk, wg) {
-  const factor = (1 + bgk / 100) * (1 + agk / 100) * (1 + wg / 100);
-  return ((factor - 1) * 100).toFixed(1);
+  return (Number(bgk) + Number(agk) + Number(wg)).toFixed(1);
 }
 
 export default function ZuschlaegeDialog({ zuschlaege, onSave }) {
