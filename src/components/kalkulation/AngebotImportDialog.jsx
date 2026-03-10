@@ -256,6 +256,7 @@ export default function AngebotImportDialog({ project, kalkulation, onPositionen
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="bg-muted/40 border-b border-border">
+                      <th className="text-left px-3 py-2 font-medium text-muted-foreground w-14">Pos.</th>
                       <th className="text-left px-3 py-2 font-medium text-muted-foreground">Kurztext (Angebot)</th>
                       <th className="text-right px-3 py-2 font-medium text-muted-foreground w-20">EP (€)</th>
                       <th className="text-left px-3 py-2 font-medium text-muted-foreground">Zugeordnete LV-Position</th>
