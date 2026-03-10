@@ -38,6 +38,7 @@ export default function ProjectDetail() {
   const projectId = urlParams.get("id");
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const { setUnsavedState } = useUnsavedChanges();
   const [activeTab, setActiveTab] = useState("overview");
   const [pendingTab, setPendingTab] = useState(null);
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
@@ -46,6 +47,12 @@ export default function ProjectDetail() {
   // AFU internal view
   const [afuView, setAfuView] = useState("setup"); // setup | review | openpoints | result
   const [activeTrade, setActiveTrade] = useState("allgemein");
+
+  // Update global unsaved state
+  useEffect(() => {
+    const hasDirty = activeTab === "kalkulation" && kalkulationRef.current?.hasDirtyChanges();
+    setUnsavedState(prev => ({ ...prev, hasChanges: hasDirty }));
+  }, [activeTab, setUnsavedState]);
 
   // Guard navigation away from ProjectDetail
   useEffect(() => {
