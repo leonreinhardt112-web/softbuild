@@ -59,6 +59,7 @@ Antworte NUR mit JSON, kein Text davor oder danach.`;
                 kurztext_angebot: { type: "string" },
                 ep: { type: "number" },
                 einheit: { type: "string" },
+                kostentyp: { type: "string", enum: ["Lohn", "Material", "Gerät", "NU", "Sonstiges"] },
                 zugeordnete_oz: { type: "string" },
                 zugeordneter_kurztext: { type: "string" },
                 konfidenz: { type: "number" }
