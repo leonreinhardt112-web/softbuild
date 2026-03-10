@@ -46,6 +46,7 @@ export default function AngebotImportDialog({ project, kalkulation, onPositionen
 
   const handleReviewImport = (imp) => {
     setLieferantName(imp.lieferant_name);
+    setCurrentImportId(imp.id);
     setPositionen(imp.extrahierte_positionen || []);
     setStep("review");
   };
