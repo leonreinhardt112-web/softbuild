@@ -93,18 +93,26 @@ export default function PositionKalkTable({ rows = [], onRowsChange, zuschlaege 
                     <div className="relative">
                       <Input 
                         value={row.einheit} 
-                        onChange={e => handleChange(row.id, "einheit", e.target.value)} 
-                        onFocus={() => setOpenUnitDropdown(row.id)}
+                        onChange={e => {
+                          handleChange(row.id, "einheit", e.target.value);
+                          setUnitInput({ ...unitInput, [row.id]: e.target.value });
+                          setOpenUnitDropdown(row.id);
+                        }}
+                        onFocus={() => {
+                          setOpenUnitDropdown(row.id);
+                          setUnitInput({ ...unitInput, [row.id]: row.einheit });
+                        }}
+                        onBlur={() => setTimeout(() => setOpenUnitDropdown(null), 100)}
                         className="h-7 text-xs w-20 border-0 bg-transparent focus:bg-background focus:border focus:border-input text-center pr-6" 
                         placeholder="h" 
                       />
                       <ChevronDown className="absolute right-1 top-1.5 w-4 h-4 text-muted-foreground pointer-events-none" />
-                      {openUnitDropdown === row.id && (
-                        <div className="absolute top-full left-0 mt-1 bg-background border border-input rounded-md shadow-lg z-10">
-                          {UNITS.map(u => (
+                      {openUnitDropdown === row.id && getFilteredUnits(unitInput[row.id]).length > 0 && (
+                        <div className="absolute top-full left-0 mt-1 bg-background border border-input rounded-md shadow-lg z-10 w-20">
+                          {getFilteredUnits(unitInput[row.id]).map(u => (
                             <div
                               key={u}
-                              onClick={() => {
+                              onMouseDown={() => {
                                 handleChange(row.id, "einheit", u);
                                 setOpenUnitDropdown(null);
                               }}
