@@ -34,6 +34,12 @@ export default function AngebotImportDialog({ project, kalkulation, onPositionen
     refetchImports();
   };
 
+  const handleReviewImport = (imp) => {
+    setLieferantName(imp.lieferant_name);
+    setPositionen(imp.extrahierte_positionen || []);
+    setStep("review");
+  };
+
   const lvPositions = (project?.lv_positions || []).filter(p => {
     if (p.type === "title") return false;
     const hasNoQty = !p.quantity || p.quantity === "0" || p.quantity === "";
