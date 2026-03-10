@@ -556,6 +556,9 @@ const LVKalkulationView = forwardRef(function LVKalkulationView({ project }, ref
                                 })()}
                             </span>
                             {savingOz === posKey && <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground shrink-0" />}
+                            {dirtyPositions.has(posKey) && savingOz !== posKey && (
+                              <span className="text-[10px] text-amber-500 font-medium shrink-0">ungespeichert</span>
+                            )}
                           </div>
 
                           {isExpanded &&
@@ -566,14 +569,9 @@ const LVKalkulationView = forwardRef(function LVKalkulationView({ project }, ref
                                   <p className="text-xs text-muted-foreground leading-relaxed">
                                     {(() => {
                                       let text = pos.long_text.trim();
-                                      // Entferne Kurztext vom Anfang und Ende, falls vorhanden
                                       const shortStart = (pos.short_text || "").split("\n")[0].trim();
-                                      if (shortStart && text.startsWith(shortStart)) {
-                                        text = text.substring(shortStart.length).trim();
-                                      }
-                                      if (shortStart && text.endsWith(shortStart)) {
-                                        text = text.substring(0, text.length - shortStart.length).trim();
-                                      }
+                                      if (shortStart && text.startsWith(shortStart)) text = text.substring(shortStart.length).trim();
+                                      if (shortStart && text.endsWith(shortStart)) text = text.substring(0, text.length - shortStart.length).trim();
                                       return text;
                                     })()}
                                   </p>
@@ -584,7 +582,19 @@ const LVKalkulationView = forwardRef(function LVKalkulationView({ project }, ref
                                   rows={rows}
                                   zuschlaege={kalk?.zuschlaege || {}}
                                   onRowsChange={(newRows) => handleRowsChange(posIndex, newRows)} />
-
+                              </div>
+                              <div className="mt-3 flex justify-end">
+                                <Button
+                                  size="sm"
+                                  className="gap-1.5"
+                                  disabled={savingOz === posKey || !dirtyPositions.has(posKey)}
+                                  onClick={() => handleSavePosition(posIndex)}
+                                >
+                                  {savingOz === posKey
+                                    ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                    : <Save className="w-3.5 h-3.5" />}
+                                  Speichern
+                                </Button>
                               </div>
                             </CardContent>
                             }
