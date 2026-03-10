@@ -28,11 +28,13 @@ const LVKalkulationView = forwardRef(function LVKalkulationView({ project }, ref
   }, []);
   const saveTimers = useRef({});
 
+  const saveAllDirtyRef = useRef(null);
+
   // Expose hasDirty for parent (tab-switch guard)
   useImperativeHandle(ref, () => ({
     hasDirtyChanges: () => dirtyPositions.size > 0,
-    saveAll: saveAllDirty,
-  }), [dirtyPositions, saveAllDirty]);
+    saveAll: () => saveAllDirtyRef.current?.(),
+  }), [dirtyPositions]);
 
   const { data: kalkulationen = [], isLoading } = useQuery({
     queryKey: ["kalkulation", projectId],
