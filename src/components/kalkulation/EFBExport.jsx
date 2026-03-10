@@ -18,73 +18,94 @@ export async function generateEFB221(project, kalkulation, stammdaten) {
   const mR = W - 20;
   const cW = mR - mL; // 170mm
 
-  // Helper
-  const drawRect = (x, y, w, h) => doc.rect(x, y, w, h);
-  const fillRect = (x, y, w, h, color) => {
-    doc.setFillColor(...color);
-    doc.rect(x, y, w, h, "F");
-    doc.setFillColor(255, 255, 255);
-  };
+  doc.setLineWidth(0.3);
+
   const text = (txt, x, y, opts = {}) => {
     doc.setFontSize(opts.size || 9);
     doc.setFont("helvetica", opts.bold ? "bold" : "normal");
-    if (opts.align === "right") {
-      doc.text(String(txt), x, y, { align: "right" });
-    } else {
-      doc.text(String(txt), x, y);
-    }
+    if (opts.align === "right") doc.text(String(txt ?? ""), x, y, { align: "right" });
+    else if (opts.align === "center") doc.text(String(txt ?? ""), x, y, { align: "center" });
+    else doc.text(String(txt ?? ""), x, y);
   };
 
-  // ── Header ──────────────────────────────────
-  text("221", mR, 14, { bold: true, size: 14 });
-  text("(Preisermittlung bei Zuschlagskalkulation)", mR, 19, { size: 7, align: "right" });
+  // ── SEITE 1 ─────────────────────────────────────────────────────────────
 
-  let y = 25;
-  // Bieter / Vergabenummer / Datum row
+  // Kennnummer oben rechts
+  text("221", mR, 12, { bold: true, size: 16 });
+  text("(Preisermittlung bei Zuschlagskalkulation)", mR, 17, { size: 7, align: "right" });
+
+  let y = 22;
   const firm = stammdaten?.find((s) => s.typ === "unternehmen");
-  doc.setLineWidth(0.3);
-  drawRect(mL, y, cW * 0.5, 12);
-  drawRect(mL + cW * 0.5, y, cW * 0.3, 12);
-  drawRect(mL + cW * 0.8, y, cW * 0.2, 12);
-  text("Bieter", mL + 1, y + 4, { size: 7 });
-  text(firm?.name || "", mL + 1, y + 9, { size: 8, bold: true });
-  text("Vergabenummer", mL + cW * 0.5 + 1, y + 4, { size: 7 });
-  text(project?.project_number || "", mL + cW * 0.5 + 1, y + 9, { size: 8 });
-  text("Datum", mL + cW * 0.8 + 1, y + 4, { size: 7 });
-  text(new Date().toLocaleDateString("de-DE"), mL + cW * 0.8 + 1, y + 9, { size: 8 });
-  y += 12;
 
-  // Baumaßnahme
-  drawRect(mL, y, cW, 14);
-  text("Baumaßnahme", mL + 1, y + 4, { size: 7 });
-  text(project?.project_name || "", mL + 1, y + 10, { size: 8 });
-  y += 14;
+  // ── Bieter / Vergabenummer / Datum ─────────────────────────────────────
+  // Zwei Zeilen: Labelezeile + Wertezeile → je 6mm hoch
+  const bieterW = cW * 0.5;
+  const vergabeW = cW * 0.3;
+  const datumW = cW - bieterW - vergabeW;
 
-  // Leistung
-  drawRect(mL, y, cW, 12);
-  text("Leistung", mL + 1, y + 4, { size: 7 });
-  const leistung = (project?.selected_trades || []).join(", ") || (project?.location || "");
-  text(leistung, mL + 1, y + 9, { size: 8 });
-  y += 14;
-
-  // ── Section 1: Verrechnungslohn ─────────────
-  text("Angaben zur Kalkulation mit vorbestimmten Zuschlägen", mL, y, { bold: true, size: 9 });
+  doc.rect(mL, y, bieterW, 6);
+  doc.rect(mL + bieterW, y, vergabeW, 6);
+  doc.rect(mL + bieterW + vergabeW, y, datumW, 6);
+  text("Bieter", mL + 1, y + 4.5, { size: 7 });
+  text("Vergabenummer", mL + bieterW + 1, y + 4.5, { size: 7 });
+  text("Datum", mL + bieterW + vergabeW + 1, y + 4.5, { size: 7 });
   y += 6;
 
-  const col1W = 110;
-  const col2W = 30;
-  const col3W = cW - col1W - col2W;
-
-  // Section 1 header
-  fillRect(mL, y, cW, 7, [230, 230, 230]);
-  drawRect(mL, y, col1W, 7);
-  drawRect(mL + col1W, y, col2W, 7);
-  drawRect(mL + col1W + col2W, y, col3W, 7);
-  text("1", mL + 1, y + 5, { bold: true });
-  text("Angaben über den Verrechnungslohn", mL + 10, y + 5, { bold: true });
-  text("Zuschlag %", mL + col1W + 1, y + 5, { size: 7 });
-  text("€/h", mL + col1W + col2W + 1, y + 5, { size: 7 });
+  doc.rect(mL, y, bieterW, 7);
+  doc.rect(mL + bieterW, y, vergabeW, 7);
+  doc.rect(mL + bieterW + vergabeW, y, datumW, 7);
+  text(firm?.name || "", mL + 1, y + 5, { size: 9, bold: true });
+  text(project?.project_number || "", mL + bieterW + 1, y + 5, { size: 9, bold: true });
+  text(new Date().toLocaleDateString("de-DE"), mL + bieterW + vergabeW + 1, y + 5, { size: 9 });
   y += 7;
+
+  // ── Baumaßnahme ─────────────────────────────────────────────────────────
+  doc.rect(mL, y, cW, 6);
+  text("Baumaßnahme", mL + 1, y + 4.5, { size: 7 });
+  y += 6;
+  doc.rect(mL, y, cW, 10);
+  const projName = project?.project_name || "";
+  // Wrap long names
+  const nameLines = doc.splitTextToSize(projName, cW - 3);
+  doc.setFontSize(9); doc.setFont("helvetica", "normal");
+  doc.text(nameLines.slice(0, 2), mL + 1, y + 5);
+  y += 10;
+
+  // ── Leistung ────────────────────────────────────────────────────────────
+  doc.rect(mL, y, cW, 6);
+  text("Leistung", mL + 1, y + 4.5, { size: 7 });
+  y += 6;
+  doc.rect(mL, y, cW, 10);
+  const leistung = (project?.selected_trades || []).join(", ") || (project?.location || "");
+  const leistungLines = doc.splitTextToSize(leistung, cW - 3);
+  doc.setFontSize(9); doc.setFont("helvetica", "normal");
+  doc.text(leistungLines.slice(0, 2), mL + 1, y + 5);
+  y += 10;
+
+  y += 3;
+
+  // ── "Angaben zur Kalkulation..." Überschrift ───────────────────────────
+  text("Angaben zur Kalkulation mit vorbestimmten Zuschlägen", mL, y + 4, { bold: true, size: 9 });
+  y += 8;
+
+  // ── Section 1: Verrechnungslohn ─────────────────────────────────────────
+  // Spalten: Nr(10) | Label(cW-10-col2W-col3W) | Zuschlag%(col2W) | €/h(col3W)
+  const s1numW = 10;
+  const s1col2W = 22; // Zuschlag %
+  const s1col3W = 22; // €/h
+  const s1labelW = cW - s1numW - s1col2W - s1col3W;
+
+  // Section-1 Header
+  doc.rect(mL, y, s1numW, 8);
+  doc.rect(mL + s1numW, y, s1labelW, 8);
+  doc.rect(mL + s1numW + s1labelW, y, s1col2W, 8);
+  doc.rect(mL + s1numW + s1labelW + s1col2W, y, s1col3W, 8);
+  text("1", mL + 2, y + 5.5, { bold: true, size: 9 });
+  text("Angaben über den Verrechnungslohn", mL + s1numW + 2, y + 5.5, { bold: true, size: 9 });
+  text("Zuschlag", mL + s1numW + s1labelW + s1col2W / 2, y + 3.5, { size: 7, align: "center" });
+  text("%", mL + s1numW + s1labelW + s1col2W / 2, y + 7, { size: 7, align: "center" });
+  text("€/h", mL + s1numW + s1labelW + s1col2W + s1col3W / 2, y + 5.5, { size: 7, align: "center" });
+  y += 8;
 
   const lohnRows = [
     { nr: "1.1", label: "Mittellohn ML", sub: "einschl. Lohnzulagen u. Lohnerhöhung, wenn keine Lohngleitklausel vereinbart wird" },
@@ -96,202 +117,268 @@ export async function generateEFB221(project, kalkulation, stammdaten) {
   ];
 
   lohnRows.forEach((row) => {
-    const rh = 10;
-    drawRect(mL, y, col1W, rh);
-    drawRect(mL + col1W, y, col2W, rh);
-    drawRect(mL + col1W + col2W, y, col3W, rh);
-    text(row.nr, mL + 1, y + 4, { bold: true });
-    text(row.label, mL + 10, y + 4, { bold: true, size: 8 });
-    if (row.sub) text(row.sub, mL + 10, y + 8, { size: 6.5 });
-    // Fill 1.5 with BGK lohn value
+    const rh = 13;
+    doc.rect(mL, y, s1numW, rh);
+    doc.rect(mL + s1numW, y, s1labelW, rh);
+    doc.rect(mL + s1numW + s1labelW, y, s1col2W, rh);
+    doc.rect(mL + s1numW + s1labelW + s1col2W, y, s1col3W, rh);
+    text(row.nr, mL + 2, y + 5, { bold: true, size: 9 });
+    text(row.label, mL + s1numW + 2, y + 5, { bold: true, size: 9 });
+    if (row.sub) text(row.sub, mL + s1numW + 2, y + 9.5, { size: 6.5 });
     if (row.nr === "1.5") {
       const totalLohnZ = (Number(z.lohn_bgk) || 0) + (Number(z.lohn_agk) || 0) + (Number(z.lohn_wg) || 0);
-      text(fmtPct(totalLohnZ), mL + col1W + col2W - 2, y + 5, { align: "right" });
+      text(fmtPct(totalLohnZ), mL + s1numW + s1labelW + s1col2W - 2, y + 7, { size: 8, align: "right" });
     }
     y += rh;
   });
 
-  y += 4;
+  y += 5;
 
-  // ── Section 2: Zuschläge ─────────────────────
-  text("2", mL + 1, y + 5, { bold: true });
-  const s2Label = "Zuschläge auf die Einzelkosten der Teilleistungen = unmittelbare Herstellungskosten";
-  fillRect(mL, y, cW, 7, [230, 230, 230]);
-  drawRect(mL, y, cW, 7);
-  text(s2Label, mL + 10, y + 5, { bold: true, size: 8 });
-  y += 7;
+  // ── Section 2: Zuschläge ─────────────────────────────────────────────────
+  // Section-2 Header (breite Zeile)
+  const s2numW = 10;
+  const s2labelW = 48;
+  const s2dataW = (cW - s2numW - s2labelW) / 5;
 
-  // Subheader row
-  const hdrH = 12;
-  const numColW = 12;
-  const labelColW = 55;
-  const dataColW = (cW - numColW - labelColW) / 5;
+  doc.rect(mL, y, cW, 8);
+  text("2", mL + 2, y + 5.5, { bold: true, size: 9 });
+  text("Zuschläge auf die Einzelkosten der Teilleistungen = unmittelbare Herstellungskosten", mL + s2numW + 2, y + 5.5, { bold: true, size: 8 });
+  y += 8;
 
-  fillRect(mL, y, cW, hdrH, [230, 230, 230]);
-  drawRect(mL, y, numColW, hdrH);
-  drawRect(mL + numColW, y, labelColW, hdrH);
-  ["Lohn", "Stoffkosten", "Gerätekosten", "Sonstige Kosten", "Nachunternehmer-\nleistungen"].forEach((h, i) => {
-    drawRect(mL + numColW + labelColW + i * dataColW, y, dataColW, hdrH);
-    text(h, mL + numColW + labelColW + i * dataColW + dataColW / 2 - 8, y + 5, { size: 6.5 });
+  // Sub-Header: Leerzeile mit "Zuschläge in % auf" oben, Spaltennamen unten
+  // Obere Headerzeile: nur Spalten ohne Inhalt + "Zuschläge in % auf" Überschrift
+  const subHdrH1 = 6;
+  doc.rect(mL, y, s2numW, subHdrH1);
+  doc.rect(mL + s2numW, y, s2labelW, subHdrH1);
+  const valZoneStart = mL + s2numW + s2labelW;
+  const valZoneW = s2dataW * 5;
+  doc.rect(valZoneStart, y, valZoneW, subHdrH1);
+  text("Zuschläge in % auf", valZoneStart + valZoneW / 2, y + 4.2, { size: 7, align: "center" });
+  y += subHdrH1;
+
+  // Spalten-Header Zeile
+  const colHeaders = ["Lohn", "Stoffkosten", "Geräte-\nkosten", "Sonstige Kos-\nten", "Nachunter-\nnehmer-\nleistungen"];
+  const subHdrH2 = 14;
+  doc.rect(mL, y, s2numW, subHdrH2);
+  doc.rect(mL + s2numW, y, s2labelW, subHdrH2);
+  colHeaders.forEach((h, i) => {
+    const cx = valZoneStart + i * s2dataW;
+    doc.rect(cx, y, s2dataW, subHdrH2);
+    const lines = h.split("\n");
+    const startY = y + subHdrH2 / 2 - (lines.length - 1) * 2.2;
+    lines.forEach((l, li) => text(l, cx + s2dataW / 2, startY + li * 4, { size: 6.5, align: "center" }));
   });
-  text("Zuschläge in % auf", mL + numColW + labelColW + (cW - numColW - labelColW) / 2 - 15, y + 3, { size: 6 });
-  y += hdrH;
+  y += subHdrH2;
 
   const bgkRow = [z.lohn_bgk, z.material_bgk, z.geraet_bgk, z.sonstiges_bgk, z.nu_bgk];
   const agkRow = [z.lohn_agk, z.material_agk, z.geraet_agk, z.sonstiges_agk, z.nu_agk];
   const wgRow  = [z.lohn_wg,  z.material_wg,  z.geraet_wg,  z.sonstiges_wg,  z.nu_wg];
-
-  const calcTotal = (row) => row.map((v) => Number(v) || 0).reduce((a, b) => a + b, 0);
   const totRow = bgkRow.map((_, i) =>
     (Number(bgkRow[i]) || 0) + (Number(agkRow[i]) || 0) + (Number(wgRow[i]) || 0)
   );
 
+  // Datareihen: 2.1, 2.2, 2.3 (mit Kreuzschraffur), 2.3.1, 2.3.2, 2.3.3, 2.4
   const sec2Rows = [
-    { nr: "2.1", label: "Baustellengemeinkosten", vals: bgkRow },
-    { nr: "2.2", label: "Allgemeine Geschäftskosten", vals: agkRow },
-    { nr: "2.3", label: "Wagnis und Gewinn", vals: wgRow },
-    { nr: "2.4", label: "Gesamtzuschläge", vals: totRow, bold: true },
+    { nr: "2.1",   label: "Baustellengemeinkosten",     vals: bgkRow, bold: true, hatch: false },
+    { nr: "2.2",   label: "Allgemeine Geschäftskosten", vals: agkRow, bold: true, hatch: false },
+    { nr: "2.3",   label: "Wagnis und Gewinn",          vals: null,   bold: true, hatch: true  },
+    { nr: "2.3.1", label: "Gewinn",                     vals: null,   bold: true, hatch: false },
+    { nr: "2.3.2", label: "betriebsbezogenes Wagnis\u00b9", vals: null, bold: true, hatch: false },
+    { nr: "2.3.3", label: "leistungsbezogenes Wagnis\u00b2", vals: null, bold: true, hatch: false },
+    { nr: "2.4",   label: "Gesamtzuschläge",            vals: totRow, bold: true, hatch: false },
   ];
 
   sec2Rows.forEach((row) => {
-    const rh = 8;
-    drawRect(mL, y, numColW, rh);
-    drawRect(mL + numColW, y, labelColW, rh);
-    text(row.nr, mL + 1, y + 5, { bold: true, size: 8 });
-    text(row.label, mL + numColW + 1, y + 5, { bold: row.bold, size: 8 });
-    row.vals.forEach((v, i) => {
-      drawRect(mL + numColW + labelColW + i * dataColW, y, dataColW, rh);
-      text(fmtPct(v), mL + numColW + labelColW + (i + 1) * dataColW - 2, y + 5, { size: 8, align: "right" });
-    });
-    y += rh;
-  });
+    const rh = 9;
+    doc.rect(mL, y, s2numW, rh);
+    doc.rect(mL + s2numW, y, s2labelW, rh);
+    text(row.nr, mL + 2, y + 6, { bold: true, size: 8 });
+    text(row.label, mL + s2numW + 2, y + 6, { bold: row.bold, size: 8 });
 
-  // Footer Seite 1
-  doc.setFontSize(6.5);
-  doc.setFont("helvetica", "normal");
-  doc.text("© VHB - Bund - Ausgabe 2017", mL, 288);
-  doc.text("Seite 1 von 2", mR, 288, { align: "right" });
-
-  // ── Seite 2 ─────────────────────────────────
-  doc.addPage();
-  text("221", mR, 14, { bold: true, size: 14 });
-  text("(Preisermittlung bei Zuschlagskalkulation)", mR, 19, { size: 7, align: "right" });
-  y = 25;
-
-  // ── Section 3: Angebotssumme ─────────────────
-  fillRect(mL, y, cW, 7, [230, 230, 230]);
-  drawRect(mL, y, cW, 7);
-  text("3.", mL + 1, y + 5, { bold: true });
-  text("Ermittlung der Angebotssumme", mL + 10, y + 5, { bold: true });
-  y += 7;
-
-  // Sub-header
-  const col3aW = numColW + labelColW + 10;
-  const col3bW = 38;
-  const col3cW = 23;
-  const col3dW = cW - col3aW - col3bW - col3cW;
-  const s3hdrH = 26;
-  fillRect(mL, y, cW, s3hdrH, [230, 230, 230]);
-  drawRect(mL, y, col3aW, s3hdrH);
-  drawRect(mL + col3aW, y, col3bW, s3hdrH);
-  drawRect(mL + col3aW + col3bW, y, col3cW, s3hdrH);
-  drawRect(mL + col3aW + col3bW + col3cW, y, col3dW, s3hdrH);
-  // Multi-line header texts rendered line by line
-  doc.setFontSize(6.5);
-  doc.setFont("helvetica", "normal");
-  [["Einzelkosten der", "Teilleistungen =", "unmittelbare Her-", "stellungskosten", "€"], ].forEach((lines) => {
-    lines.forEach((l, i) => doc.text(l, mL + col3aW + 2, y + 6 + i * 3.2));
-  });
-  [["Gesamt-", "zuschläge", "gem. 2.4", "%"]].forEach((lines) => {
-    lines.forEach((l, i) => doc.text(l, mL + col3aW + col3bW + 2, y + 8 + i * 3.2));
-  });
-  [["Angebotssumme", "€"]].forEach((lines) => {
-    lines.forEach((l, i) => doc.text(l, mL + col3aW + col3bW + col3cW + 2, y + 12 + i * 3.5));
-  });
-  y += s3hdrH;
-
-  // Aggregate values from kalkulation positions rows
-  const allRows = (kalkulation?.positions || []).flatMap((p) => p.rows || []);
-  const sumByType = { Lohn: 0, Material: 0, "Gerät": 0, NU: 0, Sonstiges: 0 };
-  allRows.forEach((r) => {
-    const t = r.kostentyp in sumByType ? r.kostentyp : "Sonstiges";
-    const kosten = Number(r.kosten_einheit || 0);
-    sumByType[t] += kosten;
-  });
-
-  const typeZuschlaege = {
-    Lohn: totRow[0],
-    Material: totRow[1],
-    "Gerät": totRow[2],
-    Sonstiges: totRow[3],
-    NU: totRow[4],
-  };
-
-  const sec3Rows = [
-    { nr: "3.1", label: "Eigene Lohnkosten", type: "Lohn", sub: "Verrechnungslohn (1.6)  ×  Gesamtstunden" },
-    { nr: "3.2", label: "Stoffkosten", type: "Material", sub: "(einschl. Kosten für Hilfsstoffe)" },
-    { nr: "3.3", label: "Gerätekosten", type: "Gerät", sub: "(einschließlich Kosten für Energie und Betriebsstoffe)" },
-    { nr: "3.4", label: "Sonstige Kosten", type: "Sonstiges", sub: "(vom Bieter zu erläutern)" },
-    { nr: "3.5", label: "Nachunternehmerleistungen", type: "NU", sub: "" },
-  ];
-
-  let angebotssumme = 0;
-  sec3Rows.forEach((row) => {
-    const rh = 13;
-    drawRect(mL, y, col3aW, rh);
-    drawRect(mL + col3aW, y, col3bW, rh);
-    drawRect(mL + col3aW + col3bW, y, col3cW, rh);
-    drawRect(mL + col3aW + col3bW + col3cW, y, col3dW, rh);
-    text(row.nr, mL + 1, y + 5, { bold: true });
-    text(row.label, mL + 10, y + 5, { bold: true, size: 8 });
-    if (row.sub) text(row.sub, mL + 10, y + 10, { size: 6.5 });
-    const ek = sumByType[row.type] || 0;
-    const pct = typeZuschlaege[row.type] || 0;
-    const as = ek * (1 + pct / 100);
-    angebotssumme += as;
-    // Row 3.1: Angebotssumme-Spalte mit Kreuzschraffur (VL × h Berechnung)
-    if (row.nr === "3.1") {
-      const x1 = mL + col3aW + col3bW + col3cW;
-      const x2 = x1 + col3dW;
-      doc.setLineWidth(0.25);
-      doc.line(x1, y, x2, y + rh);
-      doc.line(x1, y + rh, x2, y);
-      doc.setLineWidth(0.3);
-    }
-    if (ek > 0) {
-      text(fmt(ek), mL + col3aW + col3bW - 2, y + 7, { align: "right", size: 8 });
-      text(fmtPct(pct), mL + col3aW + col3bW + col3cW - 2, y + 7, { align: "right", size: 8 });
-      if (row.nr !== "3.1") {
-        text(fmt(as), mL + cW - 2, y + 7, { align: "right", size: 8 });
+    for (let i = 0; i < 5; i++) {
+      const cx = valZoneStart + i * s2dataW;
+      doc.rect(cx, y, s2dataW, rh);
+      if (row.hatch) {
+        // Kreuzschraffur für 2.3
+        doc.setLineWidth(0.2);
+        doc.line(cx, y, cx + s2dataW, y + rh);
+        doc.line(cx, y + rh, cx + s2dataW, y);
+        doc.setLineWidth(0.3);
+      } else if (row.vals) {
+        const v = row.vals[i];
+        if (v != null) text(fmtPct(v), cx + s2dataW - 2, y + 6, { size: 8, align: "right" });
       }
     }
     y += rh;
   });
 
-  // Angebotssumme footer
-  const fh = 10;
-  fillRect(mL, y, cW, fh, [230, 230, 230]);
-  drawRect(mL, y, col3aW + col3bW + col3cW, fh);
-  drawRect(mL + col3aW + col3bW + col3cW, y, col3dW, fh);
-  text("Angebotssumme ohne Umsatzsteuer", mL + 1, y + 6, { bold: true, size: 9 });
-  text(fmt(angebotssumme), mL + cW - 2, y + 6, { align: "right", size: 9, bold: true });
-  y += fh + 8;
-
-  // Fußnote Seite 2
+  // Fußnoten Seite 1
+  y += 8;
+  doc.setLineWidth(0.3);
+  doc.line(mL, y, mL + 55, y);
+  y += 3.5;
+  doc.setFontSize(7); doc.setFont("helvetica", "normal");
+  doc.text("\u00b9 Wagnis f\u00fcr das allgemeine Unternehmensrisiko", mL, y);
   y += 4;
-  doc.setLineWidth(0.2);
-  doc.line(mL, y, mL + 80, y);
-  y += 3;
-  doc.setFontSize(6.5);
+  doc.text("\u00b2 Mit der Ausf\u00fchrung der Leistungen verbundenes Wagnis", mL, y);
+
+  // Footer Seite 1
+  doc.setFontSize(7); doc.setFont("helvetica", "bold");
+  doc.text("\u00a9", mL, 289);
   doc.setFont("helvetica", "normal");
-  doc.text("3  Auf Verlangen sind für diese Leistungen die Angaben zur Kalkulation der(s) Nachunternehmer(s) dem Auftraggeber vorzulegen.", mL, y);
-  y += 10;
-  doc.text("eventuelle Erläuterungen des Bieters:", mL, y);
+  doc.text(" VHB - Bund - Ausgabe 2017", mL + 3, 289);
+  doc.text("Seite 1 von 2", mR, 289, { align: "right" });
+
+  // ── SEITE 2 ─────────────────────────────────────────────────────────────
+  doc.addPage();
+  doc.setLineWidth(0.3);
+
+  text("221", mR, 12, { bold: true, size: 16 });
+  text("(Preisermittlung bei Zuschlagskalkulation)", mR, 17, { size: 7, align: "right" });
+
+  y = 22;
+
+  // ── Section 3: Ermittlung der Angebotssumme ────────────────────────────
+  // Spalten: Nr(10) | Label(s3labelW) | EK(s3ekW) | Zuschlag%(s3zW) | Angebotssumme(s3asW)
+  const s3numW  = 10;
+  const s3asW   = 35;  // Angebotssumme
+  const s3zW    = 25;  // Gesamtzuschläge %
+  const s3ekW   = 40;  // Einzelkosten €
+  const s3labelW = cW - s3numW - s3ekW - s3zW - s3asW;
+
+  // Section 3 Header
+  doc.rect(mL, y, s3numW, 8);
+  doc.rect(mL + s3numW, y, s3labelW + s3ekW + s3zW + s3asW, 8);
+  text("3.", mL + 2, y + 5.5, { bold: true, size: 9 });
+  text("Ermittlung der Angebotssumme", mL + s3numW + 2, y + 5.5, { bold: true, size: 9 });
+  y += 8;
+
+  // Spalten-Header für Section 3
+  const s3hdrH = 28;
+  doc.rect(mL, y, s3numW, s3hdrH);
+  doc.rect(mL + s3numW, y, s3labelW, s3hdrH);
+  doc.rect(mL + s3numW + s3labelW, y, s3ekW, s3hdrH);
+  doc.rect(mL + s3numW + s3labelW + s3ekW, y, s3zW, s3hdrH);
+  doc.rect(mL + s3numW + s3labelW + s3ekW + s3zW, y, s3asW, s3hdrH);
+
+  // EK-Spalte Header
+  doc.setFontSize(7.5); doc.setFont("helvetica", "normal");
+  const ekHdrX = mL + s3numW + s3labelW + 2;
+  doc.text("Einzelkosten der", ekHdrX, y + 6);
+  doc.text("Teilleistungen =", ekHdrX, y + 10);
+  doc.text("unmittelbare Her-", ekHdrX, y + 14);
+  doc.text("stellungskosten", ekHdrX, y + 18);
+  doc.text("\u20ac", ekHdrX, y + 23);
+
+  // Gesamtzuschläge-Spalte Header
+  const zHdrX = mL + s3numW + s3labelW + s3ekW + 2;
+  doc.text("Gesamt-", zHdrX, y + 8);
+  doc.text("zuschlä-", zHdrX, y + 12);
+  doc.text("ge", zHdrX, y + 16);
+  doc.text("gem. 2.4", zHdrX, y + 20);
+  doc.text("%", zHdrX, y + 25);
+
+  // Angebotssumme-Spalte Header
+  const asHdrX = mL + s3numW + s3labelW + s3ekW + s3zW + 2;
+  doc.text("Angebotssumme", asHdrX, y + 10);
+  doc.text("\u20ac", asHdrX, y + 25);
+  y += s3hdrH;
+
+  // Aggregierte Werte
+  const allRows = (kalkulation?.positions || []).flatMap((p) => p.rows || []);
+  const sumByType = { Lohn: 0, Material: 0, "Gerät": 0, NU: 0, Sonstiges: 0 };
+  allRows.forEach((r) => {
+    const t = r.kostentyp in sumByType ? r.kostentyp : "Sonstiges";
+    sumByType[t] += Number(r.kosten_einheit || 0);
+  });
+
+  const typeZuschlaege = {
+    Lohn: totRow[0], Material: totRow[1], "Gerät": totRow[2], Sonstiges: totRow[3], NU: totRow[4],
+  };
+
+  const sec3Rows = [
+    { nr: "3.1", label: "Eigene Lohnkosten",       sub: "Verrechnungslohn (1.6)  \u00d7  Gesamtstunden", type: "Lohn",      hatch: true },
+    { nr: "3.2", label: "Stoffkosten",             sub: "(einschl. Kosten f\u00fcr Hilfsstoffe)",           type: "Material",  hatch: false },
+    { nr: "3.3", label: "Gerätekosten",            sub: "(einschlie\u00dflich Kosten f\u00fcr Energie und Betriebsstoffe)", type: "Gerät", hatch: false },
+    { nr: "3.4", label: "Sonstige Kosten",         sub: "(vom Bieter zu erl\u00e4utern)",                  type: "Sonstiges", hatch: false },
+    { nr: "3.5", label: "Nachunternehmerleistungen \u00b3", sub: "",                                       type: "NU",        hatch: false },
+  ];
+
+  let angebotssumme = 0;
+  sec3Rows.forEach((row) => {
+    const rh = row.nr === "3.1" ? 18 : 14;
+    const ekX = mL + s3numW + s3labelW;
+    const zX  = ekX + s3ekW;
+    const asX = zX + s3zW;
+
+    doc.rect(mL, y, s3numW, rh);
+    doc.rect(mL + s3numW, y, s3labelW, rh);
+    doc.rect(ekX, y, s3ekW, rh);
+    doc.rect(zX, y, s3zW, rh);
+    doc.rect(asX, y, s3asW, rh);
+
+    text(row.nr, mL + 2, y + 5, { bold: true, size: 9 });
+    text(row.label, mL + s3numW + 2, y + 5, { bold: true, size: 9 });
+    if (row.sub) text(row.sub, mL + s3numW + 2, y + 9.5, { size: 7 });
+
+    if (row.nr === "3.1") {
+      // "x" Zeile in der Mitte
+      text("x", mL + s3numW + s3labelW / 2, y + 14, { size: 9, align: "center" });
+      // Kreuzschraffur in Angebotssumme-Spalte
+      doc.setLineWidth(0.25);
+      doc.line(asX, y, asX + s3asW, y + rh);
+      doc.line(asX, y + rh, asX + s3asW, y);
+      doc.setLineWidth(0.3);
+    }
+
+    const ek = sumByType[row.type] || 0;
+    const pct = typeZuschlaege[row.type] || 0;
+    const as = ek * (1 + pct / 100);
+    if (row.nr !== "3.1") angebotssumme += as;
+
+    if (ek > 0) {
+      text(fmt(ek), ekX + s3ekW - 2, y + 7, { size: 8, align: "right" });
+      text(fmtPct(pct), zX + s3zW - 2, y + 7, { size: 8, align: "right" });
+      if (row.nr !== "3.1") text(fmt(as), asX + s3asW - 2, y + 7, { size: 8, align: "right" });
+    }
+    // 3.1 Lohn: EK und % immer anzeigen
+    if (row.nr === "3.1" && ek > 0) {
+      text(fmt(ek), ekX + s3ekW - 2, y + 7, { size: 8, align: "right" });
+      text(fmtPct(pct), zX + s3zW - 2, y + 7, { size: 8, align: "right" });
+    }
+    y += rh;
+  });
+
+  // Angebotssumme Footer-Zeile
+  const fh = 10;
+  doc.rect(mL, y, s3numW + s3labelW + s3ekW + s3zW, fh);
+  doc.rect(mL + s3numW + s3labelW + s3ekW + s3zW, y, s3asW, fh);
+  text("Angebotssumme ohne Umsatzsteuer", mL + 2, y + 6.5, { bold: true, size: 10 });
+  text(angebotssumme > 0 ? fmt(angebotssumme) : "", mL + s3numW + s3labelW + s3ekW + s3zW + s3asW - 2, y + 6.5, { align: "right", size: 9, bold: true });
+  y += fh;
+
+  // Erläuterungen
+  y += 8;
+  text("eventuelle Erläuterungen des Bieters:", mL, y, { size: 8 });
+  y += 5;
+  // Linienfeld für Erläuterungen (12 Zeilen)
+  for (let i = 0; i < 12; i++) {
+    doc.rect(mL, y + i * 8, cW, 8);
+  }
+
+  // Fußnoten Seite 2
+  const fn2Y = 264;
+  doc.setLineWidth(0.3);
+  doc.line(mL, fn2Y, mL + 60, fn2Y);
+  doc.setFontSize(7); doc.setFont("helvetica", "normal");
+  doc.text("3  Auf Verlangen sind f\u00fcr diese Leistungen die Angaben zur Kalkulation der(s) Nachunternehmer(s) dem Auftraggeber vorzulegen.", mL, fn2Y + 4);
+
   // Footer Seite 2
-  doc.setFontSize(6.5);
+  doc.setFontSize(7); doc.setFont("helvetica", "bold");
+  doc.text("\u00a9", mL, 289);
   doc.setFont("helvetica", "normal");
-  doc.text("© VHB - Bund - Ausgabe 2017", mL, 288);
-  doc.text("Seite 2 von 2", mR, 288, { align: "right" });
+  doc.text(" VHB - Bund - Ausgabe 2017", mL + 3, 289);
+  doc.text("Seite 2 von 2", mR, 289, { align: "right" });
 
   doc.save(`EFB_221_${project?.project_number || "Kalkulation"}.pdf`);
 }
