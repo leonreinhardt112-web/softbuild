@@ -108,7 +108,7 @@ export default function PositionKalkTable({ rows = [], onRowsChange, zuschlaege 
                       />
                       <ChevronDown className="absolute right-1 top-1.5 w-4 h-4 text-muted-foreground pointer-events-none" />
                       {openUnitDropdown === row.id && getFilteredUnits(unitInput[row.id]).length > 0 && (
-                        <div className="absolute top-full left-0 mt-1 bg-background border border-input rounded-md shadow-lg z-10 w-20">
+                        <div className="fixed bg-background border border-input rounded-md shadow-lg z-50 w-20">
                           {getFilteredUnits(unitInput[row.id]).map(u => (
                             <div
                               key={u}
