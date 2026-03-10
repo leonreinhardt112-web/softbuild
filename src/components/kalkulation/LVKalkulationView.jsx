@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, ChevronDown, ChevronRight, Calculator, CheckCircle2, Download, ChevronDown as ChevronDownIcon } from "lucide-react";
+import { Loader2, ChevronDown, ChevronRight, Calculator, CheckCircle2, Download, ChevronDown as ChevronDownIcon, Save } from "lucide-react";
 import PositionKalkTable from "./PositionKalkTable";
 import { generateKalkulationPDF } from "./KalkulationPdfExport";
 import KalkulationPdfExportDialog from "./KalkulationPdfExportDialog";
@@ -13,7 +13,7 @@ import ZuschlaegeDialog from "./ZuschlaegeDialog";
 import { generateEFB221, generateEFB223 } from "./EFBExport";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 
-export default function LVKalkulationView({ project }) {
+const LVKalkulationView = forwardRef(function LVKalkulationView({ project }, ref) {
   const queryClient = useQueryClient();
   const projectId = project.id;
   const [expandedOz, setExpandedOz] = useState(null);
