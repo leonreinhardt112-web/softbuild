@@ -36,10 +36,9 @@ export default function Layout({ children, currentPageName }) {
   const [localUnsavedState, setLocalUnsavedState] = useState({ hasChanges: false });
 
   const handleNavigation = (e, page) => {
-    const hasChanges = unsavedState?.hasChanges ?? localUnsavedState.hasChanges;
-    if (hasChanges) {
+    if (localUnsavedState.hasChanges) {
       e.preventDefault();
-      setLocalUnsavedState({ hasChanges: true, pendingPage: page });
+      setLocalUnsavedState(prev => ({ ...prev, pendingPage: page }));
       return;
     }
     navigate(createPageUrl(page));
