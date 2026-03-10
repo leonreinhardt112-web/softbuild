@@ -80,6 +80,7 @@ export default function ProjectDetail() {
 
   const handleDiscardAndSwitch = () => {
     setShowUnsavedDialog(false);
+    setUnsavedState(prev => ({ ...prev, hasChanges: false }));
     if (pendingNavigation) {
       pendingNavigation();
       setPendingNavigation(null);
