@@ -70,14 +70,33 @@ const LVKalkulationView = forwardRef(function LVKalkulationView({ project }, ref
   // Auto-create kalkulation if none exists
   useEffect(() => {
     if (!isLoading && kalkulationen.length === 0 && lvPositions.length > 0) {
-      createKalkMutation.mutate({
-        project_id: projectId,
-        version_name: "Hauptangebot",
-        positions: lvPositions.map((p) => ({
-          oz: p.oz, short_text: p.short_text, menge: parseFloat(p.quantity) || 0,
-          einheit: p.unit, ep: 0, gp: 0, rows: []
-        }))
-      });
+      const generateNummer = async () => {
+        try {
+          const response = await base44.functions.invoke('generateAngebotNummer', {});
+          const angebotNummer = response.data.angebotNummer;
+          createKalkMutation.mutate({
+            project_id: projectId,
+            version_name: "Hauptangebot",
+            angebot_nummer: angebotNummer,
+            positions: lvPositions.map((p) => ({
+              oz: p.oz, short_text: p.short_text, menge: parseFloat(p.quantity) || 0,
+              einheit: p.unit, ep: 0, gp: 0, rows: []
+            }))
+          });
+        } catch (error) {
+          console.error('Fehler bei Angebotsnummernvergabe:', error);
+          // Fallback ohne Nummer
+          createKalkMutation.mutate({
+            project_id: projectId,
+            version_name: "Hauptangebot",
+            positions: lvPositions.map((p) => ({
+              oz: p.oz, short_text: p.short_text, menge: parseFloat(p.quantity) || 0,
+              einheit: p.unit, ep: 0, gp: 0, rows: []
+            }))
+          });
+        }
+      };
+      generateNummer();
     }
   }, [isLoading, kalkulationen.length]);
 
