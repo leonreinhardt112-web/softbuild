@@ -345,8 +345,25 @@ const LVKalkulationView = forwardRef(function LVKalkulationView({ project }, ref
     await generateKalkulationPDF(project, kalk, options);
   };
 
+  const handleSaveAndContinue = async () => {
+    await saveAllDirty();
+    setUnsavedDialogOpen(false);
+    if (pendingNavigation) {
+      pendingNavigation();
+      setPendingNavigation(null);
+    }
+  };
+
   return (
     <div className="space-y-4">
+      <UnsavedChangesDialog
+        open={unsavedDialogOpen}
+        onCancel={() => {
+          setUnsavedDialogOpen(false);
+          setPendingNavigation(null);
+        }}
+        onSaveAndContinue={handleSaveAndContinue}
+      />
       <KalkulationPdfExportDialog 
         isOpen={exportDialogOpen} 
         onClose={() => setExportDialogOpen(false)}
