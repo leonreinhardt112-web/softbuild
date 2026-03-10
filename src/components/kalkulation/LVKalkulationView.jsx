@@ -12,6 +12,7 @@ import AngebotImportDialog from "./AngebotImportDialog";
 import ZuschlaegeDialog from "./ZuschlaegeDialog";
 import { generateEFB221, generateEFB223 } from "./EFBExport";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import UnsavedChangesDialog from "@/components/common/UnsavedChangesDialog";
 
 const LVKalkulationView = forwardRef(function LVKalkulationView({ project }, ref) {
   const queryClient = useQueryClient();
