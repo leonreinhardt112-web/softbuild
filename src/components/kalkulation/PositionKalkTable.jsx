@@ -24,7 +24,7 @@ function getZuschlagEur(kostentyp, kosten_einheit, zuschlaege) {
   return base * (bgk + agk + wg);
 }
 
-const UNITS = ["h", "m", "m²", "m³", "St.", "t", "kg"];
+const UNITS = ["h", "m", "m²", "m³", "St.", "t"];
 
 function newRow() {
   return { id: crypto.randomUUID(), name: "", beschreibung: "", kostentyp: "Lohn", menge: 1, einheit: "h", kosten_einheit: 0 };
