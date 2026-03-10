@@ -22,8 +22,14 @@ Deno.serve(async (req) => {
 Dann versuche jede extrahierte Position einer der folgenden LV-Positionen zuzuordnen:
 ${lvText}
 
+WICHTIG – Umgang mit Alternativen:
+- Wenn im Angebot nach einer Position das Wort "oder", "alternativ", "Alternativposition" o.ä. erscheint, handelt es sich um eine Alternative.
+- Extrahiere bei solchen Fällen NUR die erste (Haupt-)Position. Die Alternative wird vollständig ignoriert und darf NICHT in die Liste aufgenommen werden.
+
 Regeln für die Zuordnung:
 - Ordne zu, wenn der Sinn/Inhalt übereinstimmt, auch wenn die Formulierung leicht abweicht
+- Achte bei ähnlichem Kurztext aber unterschiedlichem EP besonders auf weitere Merkmale wie Baulänge, Nennweite, Dimension oder Variante, um die richtige LV-Position zuzuordnen
+- Wenn mehrere LV-Positionen ähnlich klingen (z.B. gleicher Rohrtyp, verschiedene Baulängen), ordne anhand dieser zusätzlichen Merkmale zu – nicht anhand des günstigsten oder teuersten Preises
 - Verwende "konfidenz" zwischen 0 und 1 (1 = sehr sicher, 0 = unsicher)
 - Wenn keine passende LV-Position gefunden werden kann, lasse "zugeordnete_oz" leer und setze konfidenz auf 0
 - Extrahiere den Einzelpreis (EP) als Zahl ohne Währungssymbol
