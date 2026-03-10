@@ -12,12 +12,18 @@ const DEFAULT_ZUSCHLAEGE = {
   sonstiges_bgk: 5, sonstiges_agk: 3, sonstiges_wg: 2,
 };
 
-const GRUPPEN = [
-  { key: "lohn", label: "Lohn", color: "bg-blue-100 text-blue-700" },
-  { key: "material", label: "Material", color: "bg-green-100 text-green-700" },
-  { key: "geraet", label: "Gerät", color: "bg-amber-100 text-amber-700" },
-  { key: "nu", label: "Nachunternehmer", color: "bg-purple-100 text-purple-700" },
-  { key: "sonstiges", label: "Sonstiges", color: "bg-gray-100 text-gray-700" },
+const KOSTENARTEN = [
+{ key: "lohn", label: "Lohn" },
+{ key: "material", label: "Stoffkosten" },
+{ key: "geraet", label: "Gerätekosten" },
+{ key: "sonstiges", label: "Sonstige Kosten" },
+{ key: "nu", label: "NU-Leistungen" },
+];
+
+const ZUSCHLAGZEILEN = [
+{ suffix: "bgk", label: "Baustellengemeinkosten", nr: "2.1" },
+{ suffix: "agk", label: "Allgemeine Geschäftskosten", nr: "2.2" },
+{ suffix: "wg", label: "Wagnis und Gewinn", nr: "2.3" },
 ];
 
 function calcGesamtZuschlag(bgk, agk, wg) {
