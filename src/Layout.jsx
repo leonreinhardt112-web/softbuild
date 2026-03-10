@@ -46,8 +46,38 @@ export default function Layout({ children, currentPageName }) {
     setSidebarOpen(false);
   };
 
+  const showDialog = localUnsavedState.hasChanges;
+
   return (
-    <div className="min-h-screen bg-background flex">
+    <>
+      {showDialog && (
+        <AlertDialog open={showDialog} onOpenChange={(open) => {
+          if (!open) setLocalUnsavedState({ hasChanges: false });
+        }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Ungespeicherte Änderungen</AlertDialogTitle>
+              <AlertDialogDescription>
+                Es gibt ungespeicherte Änderungen. Möchten Sie diese speichern, bevor Sie fortfahren?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setLocalUnsavedState({ hasChanges: false })}>
+                Abbrechen
+              </AlertDialogCancel>
+              <Button variant="outline" onClick={() => {
+                setLocalUnsavedState({ hasChanges: false });
+                navigate(createPageUrl(localUnsavedState.pendingPage));
+              }}>Verwerfen</Button>
+              <AlertDialogAction onClick={() => {
+                setLocalUnsavedState({ hasChanges: false });
+                navigate(createPageUrl(localUnsavedState.pendingPage));
+              }}>Speichern & Fortfahren</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
+      <div className="min-h-screen bg-background flex">
       {sidebarOpen && (
         <div
           className="fixed inset-0 bg-black/40 z-40 lg:hidden"
