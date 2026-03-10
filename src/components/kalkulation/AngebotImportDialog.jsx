@@ -179,7 +179,17 @@ export default function AngebotImportDialog({ project, kalkulation, onPositionen
               </div>
               <div>
                 <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Angebotsdatei (PDF, JPG, PNG) *</label>
-                <label className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-primary/50 hover:bg-accent/5 transition-all">
+                <label
+                  className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-primary/50 hover:bg-accent/5 transition-all"
+                  onDragOver={e => { e.preventDefault(); e.currentTarget.classList.add("border-primary", "bg-accent/10"); }}
+                  onDragLeave={e => { e.currentTarget.classList.remove("border-primary", "bg-accent/10"); }}
+                  onDrop={e => {
+                    e.preventDefault();
+                    e.currentTarget.classList.remove("border-primary", "bg-accent/10");
+                    const dropped = e.dataTransfer.files?.[0];
+                    if (dropped) setFile(dropped);
+                  }}
+                >
                   <input
                     type="file"
                     className="hidden"
