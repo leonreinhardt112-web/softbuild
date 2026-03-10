@@ -93,7 +93,7 @@ export default function ZuschlaegeDialog({ zuschlaege, onSave }) {
                       <th className="text-left font-medium text-muted-foreground py-2 px-2 border border-border w-6">#</th>
                       <th className="text-left font-medium text-muted-foreground py-2 px-2 border border-border">Zuschlagsart</th>
                       {KOSTENARTEN.map(k => (
-                        <th key={k.key} className="text-center font-medium text-muted-foreground py-2 px-1 border border-border text-[11px]">{k.label}</th>
+                        <th key={k.key} className="text-center font-medium text-muted-foreground py-2 px-2 border border-border text-[11px] min-w-[80px]">{k.label}</th>
                       ))}
                       <th className="text-center font-medium text-muted-foreground py-2 px-1 border border-border">Gesamt %</th>
                     </tr>
