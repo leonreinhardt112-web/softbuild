@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Upload, Loader2, CheckCircle2, AlertCircle, FileText, Sparkles, Check, X, Package, Trash2 } from "lucide-react";
+import { Upload, Loader2, CheckCircle2, AlertCircle, FileText, Sparkles, Check, X, Package, Trash2, PlayCircle } from "lucide-react";
 
 const KONFIDENZ_COLOR = (k) => {
   if (k >= 0.8) return "bg-green-100 text-green-700";
