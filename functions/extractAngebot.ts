@@ -47,6 +47,7 @@ Antworte NUR mit JSON, kein Text davor oder danach.`;
             items: {
               type: "object",
               properties: {
+                pos_nr: { type: "string" },
                 kurztext_angebot: { type: "string" },
                 ep: { type: "number" },
                 einheit: { type: "string" },
