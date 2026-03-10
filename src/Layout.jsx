@@ -81,21 +81,20 @@ export default function Layout({ children, currentPageName }) {
             const isActive = currentPageName === item.page;
             const Icon = item.icon;
             return (
-              <Link
+              <button
                 key={item.page}
-                to={createPageUrl(item.page)}
-                onClick={() => setSidebarOpen(false)}
+                onClick={(e) => handleNavigation(e, item.page)}
                 className={cn(
-                  "flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all group",
+                  "w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all group",
                   isActive
                     ? "bg-primary text-primary-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground hover:bg-accent"
                 )}
               >
                 <Icon className="w-4 h-4 shrink-0" />
-                <span className="flex-1 truncate">{item.name}</span>
+                <span className="flex-1 truncate text-left">{item.name}</span>
                 {isActive && <ChevronRight className="w-3 h-3 opacity-60" />}
-              </Link>
+              </button>
             );
           })}
         </nav>
