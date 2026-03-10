@@ -23,6 +23,12 @@ export default function AngebotImportDialog({ project, kalkulation, onPositionen
   const [error, setError] = useState(null);
   const qc = useQueryClient();
 
+  const { data: vorhandeneImports = [] } = useQuery({
+    queryKey: ["angebot-imports", kalkulation?.id],
+    queryFn: () => base44.entities.AngebotImport.filter({ kalkulation_id: kalkulation.id }),
+    enabled: open && !!kalkulation?.id
+  });
+
   const lvPositions = (project?.lv_positions || []).filter(p => {
     if (p.type === "title") return false;
     const hasNoQty = !p.quantity || p.quantity === "0" || p.quantity === "";
