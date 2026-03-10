@@ -331,6 +331,13 @@ export default function LVKalkulationView({ project }) {
               <p className="text-xs text-muted-foreground">Kalkulierte Angebotssumme</p>
               <p className="text-lg font-bold text-primary">{totalAngebotsumme.toLocaleString("de-DE", { style: "currency", currency: "EUR" })}</p>
             </div>
+            {kalk && (
+              <AngebotImportDialog
+                project={project}
+                kalkulation={kalk}
+                onPositionenApplied={() => { initialSyncDone.current = false; queryClient.invalidateQueries({ queryKey: ["kalkulation", projectId] }); }}
+              />
+            )}
             <Button
             onClick={() => setExportDialogOpen(true)}
             className="gap-2 whitespace-nowrap"
