@@ -171,6 +171,33 @@ export default function AngebotImportDialog({ project, kalkulation, onPositionen
             <DialogTitle className="text-base">Angebot importieren & Positionen zuordnen</DialogTitle>
           </DialogHeader>
 
+          {/* Vorhandene Imports */}
+          {step === "upload" && vorhandeneImports.length > 0 && (
+            <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-2">
+              <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                <Package className="w-3.5 h-3.5" />
+                Bereits importierte Angebote ({vorhandeneImports.length})
+              </p>
+              <div className="space-y-1.5">
+                {vorhandeneImports.map(imp => (
+                  <div key={imp.id} className="flex items-center justify-between text-xs bg-card rounded-md px-3 py-2 border border-border/50">
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                      <span className="font-medium">{imp.lieferant_name}</span>
+                      {imp.file_name && <span className="text-muted-foreground truncate max-w-[180px]">{imp.file_name}</span>}
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-muted-foreground">{(imp.extrahierte_positionen || []).length} Pos.</span>
+                      <Badge className={imp.status === "angewendet" ? "bg-green-100 text-green-700 text-[10px]" : "bg-amber-100 text-amber-700 text-[10px]"}>
+                        {imp.status === "angewendet" ? "Angewendet" : imp.status === "geprueft" ? "Geprüft" : "Extrahiert"}
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Step: Upload */}
           {step === "upload" && (
             <div className="space-y-4">
