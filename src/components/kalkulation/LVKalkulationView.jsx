@@ -329,11 +329,10 @@ export default function LVKalkulationView({ project }) {
         </div>
         {kalk ?
         <div className="flex items-center gap-4">
-            <div className="flex gap-2">
-              <Button onClick={toggleAllTitles} variant="outline" size="sm" className="text-xs">
-                {expandedTitles.size === grouped.length ? "Alle Titel zuklappen" : "Alle Titel aufklappen"}
-              </Button>
-            </div>
+            <ZuschlaegeDialog
+              zuschlaege={kalk?.zuschlaege}
+              onSave={(values) => updateKalkMutation.mutate({ id: kalk.id, data: { zuschlaege: values } })}
+            />
             <div className="text-right">
               <p className="text-xs text-muted-foreground">Kalkulierte Angebotssumme</p>
               <p className="text-lg font-bold text-primary">{totalAngebotsumme.toLocaleString("de-DE", { style: "currency", currency: "EUR" })}</p>
