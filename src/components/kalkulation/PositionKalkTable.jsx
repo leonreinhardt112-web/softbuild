@@ -83,17 +83,33 @@ export default function PositionKalkTable({ rows = [], onRowsChange, zuschlaege 
                       </SelectContent>
                     </Select>
                   </td>
-                  <td className="px-1 py-1">
-                    <Input 
-                      value={row.einheit} 
-                      onChange={e => handleChange(row.id, "einheit", e.target.value)} 
-                      list="units-list"
-                      className="h-7 text-xs w-20 border-0 bg-transparent focus:bg-background focus:border focus:border-input text-center" 
-                      placeholder="h" 
-                    />
-                    <datalist id="units-list">
-                      {UNITS.map(u => <option key={u} value={u} />)}
-                    </datalist>
+                  <td className="px-1 py-1 relative">
+                    <div className="relative">
+                      <Input 
+                        value={row.einheit} 
+                        onChange={e => handleChange(row.id, "einheit", e.target.value)} 
+                        onFocus={() => setOpenUnitDropdown(row.id)}
+                        className="h-7 text-xs w-20 border-0 bg-transparent focus:bg-background focus:border focus:border-input text-center pr-6" 
+                        placeholder="h" 
+                      />
+                      <ChevronDown className="absolute right-1 top-1.5 w-4 h-4 text-muted-foreground pointer-events-none" />
+                      {openUnitDropdown === row.id && (
+                        <div className="absolute top-full left-0 mt-1 bg-background border border-input rounded-md shadow-lg z-10">
+                          {UNITS.map(u => (
+                            <div
+                              key={u}
+                              onClick={() => {
+                                handleChange(row.id, "einheit", u);
+                                setOpenUnitDropdown(null);
+                              }}
+                              className="px-3 py-2 text-xs cursor-pointer hover:bg-muted hover:text-foreground transition-colors"
+                            >
+                              {u}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </td>
                   <td className="px-1 py-1">
                     <Input type="number" value={row.menge} onChange={e => handleChange(row.id, "menge", parseFloat(e.target.value) || 0)} className="h-7 text-xs w-20 text-right border-0 bg-transparent focus:bg-background focus:border focus:border-input" />
