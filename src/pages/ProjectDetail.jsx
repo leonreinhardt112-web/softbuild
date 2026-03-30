@@ -16,7 +16,7 @@ import ReviewSummary from "@/components/review/ReviewSummary";
 import OpenPointsManager from "@/components/review/OpenPointsManager";
 import PdfReport from "@/components/review/PdfReport";
 import LVUploader from "@/components/lv/LVUploader";
-import LVFindings from "@/components/lv/LVFindings";
+import LVAnalyseErgebnisse from "@/components/lv/LVAnalyseErgebnisse";
 import LVKalkulationView from "@/components/kalkulation/LVKalkulationView";
 import FristenTab from "@/components/projektakte/FristenTab";
 import DokumenteTab from "@/components/projektakte/DokumenteTab";
@@ -28,6 +28,7 @@ import {
   STATUS_LABELS,
   STATUS_COLORS,
 } from "@/components/checklistData";
+import { parseISO, isPast } from "date-fns";
 import {
   ArrowLeft, ClipboardCheck, Settings, BarChart3, AlertTriangle, Play, Save,
   Building2, MapPin, Calendar, User, Calculator, Receipt, HardHat,
@@ -350,152 +351,136 @@ export default function ProjectDetail() {
             <ListTodo className="w-3.5 h-3.5" />Aufgaben
             {aufgaben.filter(a=>!["erledigt","verworfen"].includes(a.status)).length > 0 && <span className="ml-1 text-[10px] bg-primary/10 text-primary px-1 rounded">{aufgaben.filter(a=>!["erledigt","verworfen"].includes(a.status)).length}</span>}
           </TabsTrigger>
-          <TabsTrigger value="afu" className="gap-1.5 text-xs" disabled={!isPostAward}
-            title={!isPostAward ? "Erst nach Beauftragung verfügbar" : ""}>
-            <ClipboardCheck className="w-3.5 h-3.5" />
-            AFU-Prüfung
-            {!isPostAward && <Lock className="w-3 h-3 ml-0.5 opacity-50" />}
-          </TabsTrigger>
-          <TabsTrigger value="ausfuehrung" className="gap-1.5 text-xs" disabled={!isPostAward}
-            title={!isPostAward ? "Erst nach Beauftragung verfügbar" : ""}>
-            <HardHat className="w-3.5 h-3.5" />
-            Ausführung
-            {!isPostAward && <Lock className="w-3 h-3 ml-0.5 opacity-50" />}
-          </TabsTrigger>
+          {isPostAward && (
+            <TabsTrigger value="afu" className="gap-1.5 text-xs">
+              <ClipboardCheck className="w-3.5 h-3.5" />AFU-Prüfung
+            </TabsTrigger>
+          )}
+          {isPostAward && (
+            <TabsTrigger value="ausfuehrung" className="gap-1.5 text-xs">
+              <HardHat className="w-3.5 h-3.5" />Ausführung
+            </TabsTrigger>
+          )}
         </TabsList>
 
         {/* OVERVIEW */}
         <TabsContent value="overview" className="mt-6">
-          <div className="space-y-6">
-            {/* KPI-Karten */}
-            {(() => {
-              const auftragssumme = project.auftragssumme_netto || project.auftragssumme || 0;
-              const abgerechnet = rechnungen.filter(r => ["gestellt","teilbezahlt","bezahlt"].includes(r.status))
-                .reduce((s, r) => s + (r.betrag_netto || 0), 0);
-              const finanzFortschritt = auftragssumme > 0 ? Math.min(100, (abgerechnet / auftragssumme) * 100) : 0;
-              const fmt = (n) => n.toLocaleString("de-DE", { style: "currency", currency: "EUR" });
-              const offeneFristen = fristen.filter(f => f.status !== "erledigt").length;
-              const offenerSchriftverkehr = schriftverkehr.filter(s => s.status !== "erledigt").length;
-              return (
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                  <Card>
-                    <CardContent className="p-4 flex items-start gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                        <Euro className="w-4 h-4 text-primary" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-xs text-muted-foreground">Auftragssumme netto</p>
-                        <p className="text-base font-bold truncate">{auftragssumme ? fmt(auftragssumme) : "–"}</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="p-4 flex items-start gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-green-50 flex items-center justify-center shrink-0">
-                        <TrendingUp className="w-4 h-4 text-green-600" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-xs text-muted-foreground">Abgerechnet</p>
-                        <p className="text-base font-bold truncate">{abgerechnet ? fmt(abgerechnet) : "–"}</p>
-                        {auftragssumme > 0 && <p className="text-xs text-muted-foreground">{Math.round(finanzFortschritt)}% der Auftragssumme</p>}
-                      </div>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="p-4 flex items-start gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center shrink-0">
-                        <AlarmClock className="w-4 h-4 text-amber-600" />
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Offene Fristen</p>
-                        <p className="text-base font-bold">{offeneFristen}</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="p-4 flex items-start gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
-                        <Mail className="w-4 h-4 text-blue-600" />
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Schriftverkehr offen</p>
-                        <p className="text-base font-bold">{offenerSchriftverkehr}</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              );
-            })()}
+          {(() => {
+            const auftragssumme = project.auftragssumme_netto || project.auftragssumme || 0;
+            const abgerechnet = rechnungen.filter(r => ["gestellt","teilbezahlt","bezahlt"].includes(r.status))
+              .reduce((s, r) => s + (r.betrag_netto || 0), 0);
+            const offen = Math.max(0, auftragssumme - abgerechnet);
+            const finanzFortschritt = auftragssumme > 0 ? Math.min(100, (abgerechnet / auftragssumme) * 100) : 0;
+            const fmt = (n) => n.toLocaleString("de-DE", { style: "currency", currency: "EUR" });
+            const offeneFristen = fristen.filter(f => f.status !== "erledigt").length;
+            const ueberfaelligFristen = fristen.filter(f => f.status !== "erledigt" && f.datum && isPast(parseISO(f.datum))).length;
+            const offenerSchriftverkehr = schriftverkehr.filter(s => s.status !== "erledigt").length;
 
-            {/* Projektdaten + Termine + Kalkulation */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            // StatCard helper
+            const SC = ({ title, value, sub, icon: Icon, accent }) => (
               <Card>
-                <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold">Projektdaten</CardTitle></CardHeader>
-                <CardContent className="space-y-2.5 text-sm">
-                  {[
-                    ["Projektnummer", project.project_number],
-                    ["Auftraggeber", project.client],
-                    ["Standort", project.location],
-                    ["Vertragsart", project.contract_type],
-                    ["VOB/B vereinbart", project.vob_agreed !== undefined ? (project.vob_agreed ? "Ja" : "Nein") : null],
-                    ["Planungsbüro", project.planning_office],
-                    ["Projektleiter", project.project_manager],
-                    ["Bauleiter", project.site_manager],
-                    ["Bearbeiter AFU", project.reviewer],
-                  ].filter(([, v]) => v).map(([label, value]) => (
-                    <div key={label} className="flex justify-between gap-4">
-                      <span className="text-muted-foreground shrink-0">{label}</span>
-                      <span className="font-medium text-right">{value}</span>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                    <Clock className="w-4 h-4" />Termine
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2.5 text-sm">
-                  {[
-                    ["Submissionsdatum", project.submission_date],
-                    ["Prüfdatum AFU", project.review_date],
-                    ["Projektstart", project.project_start],
-                    ["Projektende (geplant)", project.project_end],
-                  ].map(([label, value]) => (
-                    <div key={label} className="flex justify-between gap-4">
-                      <span className="text-muted-foreground shrink-0">{label}</span>
-                      <span className="font-medium">{value ? format(new Date(value), "dd.MM.yyyy") : "–"}</span>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-              {latestKalk && (
-                <Card>
-                  <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold flex items-center gap-2"><Euro className="w-4 h-4" />Kalkulation</CardTitle></CardHeader>
-                  <CardContent className="space-y-2 text-sm">
-                    <div className="flex justify-between"><span className="text-muted-foreground">Angebotssumme</span><span className="font-semibold">{latestKalk.angebotsumme?.toLocaleString("de-DE", { style: "currency", currency: "EUR" }) || "–"}</span></div>
-                    <div className="flex justify-between"><span className="text-muted-foreground">Deckungsbeitrag</span><span className="font-medium">{latestKalk.deckungsbeitrag?.toLocaleString("de-DE", { style: "currency", currency: "EUR" }) || "–"}</span></div>
-                    <Button size="sm" variant="outline" className="w-full mt-2 gap-1" onClick={() => setActiveTab("kalkulation")}>
-                      Zur Kalkulation <ChevronRight className="w-3.5 h-3.5" />
-                    </Button>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-
-            {!isPostAward && (
-              <Card className="border-dashed border-muted-foreground/30">
-                <CardContent className="py-6 flex items-start gap-3">
-                  <Lock className="w-5 h-5 text-muted-foreground/50 mt-0.5 shrink-0" />
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">AFU-Prüfung & Ausführung</p>
-                    <p className="text-xs text-muted-foreground/70 mt-1">Diese Module werden nach Beauftragung freigeschaltet.</p>
+                <CardContent className="p-4 flex items-start gap-3">
+                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${accent || "bg-primary/10"}`}>
+                    <Icon className="w-4 h-4 text-primary" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs text-muted-foreground">{title}</p>
+                    <p className="text-base font-bold mt-0.5 truncate">{value}</p>
+                    {sub && <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>}
                   </div>
                 </CardContent>
               </Card>
-            )}
-          </div>
+            );
+
+            return (
+              <div className="space-y-6">
+                {/* KPI Row – identisches Design wie ursprüngliches Cockpit */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  <SC title="Auftragssumme netto" value={auftragssumme ? fmt(auftragssumme) : "–"} icon={Euro} />
+                  <SC title="Abgerechnet" value={abgerechnet ? fmt(abgerechnet) : "–"}
+                    sub={auftragssumme ? `${Math.round(finanzFortschritt)}% der Auftragssumme` : undefined}
+                    icon={TrendingUp} accent="bg-green-50" />
+                  <SC title="Offen (Abrechnung)" value={auftragssumme ? fmt(offen) : "–"} icon={Euro} accent="bg-amber-50" />
+                  <SC title="Offene Fristen" value={offeneFristen}
+                    sub={ueberfaelligFristen > 0 ? `${ueberfaelligFristen} überfällig` : `${offenerSchriftverkehr} Schriftverkehr offen`}
+                    icon={AlarmClock} accent="bg-amber-50" />
+                </div>
+
+                {/* Projektdaten + Termine + Kalkulation */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  <Card>
+                    <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold">Projektdaten</CardTitle></CardHeader>
+                    <CardContent className="space-y-2.5 text-sm">
+                      {[
+                        ["Projektnummer", project.project_number],
+                        ["Auftraggeber", project.client],
+                        ["Standort", project.location],
+                        ["Vertragsart", project.contract_type],
+                        ["VOB/B vereinbart", project.vob_agreed !== undefined ? (project.vob_agreed ? "Ja" : "Nein") : null],
+                        ["Planungsbüro", project.planning_office],
+                        ["Projektleiter", project.project_manager],
+                        ["Bauleiter", project.site_manager],
+                      ].filter(([, v]) => v).map(([label, value]) => (
+                        <div key={label} className="flex justify-between gap-4">
+                          <span className="text-muted-foreground shrink-0">{label}</span>
+                          <span className="font-medium text-right">{value}</span>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                        <Clock className="w-4 h-4" />Termine
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2.5 text-sm">
+                      {[
+                        ["Submissionsdatum", project.submission_date],
+                        ["Projektstart", project.project_start],
+                        ["Projektende (geplant)", project.project_end],
+                        ...(isPostAward ? [["Prüfdatum AFU", project.review_date]] : []),
+                      ].map(([label, value]) => (
+                        <div key={label} className="flex justify-between gap-4">
+                          <span className="text-muted-foreground shrink-0">{label}</span>
+                          <span className={`font-medium ${!value ? "text-muted-foreground" : ""}`}>
+                            {value ? format(new Date(value), "dd.MM.yyyy") : "–"}
+                          </span>
+                        </div>
+                      ))}
+                      {!project.project_start && !project.project_end && project.lv_positions?.length > 0 && (
+                        <p className="text-[11px] text-amber-600 bg-amber-50 rounded p-1.5 mt-1">
+                          Keine Fristen im LV gefunden → KI-Analyse im Kalkulation-Tab kann Bieterfragen vorschlagen.
+                        </p>
+                      )}
+                    </CardContent>
+                  </Card>
+                  {latestKalk ? (
+                    <Card>
+                      <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold flex items-center gap-2"><Euro className="w-4 h-4" />Kalkulation</CardTitle></CardHeader>
+                      <CardContent className="space-y-2 text-sm">
+                        <div className="flex justify-between"><span className="text-muted-foreground">Angebotssumme</span><span className="font-semibold">{latestKalk.angebotsumme?.toLocaleString("de-DE", { style: "currency", currency: "EUR" }) || "–"}</span></div>
+                        <div className="flex justify-between"><span className="text-muted-foreground">Deckungsbeitrag</span><span className="font-medium">{latestKalk.deckungsbeitrag?.toLocaleString("de-DE", { style: "currency", currency: "EUR" }) || "–"}</span></div>
+                        <Button size="sm" variant="outline" className="w-full mt-2 gap-1" onClick={() => setActiveTab("kalkulation")}>
+                          Zur Kalkulation <ChevronRight className="w-3.5 h-3.5" />
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    <Card className="border-dashed">
+                      <CardContent className="py-8 flex flex-col items-center justify-center gap-2 text-center">
+                        <Calculator className="w-8 h-8 text-muted-foreground/40" />
+                        <p className="text-sm text-muted-foreground">Noch keine Kalkulation</p>
+                        <Button size="sm" variant="outline" className="gap-1 mt-1" onClick={() => setActiveTab("kalkulation")}>
+                          LV hochladen & kalkulieren <ChevronRight className="w-3.5 h-3.5" />
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
         </TabsContent>
 
         {/* DOKUMENTE */}
@@ -520,7 +505,43 @@ export default function ProjectDetail() {
 
         {/* KALKULATION */}
         <TabsContent value="kalkulation" className="mt-6">
-          <LVKalkulationView ref={kalkulationRef} project={project} />
+          <div className="space-y-6">
+            {/* LV-Upload + KI-Analyse als Vorbereitung */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-1">
+                <LVUploader project={project} onUpdate={handleLVUpdate} onTradesDetected={handleTradesDetected} />
+              </div>
+              <div className="lg:col-span-2">
+                <LVAnalyseErgebnisse
+                  project={project}
+                  onUpdate={handleLVUpdate}
+                  onFristenUebernehmen={async (kiFristen) => {
+                    // Fristen als ProjektFrist-Einträge anlegen und Projektdaten ergänzen
+                    const startFrist = kiFristen.find(f => f.typ === "vertragsbeginn");
+                    const endFrist = kiFristen.find(f => f.typ === "vertragsende");
+                    const updates = {};
+                    if (startFrist?.datum && !project.project_start) updates.project_start = startFrist.datum;
+                    if (endFrist?.datum && !project.project_end) updates.project_end = endFrist.datum;
+                    if (Object.keys(updates).length > 0) await handleLVUpdate(updates);
+                    // Als ProjektFrist speichern
+                    for (const f of kiFristen) {
+                      await base44.entities.ProjektFrist.create({
+                        project_id: projectId,
+                        titel: f.titel,
+                        datum: f.datum || null,
+                        typ: f.typ || "sonstiges",
+                        status: "offen",
+                      });
+                    }
+                    queryClient.invalidateQueries({ queryKey: ["fristen", projectId] });
+                    await handleLVUpdate({ ki_gefundene_fristen: [] });
+                  }}
+                />
+              </div>
+            </div>
+            {/* Kalkulations-Tabelle */}
+            <LVKalkulationView ref={kalkulationRef} project={project} />
+          </div>
         </TabsContent>
 
         {/* AFU-PRÜFUNG */}

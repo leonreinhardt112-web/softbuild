@@ -238,6 +238,31 @@
           }
         }
       }
+    },
+    "ki_bieterfragen": {
+      "type": "array",
+      "description": "Von der KI formulierte Bieterfragen",
+      "items": {
+        "type": "string"
+      }
+    },
+    "ki_gefundene_fristen": {
+      "type": "array",
+      "description": "Aus Unterlagen extrahierte Fristen",
+      "items": {
+        "type": "object",
+        "properties": {
+          "titel": {
+            "type": "string"
+          },
+          "datum": {
+            "type": "string"
+          },
+          "typ": {
+            "type": "string"
+          }
+        }
+      }
     }
   },
   "required": [
