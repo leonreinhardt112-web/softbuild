@@ -4,7 +4,7 @@
   "properties": {
     "role": {
       "type": "string",
-      "description": "Rolle des Benutzers",
+      "description": "Fachliche Rolle",
       "enum": [
         "admin",
         "geschaeftsfuehrung",
@@ -17,6 +17,14 @@
       "type": "boolean",
       "default": true,
       "description": "Benutzer aktiv"
+    },
+    "arbeits_email": {
+      "type": "string",
+      "description": "Arbeits-E-Mail (f\u00fcr Schriftverkehr, Login)"
+    },
+    "telefon": {
+      "type": "string",
+      "description": "Telefonnummer"
     }
   },
   "required": [
