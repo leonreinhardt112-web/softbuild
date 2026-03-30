@@ -81,21 +81,68 @@ function parseX83(xmlText) {
     }
   };
 
+  // Filter out boolean/flag values that are not real text
+  const isBooleanValue = (text) => {
+    const lower = text.toLowerCase().trim();
+    return lower === "yes" || lower === "no" || lower === "true" || lower === "false" || lower === "1" || lower === "0";
+  };
+
+  // Get direct text content of an element (only direct child text nodes, not nested elements)
+  const getDirectText = (el) => {
+    if (!el) return "";
+    let text = "";
+    for (const child of el.childNodes) {
+      if (child.nodeType === 3) { // TEXT_NODE
+        text += child.textContent;
+      }
+    }
+    return text.trim();
+  };
+
+  // Find element by tag name (case-insensitive) among direct and shallow children
+  const findEl = (node, ...tagNames) => {
+    for (const tag of tagNames) {
+      const upper = tag.toUpperCase();
+      // Try querySelector first (HTML-mode, case-insensitive)
+      const found = node.querySelector(tag);
+      if (found) return found;
+      // Manual case-insensitive search in children
+      for (const child of node.children) {
+        if (child.tagName?.toUpperCase() === upper) return child;
+      }
+    }
+    return null;
+  };
+
   const processItem = (node, parentOz) => {
     let oz = getText(node, "ItemNo", "OZ", "Pos") || node.getAttribute("RNoPart") || "";
     
-    // Strikt trennen: Kurztext nur vom ShortText-Element, Langtext vom DetailText/LongText
     let shortText = "";
     let longText = "";
     
-    // Suche Kurztext in ShortText oder KurzText Element
-    const shortEl = node.querySelector("ShortText") || node.querySelector("KurzText") || node.querySelector("Description ShortText");
-    if (shortEl?.textContent?.trim()) {
-      shortText = shortEl.textContent.trim();
-    } else {
-      // Fallback: erstes Description Element
-      const descEl = node.querySelector("Description");
-      if (descEl?.textContent?.trim()) shortText = descEl.textContent.trim();
+    // Try to find ShortText — prefer direct text content to avoid picking up boolean child elements
+    const shortEl = findEl(node, "ShortText", "KurzText");
+    if (shortEl) {
+      // First try direct text only (avoids nested boolean elements)
+      const direct = getDirectText(shortEl);
+      if (direct && !isBooleanValue(direct)) {
+        shortText = direct;
+      } else {
+        // Fall back to full textContent but filter out booleans
+        const full = shortEl.textContent?.trim();
+        if (full && !isBooleanValue(full)) shortText = full;
+      }
+    }
+    
+    // If still no shortText, try Description element (but only direct text)
+    if (!shortText) {
+      const descEl = findEl(node, "Description");
+      if (descEl) {
+        const direct = getDirectText(descEl);
+        if (direct && !isBooleanValue(direct)) {
+          shortText = direct;
+        }
+      }
     }
     
     // Suche Langtext NICHT in ShortText, nur in DetailText/LongText Elementen
