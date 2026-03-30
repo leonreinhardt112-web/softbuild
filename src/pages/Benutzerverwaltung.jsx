@@ -141,7 +141,9 @@ export default function Benutzerverwaltung() {
     setAnlegenLoading(true);
     setAnlegenError("");
     try {
-      await base44.users.inviteUser(emailToUse, anlegenForm.role);
+      // Plattform erlaubt nur "user" oder "admin" – fachliche Rolle wird separat gespeichert
+      const platformRole = anlegenForm.role === "admin" ? "admin" : "user";
+      await base44.users.inviteUser(emailToUse, platformRole);
       await new Promise(r => setTimeout(r, 1000));
       const allUsers = await base44.entities.User.list("full_name", 200);
       const neu = allUsers.find(u => u.email === emailToUse);
