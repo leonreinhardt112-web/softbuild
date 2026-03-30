@@ -251,7 +251,18 @@ export default function LVUploader({ project, onUpdate, onTradesDetected }) {
     try {
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
       const existing = project?.projekt_unterlagen || [];
+      // Unterlage im Projekt speichern
       await onUpdate({ projekt_unterlagen: [...existing, { name: file.name, url: file_url }], baulv_conflict_findings: [] });
+      // Gleichzeitig als ProjektDokument anlegen → kein Doppel-Upload nötig
+      const kat = file.name.toLowerCase().endsWith(".pdf") ? "angebotsunterlagen" : "sonstiges";
+      await base44.entities.ProjektDokument.create({
+        project_id: project.id,
+        titel: file.name,
+        dateiname: file.name,
+        datei: file_url,
+        kategorie: kat,
+        bemerkung: "Automatisch aus LV-Unterlagen übernommen",
+      });
     } catch (err) {
       setError("Fehler beim Hochladen: " + err.message);
     }
