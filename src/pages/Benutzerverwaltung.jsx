@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Users, UserPlus, Trash2, FolderOpen, Pencil, Mail, Phone, CheckCircle2, XCircle } from "lucide-react";
+import { Users, UserPlus, Trash2, FolderOpen, Pencil, Mail, CheckCircle2, XCircle } from "lucide-react";
 
 const ROLLEN = {
   admin: "Admin",
@@ -33,7 +33,7 @@ const PROJEKT_ROLLEN = {
   nur_lesen: "Nur lesen",
 };
 
-const DEFAULT_ANLEGEN = { email: "", role: "kalkulation", arbeits_email: "", telefon: "" };
+const DEFAULT_ANLEGEN = { email: "", role: "kalkulation" };
 
 export default function Benutzerverwaltung() {
   const qc = useQueryClient();
@@ -96,10 +96,9 @@ export default function Benutzerverwaltung() {
       await new Promise(r => setTimeout(r, 1000));
       const allUsers = await base44.entities.User.list("full_name", 200);
       const neu = allUsers.find(u => u.email === anlegenForm.email);
-      if (neu && (anlegenForm.arbeits_email || anlegenForm.telefon)) {
+      if (neu) {
         await base44.entities.User.update(neu.id, {
-          arbeits_email: anlegenForm.arbeits_email || anlegenForm.email,
-          telefon: anlegenForm.telefon,
+          arbeits_email: anlegenForm.email,
         });
       }
       qc.invalidateQueries({ queryKey: ["users"] });
@@ -119,7 +118,6 @@ export default function Benutzerverwaltung() {
       role: u.role || "kalkulation",
       aktiv: u.aktiv !== false,
       arbeits_email: u.arbeits_email || u.email || "",
-      telefon: u.telefon || "",
     });
     setShowBearbeitenDialog(true);
   };
@@ -209,11 +207,6 @@ export default function Benutzerverwaltung() {
                               <Mail className="w-3 h-3" />
                               {u.arbeits_email || u.email}
                             </span>
-                            {u.telefon && (
-                              <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                <Phone className="w-3 h-3" />{u.telefon}
-                              </span>
-                            )}
                           </div>
                         </div>
                       </div>
@@ -277,31 +270,20 @@ export default function Benutzerverwaltung() {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-1">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="col-span-2">
-                <Label className="text-xs font-medium">Login-E-Mail <span className="text-destructive">*</span></Label>
+            <div className="space-y-3">
+              <div>
+                <Label className="text-xs font-medium">E-Mail-Adresse <span className="text-destructive">*</span></Label>
                 <Input
                   type="email"
-                  placeholder="vorname.nachname@firma.de"
+                  placeholder="max.mustermann@meinefirma.de"
                   value={anlegenForm.email}
                   onChange={e => setAnlegenForm(f => ({ ...f, email: e.target.value }))}
                   className="mt-1 text-sm"
                 />
-                <p className="text-[10px] text-muted-foreground mt-1">Diese E-Mail wird zum Login verwendet. Der Mitarbeiter erhält eine Einladungs-E-Mail.</p>
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  Der Mitarbeiter erhält an diese Adresse eine Einladung zum Setzen seines Passworts. Diese E-Mail gilt gleichzeitig als Absender im Schriftverkehr.
+                </p>
               </div>
-
-              <div className="col-span-2">
-                <Label className="text-xs font-medium">Arbeits-E-Mail</Label>
-                <Input
-                  type="email"
-                  placeholder="wie Login-E-Mail, oder abweichend"
-                  value={anlegenForm.arbeits_email}
-                  onChange={e => setAnlegenForm(f => ({ ...f, arbeits_email: e.target.value }))}
-                  className="mt-1 text-sm"
-                />
-                <p className="text-[10px] text-muted-foreground mt-1">Wird im Schriftverkehr als Absender verwendet. Leer lassen = Login-E-Mail wird übernommen.</p>
-              </div>
-
               <div>
                 <Label className="text-xs font-medium">Fachliche Rolle <span className="text-destructive">*</span></Label>
                 <Select value={anlegenForm.role} onValueChange={v => setAnlegenForm(f => ({ ...f, role: v }))}>
@@ -312,16 +294,6 @@ export default function Benutzerverwaltung() {
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
-
-              <div>
-                <Label className="text-xs font-medium">Telefon</Label>
-                <Input
-                  placeholder="+49 ..."
-                  value={anlegenForm.telefon}
-                  onChange={e => setAnlegenForm(f => ({ ...f, telefon: e.target.value }))}
-                  className="mt-1 text-sm"
-                />
               </div>
             </div>
 
@@ -361,16 +333,16 @@ export default function Benutzerverwaltung() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="col-span-2">
-                  <Label className="text-xs font-medium">Arbeits-E-Mail</Label>
+              <div className="space-y-3">
+                <div>
+                  <Label className="text-xs font-medium">E-Mail-Adresse</Label>
                   <Input
                     type="email"
                     value={bearbeitenForm.arbeits_email || ""}
                     onChange={e => setBearbeitenForm(f => ({ ...f, arbeits_email: e.target.value }))}
                     className="mt-1 text-sm"
                   />
-                  <p className="text-[10px] text-muted-foreground mt-1">Absender im Schriftverkehr</p>
+                  <p className="text-[10px] text-muted-foreground mt-1">Login-Adresse & Absender im Schriftverkehr</p>
                 </div>
 
                 <div>
@@ -386,16 +358,6 @@ export default function Benutzerverwaltung() {
                 </div>
 
                 <div>
-                  <Label className="text-xs font-medium">Telefon</Label>
-                  <Input
-                    placeholder="+49 ..."
-                    value={bearbeitenForm.telefon || ""}
-                    onChange={e => setBearbeitenForm(f => ({ ...f, telefon: e.target.value }))}
-                    className="mt-1 text-sm"
-                  />
-                </div>
-
-                <div className="col-span-2">
                   <Label className="text-xs font-medium">Status</Label>
                   <div className="flex gap-2 mt-1">
                     <Button
@@ -416,11 +378,11 @@ export default function Benutzerverwaltung() {
                     </Button>
                   </div>
                 </div>
-              </div>
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowBearbeitenDialog(false)}>Abbrechen</Button>
+                </div>
+                </div>
+                )}
+                <DialogFooter>
+                <Button variant="outline" onClick={() => setShowBearbeitenDialog(false)}>Abbrechen</Button>
             <Button onClick={handleBearbeitenSave} disabled={updateUserMut.isPending}>
               {updateUserMut.isPending ? "Speichern..." : "Speichern"}
             </Button>
