@@ -126,7 +126,14 @@ export default function Benutzerverwaltung() {
           nachname: anlegenForm.nachname,
         });
       }
+      // Erstelle automatisch ein Postfach für den neuen Benutzer
+      await base44.functions.invoke('createUserMailbox', {
+        email: emailToUse,
+        vorname: anlegenForm.vorname,
+        nachname: anlegenForm.nachname
+      });
       qc.invalidateQueries({ queryKey: ["users"] });
+      qc.invalidateQueries({ queryKey: ["postfaecher"] });
       setShowAnlegenDialog(false);
       setAnlegenForm(DEFAULT_ANLEGEN);
       setEmailManuell(false);
