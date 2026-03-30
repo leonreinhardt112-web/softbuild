@@ -19,16 +19,20 @@ Deno.serve(async (req) => {
     let projektNummer = company.projekt_nummer_laufend || 0;
     const currentYear = new Date().getFullYear() % 100; // z.B. 26 für 2026
 
-    // Erhöhe die laufende Nummer
-    projektNummer += 1;
+    // Preview-Modus: nur anzeigen, nicht speichern
+    const body = await req.json().catch(() => ({}));
+    const preview = body.preview === true;
 
-    // Aktualisiere das Unternehmen
-    await base44.asServiceRole.entities.Stammdatum.update(company.id, {
-      projekt_nummer_laufend: projektNummer
-    });
+    const nextNummer = projektNummer + 1;
+
+    if (!preview) {
+      await base44.asServiceRole.entities.Stammdatum.update(company.id, {
+        projekt_nummer_laufend: nextNummer
+      });
+    }
 
     // Formatiere die Nummer (z.B. 26-00001)
-    const formattedNummer = `${currentYear}-${String(projektNummer).padStart(5, '0')}`;
+    const formattedNummer = `${currentYear}-${String(nextNummer).padStart(5, '0')}`;
 
     return Response.json({ projektNummer: formattedNummer });
   } catch (error) {

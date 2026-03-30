@@ -57,7 +57,7 @@ export default function ProjectForm({ open, onOpenChange, onSave, initialData })
       setForm(EMPTY_FORM);
       if (open) {
         setProjektNummerLoading(true);
-        base44.functions.invoke('generateProjeknummer', {})
+        base44.functions.invoke('generateProjeknummer', { preview: true })
           .then(response => setForm(f => ({ ...f, project_number: response.data.projektNummer })))
           .catch(() => {})
           .finally(() => setProjektNummerLoading(false));
@@ -106,7 +106,17 @@ export default function ProjectForm({ open, onOpenChange, onSave, initialData })
     e.preventDefault();
     if (!form.client_id) return;
     
-    onSave(form);
+    // Nummer erst beim echten Speichern festschreiben
+    let submitForm = { ...form };
+    if (!initialData) {
+      try {
+        const response = await base44.functions.invoke('generateProjeknummer', { preview: false });
+        submitForm.project_number = response.data.projektNummer;
+      } catch (error) {
+        console.error('Fehler bei Projektnummernvergabe:', error);
+      }
+    }
+    onSave(submitForm);
   };
 
   const missingDates = form.project_start && !form.project_end;
