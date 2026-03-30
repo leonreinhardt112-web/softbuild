@@ -6,8 +6,6 @@ import { useUnsavedChanges, UnsavedChangesProvider } from "@/components/common/U
 import {
   LayoutDashboard,
   FolderOpen,
-  Calculator,
-  FileSignature,
   HardHat,
   Receipt,
   BarChart3,
@@ -26,7 +24,6 @@ const NAV_ITEMS = [
   { name: "Dashboard", page: "Dashboard", icon: LayoutDashboard },
   { name: "Projekte", page: "Projects", icon: FolderOpen },
   { name: "Schriftverkehr", page: "Schriftverkehr", icon: Mail },
-  { name: "Vertrag & AVor", page: "Vertrag", icon: FileSignature },
   { name: "Baustelle", page: "Baustelle", icon: HardHat },
   { name: "Abrechnung", page: "Abrechnung", icon: Receipt },
   { name: "Controlling", page: "Controlling", icon: BarChart3 },

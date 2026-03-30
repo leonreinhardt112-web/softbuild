@@ -18,7 +18,6 @@ import PdfReport from "@/components/review/PdfReport";
 import LVUploader from "@/components/lv/LVUploader";
 import LVFindings from "@/components/lv/LVFindings";
 import LVKalkulationView from "@/components/kalkulation/LVKalkulationView";
-import CockpitTab from "@/components/projektakte/CockpitTab";
 import FristenTab from "@/components/projektakte/FristenTab";
 import DokumenteTab from "@/components/projektakte/DokumenteTab";
 import SchriftverkehrTab from "@/components/projektakte/SchriftverkehrTab";
@@ -32,7 +31,7 @@ import {
 import {
   ArrowLeft, ClipboardCheck, Settings, BarChart3, AlertTriangle, Play, Save,
   Building2, MapPin, Calendar, User, Calculator, Receipt, HardHat,
-  Euro, Clock, Lock, ChevronRight, FolderOpen, LayoutDashboard, FileText, AlarmClock, Mail, ListTodo,
+  Euro, Clock, Lock, ChevronRight, FolderOpen, FileText, AlarmClock, Mail, ListTodo, TrendingUp,
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -332,9 +331,6 @@ export default function ProjectDetail() {
           <TabsTrigger value="overview" className="gap-1.5 text-xs">
             <FolderOpen className="w-3.5 h-3.5" />Übersicht
           </TabsTrigger>
-          <TabsTrigger value="cockpit" className="gap-1.5 text-xs">
-            <LayoutDashboard className="w-3.5 h-3.5" />Cockpit
-          </TabsTrigger>
           <TabsTrigger value="kalkulation" className="gap-1.5 text-xs">
             <Calculator className="w-3.5 h-3.5" />Kalkulation
           </TabsTrigger>
@@ -370,95 +366,121 @@ export default function ProjectDetail() {
 
         {/* OVERVIEW */}
         <TabsContent value="overview" className="mt-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <Card>
-              <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold">Projektdaten</CardTitle></CardHeader>
-              <CardContent className="space-y-2.5 text-sm">
-                {[
-                  ["Projektnummer", project.project_number],
-                  ["Auftraggeber", project.client],
-                  ["Standort", project.location],
-                  ["Vertragsart", project.contract_type],
-                  ["VOB/B vereinbart", project.vob_agreed !== undefined ? (project.vob_agreed ? "Ja" : "Nein") : null],
-                  ["Planungsbüro", project.planning_office],
-                  ["Projektleiter", project.project_manager],
-                  ["Bauleiter", project.site_manager],
-                  ["Bearbeiter AFU", project.reviewer],
-                ].filter(([, v]) => v).map(([label, value]) => (
-                  <div key={label} className="flex justify-between gap-4">
-                    <span className="text-muted-foreground shrink-0">{label}</span>
-                    <span className="font-medium text-right">{value}</span>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                  <Clock className="w-4 h-4" />Termine
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2.5 text-sm">
-                {[
-                  ["Submissionsdatum", project.submission_date],
-                  ["Prüfdatum AFU", project.review_date],
-                  ["Projektstart", project.project_start],
-                  ["Projektende (geplant)", project.project_end],
-                ].map(([label, value]) => (
-                  <div key={label} className="flex justify-between gap-4">
-                    <span className="text-muted-foreground shrink-0">{label}</span>
-                    <span className="font-medium">{value ? format(new Date(value), "dd.MM.yyyy") : "–"}</span>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-            {latestKalk && (
+          <div className="space-y-6">
+            {/* KPI-Karten */}
+            {(() => {
+              const auftragssumme = project.auftragssumme_netto || project.auftragssumme || 0;
+              const abgerechnet = rechnungen.filter(r => ["gestellt","teilbezahlt","bezahlt"].includes(r.status))
+                .reduce((s, r) => s + (r.betrag_netto || 0), 0);
+              const finanzFortschritt = auftragssumme > 0 ? Math.min(100, (abgerechnet / auftragssumme) * 100) : 0;
+              const fmt = (n) => n.toLocaleString("de-DE", { style: "currency", currency: "EUR" });
+              const offeneFristen = fristen.filter(f => f.status !== "erledigt").length;
+              const offenerSchriftverkehr = schriftverkehr.filter(s => s.status !== "erledigt").length;
+              return (
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  <Card>
+                    <CardContent className="p-4 flex items-start gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                        <Euro className="w-4 h-4 text-primary" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs text-muted-foreground">Auftragssumme netto</p>
+                        <p className="text-base font-bold truncate">{auftragssumme ? fmt(auftragssumme) : "–"}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-4 flex items-start gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-green-50 flex items-center justify-center shrink-0">
+                        <TrendingUp className="w-4 h-4 text-green-600" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs text-muted-foreground">Abgerechnet</p>
+                        <p className="text-base font-bold truncate">{abgerechnet ? fmt(abgerechnet) : "–"}</p>
+                        {auftragssumme > 0 && <p className="text-xs text-muted-foreground">{Math.round(finanzFortschritt)}% der Auftragssumme</p>}
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-4 flex items-start gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center shrink-0">
+                        <AlarmClock className="w-4 h-4 text-amber-600" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Offene Fristen</p>
+                        <p className="text-base font-bold">{offeneFristen}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-4 flex items-start gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
+                        <Mail className="w-4 h-4 text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Schriftverkehr offen</p>
+                        <p className="text-base font-bold">{offenerSchriftverkehr}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              );
+            })()}
+
+            {/* Projektdaten + Termine + Kalkulation */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <Card>
-                <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold flex items-center gap-2"><Euro className="w-4 h-4" />Kalkulation</CardTitle></CardHeader>
-                <CardContent className="space-y-2 text-sm">
-                  <div className="flex justify-between"><span className="text-muted-foreground">Angebotssumme</span><span className="font-semibold">{latestKalk.angebotsumme?.toLocaleString("de-DE", { style: "currency", currency: "EUR" }) || "–"}</span></div>
-                  <div className="flex justify-between"><span className="text-muted-foreground">Deckungsbeitrag</span><span className="font-medium">{latestKalk.deckungsbeitrag?.toLocaleString("de-DE", { style: "currency", currency: "EUR" }) || "–"}</span></div>
-                  <Button size="sm" variant="outline" className="w-full mt-2 gap-1" onClick={() => setActiveTab("kalkulation")}>
-                    Zur Kalkulation <ChevronRight className="w-3.5 h-3.5" />
-                  </Button>
+                <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold">Projektdaten</CardTitle></CardHeader>
+                <CardContent className="space-y-2.5 text-sm">
+                  {[
+                    ["Projektnummer", project.project_number],
+                    ["Auftraggeber", project.client],
+                    ["Standort", project.location],
+                    ["Vertragsart", project.contract_type],
+                    ["VOB/B vereinbart", project.vob_agreed !== undefined ? (project.vob_agreed ? "Ja" : "Nein") : null],
+                    ["Planungsbüro", project.planning_office],
+                    ["Projektleiter", project.project_manager],
+                    ["Bauleiter", project.site_manager],
+                    ["Bearbeiter AFU", project.reviewer],
+                  ].filter(([, v]) => v).map(([label, value]) => (
+                    <div key={label} className="flex justify-between gap-4">
+                      <span className="text-muted-foreground shrink-0">{label}</span>
+                      <span className="font-medium text-right">{value}</span>
+                    </div>
+                  ))}
                 </CardContent>
               </Card>
-            )}
-            {/* Unterlagen in Übersicht */}
-            <div className="lg:col-span-1 space-y-4">
-              <LVUploader project={project} onUpdate={handleLVUpdate} onTradesDetected={handleTradesDetected} />
-              {project.lv_analysis_findings?.length > 0 && (
-                <LVFindings
-                  findings={project.lv_analysis_findings}
-                  title={`KI-Befunde (${project.lv_analysis_findings.length})`}
-                  onToggle={(id) => {
-                    const updated = project.lv_analysis_findings.map((f) =>
-                      f.id === id ? { ...f, include_in_report: !f.include_in_report } : f
-                    );
-                    handleLVUpdate({ lv_analysis_findings: updated });
-                  }}
-                  onToggleAll={(val) => {
-                    const updated = project.lv_analysis_findings.map((f) => ({ ...f, include_in_report: val }));
-                    handleLVUpdate({ lv_analysis_findings: updated });
-                  }}
-                />
-              )}
-              {project.baulv_conflict_findings?.length > 0 && (
-                <LVFindings
-                  findings={project.baulv_conflict_findings}
-                  title={`Widersprüche Bau ↔ LV (${project.baulv_conflict_findings.length})`}
-                  icon="conflict"
-                  onToggle={(id) => {
-                    const updated = project.baulv_conflict_findings.map((f) =>
-                      f.id === id ? { ...f, include_in_report: !f.include_in_report } : f
-                    );
-                    handleLVUpdate({ baulv_conflict_findings: updated });
-                  }}
-                  onToggleAll={(val) => {
-                    const updated = project.baulv_conflict_findings.map((f) => ({ ...f, include_in_report: val }));
-                    handleLVUpdate({ baulv_conflict_findings: updated });
-                  }}
-                />
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                    <Clock className="w-4 h-4" />Termine
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2.5 text-sm">
+                  {[
+                    ["Submissionsdatum", project.submission_date],
+                    ["Prüfdatum AFU", project.review_date],
+                    ["Projektstart", project.project_start],
+                    ["Projektende (geplant)", project.project_end],
+                  ].map(([label, value]) => (
+                    <div key={label} className="flex justify-between gap-4">
+                      <span className="text-muted-foreground shrink-0">{label}</span>
+                      <span className="font-medium">{value ? format(new Date(value), "dd.MM.yyyy") : "–"}</span>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+              {latestKalk && (
+                <Card>
+                  <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold flex items-center gap-2"><Euro className="w-4 h-4" />Kalkulation</CardTitle></CardHeader>
+                  <CardContent className="space-y-2 text-sm">
+                    <div className="flex justify-between"><span className="text-muted-foreground">Angebotssumme</span><span className="font-semibold">{latestKalk.angebotsumme?.toLocaleString("de-DE", { style: "currency", currency: "EUR" }) || "–"}</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Deckungsbeitrag</span><span className="font-medium">{latestKalk.deckungsbeitrag?.toLocaleString("de-DE", { style: "currency", currency: "EUR" }) || "–"}</span></div>
+                    <Button size="sm" variant="outline" className="w-full mt-2 gap-1" onClick={() => setActiveTab("kalkulation")}>
+                      Zur Kalkulation <ChevronRight className="w-3.5 h-3.5" />
+                    </Button>
+                  </CardContent>
+                </Card>
               )}
             </div>
 
@@ -474,18 +496,6 @@ export default function ProjectDetail() {
               </Card>
             )}
           </div>
-        </TabsContent>
-
-        {/* COCKPIT */}
-        <TabsContent value="cockpit" className="mt-6">
-          <CockpitTab
-            project={project}
-            rechnungen={rechnungen}
-            fristen={fristen}
-            schriftverkehr={schriftverkehr}
-            dokumente={dokumente}
-            stundenstand={stundenstaende[0] || null}
-          />
         </TabsContent>
 
         {/* DOKUMENTE */}
