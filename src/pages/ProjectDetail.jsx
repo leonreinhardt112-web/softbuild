@@ -339,10 +339,7 @@ export default function ProjectDetail() {
             <FileText className="w-3.5 h-3.5" />Dokumente
             {dokumente.length > 0 && <span className="ml-1 text-[10px] bg-primary/10 text-primary px-1 rounded">{dokumente.length}</span>}
           </TabsTrigger>
-          <TabsTrigger value="fristen" className="gap-1.5 text-xs">
-            <AlarmClock className="w-3.5 h-3.5" />Fristen
-            {fristen.filter(f=>f.status!=="erledigt").length > 0 && <span className="ml-1 text-[10px] bg-amber-100 text-amber-700 px-1 rounded">{fristen.filter(f=>f.status!=="erledigt").length}</span>}
-          </TabsTrigger>
+
           <TabsTrigger value="schriftverkehr" className="gap-1.5 text-xs">
             <Mail className="w-3.5 h-3.5" />Schriftverkehr
             {schriftverkehr.filter(s=>s.status!=="erledigt").length > 0 && <span className="ml-1 text-[10px] bg-blue-100 text-blue-700 px-1 rounded">{schriftverkehr.filter(s=>s.status!=="erledigt").length}</span>}
@@ -526,11 +523,6 @@ export default function ProjectDetail() {
         {/* DOKUMENTE */}
         <TabsContent value="dokumente" className="mt-6">
           <DokumenteTab projectId={projectId} dokumente={dokumente} />
-        </TabsContent>
-
-        {/* FRISTEN */}
-        <TabsContent value="fristen" className="mt-6">
-          <FristenTab projectId={projectId} fristen={fristen} />
         </TabsContent>
 
         {/* SCHRIFTVERKEHR */}
