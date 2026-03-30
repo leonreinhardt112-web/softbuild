@@ -25,6 +25,7 @@ export default function ProjectForm({ open, onOpenChange, onSave, initialData })
   const [showNewClient, setShowNewClient] = useState(false);
   const [newClientForm, setNewClientForm] = useState({ name: "", strasse: "", plz: "", ort: "", kontakt_name: "", email: "", telefon: "" });
   const [plzLoading, setPlzLoading] = useState(false);
+  const [projektNummerLoading, setProjektNummerLoading] = useState(false);
 
 
 
@@ -50,8 +51,18 @@ export default function ProjectForm({ open, onOpenChange, onSave, initialData })
   }, [open]);
 
   useEffect(() => {
-    if (initialData) setForm(initialData);
-    else setForm(EMPTY_FORM);
+    if (initialData) {
+      setForm(initialData);
+    } else {
+      setForm(EMPTY_FORM);
+      if (open) {
+        setProjektNummerLoading(true);
+        base44.functions.invoke('generateProjeknummer', {})
+          .then(response => setForm(f => ({ ...f, project_number: response.data.projektNummer })))
+          .catch(() => {})
+          .finally(() => setProjektNummerLoading(false));
+      }
+    }
   }, [initialData, open]);
 
   const { data: alleStammdaten = [] } = useQuery({
@@ -95,16 +106,6 @@ export default function ProjectForm({ open, onOpenChange, onSave, initialData })
     e.preventDefault();
     if (!form.client_id) return;
     
-    // Generate project number if not editing
-    if (!initialData) {
-      try {
-        const response = await base44.functions.invoke('generateProjeknummer', {});
-        form.project_number = response.data.projektNummer;
-      } catch (error) {
-        console.error('Fehler bei Projektnummernvergabe:', error);
-      }
-    }
-    
     onSave(form);
   };
 
@@ -129,12 +130,11 @@ export default function ProjectForm({ open, onOpenChange, onSave, initialData })
                 placeholder="z.B. Kanalsanierung Hauptstraße" required />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="project_number">Projektnummer *</Label>
+              <Label htmlFor="project_number">Projektnummer</Label>
               <Input id="project_number" value={form.project_number}
                 onChange={e => handleChange("project_number", e.target.value)}
-                placeholder={initialData ? "z.B. 2024-KB-0042" : "wird automatisch generiert"}
-                disabled={!initialData}
-                required />
+                placeholder={projektNummerLoading ? "Wird generiert..." : ""}
+                disabled={!initialData} />
             </div>
           </div>
 
