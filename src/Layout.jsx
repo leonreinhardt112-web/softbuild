@@ -16,6 +16,7 @@ import {
   X,
   ChevronRight,
   Building2,
+  Mail,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -24,6 +25,7 @@ import { cn } from "@/lib/utils";
 const NAV_ITEMS = [
   { name: "Dashboard", page: "Dashboard", icon: LayoutDashboard },
   { name: "Projekte", page: "Projects", icon: FolderOpen },
+  { name: "Schriftverkehr", page: "Schriftverkehr", icon: Mail },
   { name: "Vertrag & AVor", page: "Vertrag", icon: FileSignature },
   { name: "Baustelle", page: "Baustelle", icon: HardHat },
   { name: "Abrechnung", page: "Abrechnung", icon: Receipt },

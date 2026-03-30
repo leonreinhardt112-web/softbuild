@@ -18,6 +18,11 @@ import PdfReport from "@/components/review/PdfReport";
 import LVUploader from "@/components/lv/LVUploader";
 import LVFindings from "@/components/lv/LVFindings";
 import LVKalkulationView from "@/components/kalkulation/LVKalkulationView";
+import CockpitTab from "@/components/projektakte/CockpitTab";
+import FristenTab from "@/components/projektakte/FristenTab";
+import DokumenteTab from "@/components/projektakte/DokumenteTab";
+import SchriftverkehrTab from "@/components/projektakte/SchriftverkehrTab";
+import AufgabenTab from "@/components/projektakte/AufgabenTab";
 import {
   CHECKLIST_TEMPLATES,
   TRADE_LABELS,
@@ -27,7 +32,7 @@ import {
 import {
   ArrowLeft, ClipboardCheck, Settings, BarChart3, AlertTriangle, Play, Save,
   Building2, MapPin, Calendar, User, Calculator, Receipt, HardHat,
-  Euro, Clock, Lock, ChevronRight, FolderOpen,
+  Euro, Clock, Lock, ChevronRight, FolderOpen, LayoutDashboard, FileText, AlarmClock, Mail, ListTodo,
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -131,6 +136,36 @@ export default function ProjectDetail() {
   const { data: rechnungen = [] } = useQuery({
     queryKey: ["rechnungen", projectId],
     queryFn: () => base44.entities.Rechnung.filter({ project_id: projectId }),
+    enabled: !!projectId,
+  });
+
+  const { data: fristen = [] } = useQuery({
+    queryKey: ["fristen", projectId],
+    queryFn: () => base44.entities.ProjektFrist.filter({ project_id: projectId }),
+    enabled: !!projectId,
+  });
+
+  const { data: dokumente = [] } = useQuery({
+    queryKey: ["dokumente", projectId],
+    queryFn: () => base44.entities.ProjektDokument.filter({ project_id: projectId }),
+    enabled: !!projectId,
+  });
+
+  const { data: schriftverkehr = [] } = useQuery({
+    queryKey: ["schriftverkehr", projectId],
+    queryFn: () => base44.entities.SchriftverkehrEintrag.filter({ project_id: projectId }),
+    enabled: !!projectId,
+  });
+
+  const { data: aufgaben = [] } = useQuery({
+    queryKey: ["aufgaben", projectId],
+    queryFn: () => base44.entities.Aufgabe.filter({ project_id: projectId }),
+    enabled: !!projectId,
+  });
+
+  const { data: stundenstaende = [] } = useQuery({
+    queryKey: ["stundenstand", projectId],
+    queryFn: () => base44.entities.ProjektStundenstand.filter({ project_id: projectId }, "-import_datum"),
     enabled: !!projectId,
   });
 
@@ -297,8 +332,27 @@ export default function ProjectDetail() {
           <TabsTrigger value="overview" className="gap-1.5 text-xs">
             <FolderOpen className="w-3.5 h-3.5" />Übersicht
           </TabsTrigger>
+          <TabsTrigger value="cockpit" className="gap-1.5 text-xs">
+            <LayoutDashboard className="w-3.5 h-3.5" />Cockpit
+          </TabsTrigger>
           <TabsTrigger value="kalkulation" className="gap-1.5 text-xs">
             <Calculator className="w-3.5 h-3.5" />Kalkulation
+          </TabsTrigger>
+          <TabsTrigger value="dokumente" className="gap-1.5 text-xs">
+            <FileText className="w-3.5 h-3.5" />Dokumente
+            {dokumente.length > 0 && <span className="ml-1 text-[10px] bg-primary/10 text-primary px-1 rounded">{dokumente.length}</span>}
+          </TabsTrigger>
+          <TabsTrigger value="fristen" className="gap-1.5 text-xs">
+            <AlarmClock className="w-3.5 h-3.5" />Fristen
+            {fristen.filter(f=>f.status!=="erledigt").length > 0 && <span className="ml-1 text-[10px] bg-amber-100 text-amber-700 px-1 rounded">{fristen.filter(f=>f.status!=="erledigt").length}</span>}
+          </TabsTrigger>
+          <TabsTrigger value="schriftverkehr" className="gap-1.5 text-xs">
+            <Mail className="w-3.5 h-3.5" />Schriftverkehr
+            {schriftverkehr.filter(s=>s.status!=="erledigt").length > 0 && <span className="ml-1 text-[10px] bg-blue-100 text-blue-700 px-1 rounded">{schriftverkehr.filter(s=>s.status!=="erledigt").length}</span>}
+          </TabsTrigger>
+          <TabsTrigger value="aufgaben" className="gap-1.5 text-xs">
+            <ListTodo className="w-3.5 h-3.5" />Aufgaben
+            {aufgaben.filter(a=>!["erledigt","verworfen"].includes(a.status)).length > 0 && <span className="ml-1 text-[10px] bg-primary/10 text-primary px-1 rounded">{aufgaben.filter(a=>!["erledigt","verworfen"].includes(a.status)).length}</span>}
           </TabsTrigger>
           <TabsTrigger value="afu" className="gap-1.5 text-xs" disabled={!isPostAward}
             title={!isPostAward ? "Erst nach Beauftragung verfügbar" : ""}>
@@ -420,6 +474,38 @@ export default function ProjectDetail() {
               </Card>
             )}
           </div>
+        </TabsContent>
+
+        {/* COCKPIT */}
+        <TabsContent value="cockpit" className="mt-6">
+          <CockpitTab
+            project={project}
+            rechnungen={rechnungen}
+            fristen={fristen}
+            schriftverkehr={schriftverkehr}
+            dokumente={dokumente}
+            stundenstand={stundenstaende[0] || null}
+          />
+        </TabsContent>
+
+        {/* DOKUMENTE */}
+        <TabsContent value="dokumente" className="mt-6">
+          <DokumenteTab projectId={projectId} dokumente={dokumente} />
+        </TabsContent>
+
+        {/* FRISTEN */}
+        <TabsContent value="fristen" className="mt-6">
+          <FristenTab projectId={projectId} fristen={fristen} />
+        </TabsContent>
+
+        {/* SCHRIFTVERKEHR */}
+        <TabsContent value="schriftverkehr" className="mt-6">
+          <SchriftverkehrTab projectId={projectId} eintraege={schriftverkehr} />
+        </TabsContent>
+
+        {/* AUFGABEN */}
+        <TabsContent value="aufgaben" className="mt-6">
+          <AufgabenTab projectId={projectId} aufgaben={aufgaben} />
         </TabsContent>
 
         {/* KALKULATION */}

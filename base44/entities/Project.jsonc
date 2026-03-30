@@ -1,0 +1,247 @@
+{
+  "name": "Project",
+  "type": "object",
+  "properties": {
+    "project_name": {
+      "type": "string",
+      "description": "Projektname"
+    },
+    "client": {
+      "type": "string",
+      "description": "Auftraggeber"
+    },
+    "client_id": {
+      "type": "string",
+      "description": "Auftraggeber-ID aus Stammdaten"
+    },
+    "project_number": {
+      "type": "string",
+      "description": "Projektnummer"
+    },
+    "location": {
+      "type": "string",
+      "description": "Standort"
+    },
+    "planning_office": {
+      "type": "string",
+      "description": "Planungsb\u00fcro"
+    },
+    "contract_type": {
+      "type": "string",
+      "enum": [
+        "Einheitspreisvertrag",
+        "Pauschalvertrag",
+        "Stundenlohnvertrag",
+        "GMP-Vertrag"
+      ],
+      "description": "Vertragsart"
+    },
+    "vob_agreed": {
+      "type": "boolean",
+      "default": false,
+      "description": "VOB/B vereinbart"
+    },
+    "is_public": {
+      "type": "boolean",
+      "default": false,
+      "description": "\u00d6ffentliches Projekt"
+    },
+    "auftragssumme": {
+      "type": "number",
+      "description": "Auftragssumme netto (\u20ac)"
+    },
+    "auftragssumme_netto": {
+      "type": "number",
+      "description": "Auftragssumme netto (\u20ac) \u2013 Projektakte"
+    },
+    "bauherr": {
+      "type": "string",
+      "description": "Bauherr (Projektakte)"
+    },
+    "vertragsart_detail": {
+      "type": "string",
+      "description": "Vertragsart Detail (Projektakte)"
+    },
+    "interner_bauleiter": {
+      "type": "string",
+      "description": "Interner Bauleiter"
+    },
+    "interner_kalkulator": {
+      "type": "string",
+      "description": "Interner Kalkulator"
+    },
+    "notizen_intern": {
+      "type": "string",
+      "description": "Interne Notizen"
+    },
+    "fortschritt_prozent_manuell": {
+      "type": "number",
+      "description": "Baulicher Projektfortschritt % (manuell)"
+    },
+    "kalkulierte_stunden_manuell": {
+      "type": "number",
+      "description": "Kalkulierte Stunden (manuell, Fallback)"
+    },
+    "project_start": {
+      "type": "string",
+      "format": "date",
+      "description": "Projektstart"
+    },
+    "project_end": {
+      "type": "string",
+      "format": "date",
+      "description": "Geplantes Projektende"
+    },
+    "submission_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Submissionsdatum"
+    },
+    "review_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Pr\u00fcfdatum AFU"
+    },
+    "reviewer": {
+      "type": "string",
+      "description": "AFU-Bearbeiter"
+    },
+    "project_manager": {
+      "type": "string",
+      "description": "Projektleiter"
+    },
+    "site_manager": {
+      "type": "string",
+      "description": "Bauleiter"
+    },
+    "selected_trades": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Ausgew\u00e4hlte Gewerke"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "entwurf",
+        "kalkulation",
+        "eingereicht",
+        "beauftragt",
+        "verloren",
+        "in_ausfuehrung",
+        "abgeschlossen"
+      ],
+      "default": "entwurf",
+      "description": "Projektstatus"
+    },
+    "afu_status": {
+      "type": "string",
+      "enum": [
+        "ausstehend",
+        "in_pruefung",
+        "ausfuehrungsreif",
+        "nicht_ausfuehrungsreif"
+      ],
+      "default": "ausstehend"
+    },
+    "overall_score": {
+      "type": "number",
+      "description": "AFU-Gesamtbewertung in Prozent"
+    },
+    "lv_file_url": {
+      "type": "string"
+    },
+    "lv_file_name": {
+      "type": "string"
+    },
+    "lv_positions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "oz": {
+            "type": "string"
+          },
+          "short_text": {
+            "type": "string"
+          },
+          "long_text": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "lv_analysis_findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "severity": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "include_in_report": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "projekt_unterlagen": {
+      "type": "array",
+      "description": "Baubeschreibung & sonstige Unterlagen",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "baulv_conflict_findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "severity": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "include_in_report": {
+            "type": "boolean"
+          }
+        }
+      }
+    }
+  },
+  "required": [
+    "project_name",
+    "project_number"
+  ]
+}
