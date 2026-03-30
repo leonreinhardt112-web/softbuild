@@ -220,6 +220,10 @@ Führe folgende Analysen durch:
       bieterfragenResult.push("Bitte teilen Sie uns die geplante Ausführungszeit und die verbindlichen Fristen für Baubeginn und Fertigstellung mit.");
     }
     await onUpdate({ lv_analysis_findings: findings, ki_bieterfragen: bieterfragenResult, ki_gefundene_fristen: result.fristen || [] });
+    // Fristen automatisch übernehmen
+    if (result.fristen?.length > 0 && onFristenUebernehmen) {
+      await onFristenUebernehmen(result.fristen);
+    }
     setAnalyzeLoading(false);
   };
 
@@ -297,9 +301,9 @@ Identifiziere konkrete Widersprüche: abweichende Materialangaben, fehlende LV-P
       )}
 
       {/* Tabs */}
-      {(hasAnalysis || hasConflicts || bieterfragen.length > 0 || kiFristen.length > 0) && (
+      {(hasAnalysis || hasConflicts || bieterfragen.length > 0) && (
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="h-8 w-full grid grid-cols-4">
+          <TabsList className="h-8 w-full grid grid-cols-3">
             <TabsTrigger value="lv" className="text-xs gap-1">
               <Sparkles className="w-3 h-3" />
               LV-Befunde
@@ -311,11 +315,6 @@ Identifiziere konkrete Widersprüche: abweichende Materialangaben, fehlende LV-P
               Widersprüche
               {kritischConflict > 0 && <span className="w-4 h-4 rounded-full bg-red-100 text-red-600 text-[9px] font-bold flex items-center justify-center">{kritischConflict}</span>}
               {conflictFindings.length > 0 && kritischConflict === 0 && <TabBadge count={conflictFindings.length} />}
-            </TabsTrigger>
-            <TabsTrigger value="fristen" className="text-xs gap-1">
-              <Calendar className="w-3 h-3" />
-              Fristen
-              <TabBadge count={kiFristen.length} />
             </TabsTrigger>
             <TabsTrigger value="fragen" className="text-xs gap-1">
               <MessageCircleQuestion className="w-3 h-3" />
@@ -337,12 +336,6 @@ Identifiziere konkrete Widersprüche: abweichende Materialangaben, fehlende LV-P
                 findings={conflictFindings}
                 onToggle={(id) => onUpdate({ baulv_conflict_findings: conflictFindings.map(f => f.id === id ? { ...f, include_in_report: !f.include_in_report } : f) })}
                 onToggleAll={(val) => onUpdate({ baulv_conflict_findings: conflictFindings.map(f => ({ ...f, include_in_report: val })) })}
-              />
-            </TabsContent>
-            <TabsContent value="fristen" className="mt-0">
-              <FristenList
-                fristen={kiFristen}
-                onUebernehmen={onFristenUebernehmen ? () => onFristenUebernehmen(kiFristen) : null}
               />
             </TabsContent>
             <TabsContent value="fragen" className="mt-0">
