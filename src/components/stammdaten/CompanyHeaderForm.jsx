@@ -28,6 +28,7 @@ export default function CompanyHeaderForm() {
     pdf_footer_rechts: "",
     pdf_footer_farbe: "#666666",
     unser_zeichen_optionen: [],
+    email_domain: "",
   });
   const [newZeichen, setNewZeichen] = useState("");
 
@@ -55,6 +56,7 @@ export default function CompanyHeaderForm() {
           pdf_footer_rechts: companies[0].pdf_footer_rechts || "",
           pdf_footer_farbe: companies[0].pdf_footer_farbe || "#666666",
           unser_zeichen_optionen: companies[0].unser_zeichen_optionen || [],
+          email_domain: companies[0].email_domain || "",
         });
       }
     } catch (e) {

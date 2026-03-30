@@ -78,6 +78,19 @@ export default function CompanyBriefkopfForm({ form, setForm }) {
             placeholder="z.B. www.muster-bau.de"
           />
         </div>
+
+        <div className="sm:col-span-2 border-t border-border pt-4">
+          <label className="text-xs font-semibold text-foreground mb-1 block">E-Mail-Domain für Mitarbeiter</label>
+          <p className="text-[11px] text-muted-foreground mb-2">
+            Diese Domain wird beim Anlegen neuer Mitarbeiter als Vorschlag verwendet (z.B. <span className="font-mono">vorname.nachname@domain.de</span>)
+          </p>
+          <Input
+            value={form.email_domain || ""}
+            onChange={e => setForm(f => ({ ...f, email_domain: e.target.value }))}
+            placeholder="z.B. meinefirma.de"
+            className="max-w-xs"
+          />
+        </div>
       </div>
     </div>
   );

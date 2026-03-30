@@ -22,9 +22,13 @@
       "type": "string",
       "description": "Arbeits-E-Mail (f\u00fcr Schriftverkehr, Login)"
     },
-    "telefon": {
+    "vorname": {
       "type": "string",
-      "description": "Telefonnummer"
+      "description": "Vorname"
+    },
+    "nachname": {
+      "type": "string",
+      "description": "Nachname"
     }
   },
   "required": [

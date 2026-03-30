@@ -1,0 +1,55 @@
+{
+  "name": "Postfach",
+  "type": "object",
+  "properties": {
+    "email_adresse": {
+      "type": "string",
+      "description": "E-Mail-Adresse des Postfachs"
+    },
+    "bezeichnung": {
+      "type": "string",
+      "description": "Anzeigename / Bezeichnung (z.B. 'Pers\u00f6nlich Max', 'Rechnung', 'Info')"
+    },
+    "typ": {
+      "type": "string",
+      "enum": [
+        "persoenlich",
+        "geteilt"
+      ],
+      "default": "persoenlich",
+      "description": "Pers\u00f6nliches oder geteiltes Postfach"
+    },
+    "anbieter": {
+      "type": "string",
+      "enum": [
+        "google_workspace",
+        "outlook_365",
+        "web_de",
+        "sonstiges"
+      ],
+      "default": "google_workspace",
+      "description": "E-Mail-Anbieter"
+    },
+    "user_emails": {
+      "type": "array",
+      "description": "Benutzer mit Zugriff (E-Mail-Adressen)",
+      "items": {
+        "type": "string"
+      }
+    },
+    "aktiv": {
+      "type": "boolean",
+      "default": true,
+      "description": "Postfach aktiv"
+    },
+    "notiz": {
+      "type": "string",
+      "description": "Interne Notiz"
+    }
+  },
+  "required": [
+    "email_adresse",
+    "bezeichnung",
+    "typ"
+  ]
+}
