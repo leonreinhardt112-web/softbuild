@@ -9,27 +9,88 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Plus, Upload, Star, FileText, ExternalLink } from "lucide-react";
+import {
+  Plus, Upload, Star, FileText, ExternalLink, FolderOpen, Folder,
+  ChevronRight, ChevronDown, Sparkles, Loader2, X
+} from "lucide-react";
 import { format, parseISO } from "date-fns";
 
 const KAT_LABELS = {
-  vertragsunterlagen: "Vertragsunterlagen", angebotsunterlagen: "Angebotsunterlagen",
-  lv_unterlagen: "LV-Unterlagen", plaene: "Pläne", schriftverkehr: "Schriftverkehr",
-  protokolle: "Protokolle", rechnungen: "Rechnungen", eingangsrechnungen: "Eingangsrechnungen",
-  aufmass: "Aufmaß", nachtraege: "Nachträge", fotos: "Fotos", sonstiges: "Sonstiges",
+  vertragsunterlagen: "Vertragsunterlagen",
+  angebotsunterlagen: "Angebotsunterlagen",
+  lv_unterlagen: "LV-Unterlagen",
+  plaene: "Pläne",
+  schriftverkehr: "Schriftverkehr",
+  protokolle: "Protokolle",
+  rechnungen: "Rechnungen",
+  eingangsrechnungen: "Eingangsrechnungen",
+  aufmass: "Aufmaß",
+  nachtraege: "Nachträge",
+  fotos: "Fotos",
+  sonstiges: "Sonstiges",
 };
 
-const EMPTY = { titel: "", kategorie: "sonstiges", dateiname: "", versionsstand: "", dokumentdatum: "", bemerkung: "", wichtig: false };
+const KAT_ICONS = {
+  vertragsunterlagen: "📋",
+  angebotsunterlagen: "📄",
+  lv_unterlagen: "📑",
+  plaene: "📐",
+  schriftverkehr: "✉️",
+  protokolle: "📝",
+  rechnungen: "🧾",
+  eingangsrechnungen: "📥",
+  aufmass: "📏",
+  nachtraege: "➕",
+  fotos: "📷",
+  sonstiges: "📁",
+};
+
+const EMPTY = {
+  titel: "", kategorie: "angebotsunterlagen", dateiname: "",
+  versionsstand: "", dokumentdatum: "", bemerkung: "", wichtig: false
+};
+
+async function detectCategory(filename, fileContent) {
+  const result = await base44.integrations.Core.InvokeLLM({
+    prompt: `Du bist ein Assistent für Bauunternehmen. Klassifiziere dieses Dokument in eine der folgenden Kategorien basierend auf dem Dateinamen.
+
+Dateiname: "${filename}"
+
+Kategorien:
+- vertragsunterlagen: Verträge, VOB, AGBs, Auftragsschreiben
+- angebotsunterlagen: Ausschreibungsunterlagen, Bieterbedingungen, Bewerbungsunterlagen
+- lv_unterlagen: Leistungsverzeichnisse, GAEB-Dateien, LV-Positionen
+- plaene: Baupläne, Lageplan, Schnitte, Grundrisse, DWG, PDF-Pläne
+- schriftverkehr: Briefe, E-Mails, Fax
+- protokolle: Baubesprechungsprotokolle, Abnahmeprotokolle
+- rechnungen: Ausgangsrechnungen, Abschlagsrechnungen
+- eingangsrechnungen: Eingangsrechnungen von Lieferanten/NU
+- aufmass: Aufmaßblätter, Mengenermittlungen
+- nachtraege: Nachtragsangebote, Nachtragsvereinbarungen
+- fotos: Baustellenfotos, Bilder
+- sonstiges: Alles andere
+
+Antworte NUR mit dem Kategorie-Schlüssel (z.B. "lv_unterlagen"), nichts weiter.`,
+    response_json_schema: {
+      type: "object",
+      properties: { kategorie: { type: "string" } }
+    }
+  });
+  return result?.kategorie || "sonstiges";
+}
 
 export default function DokumenteTab({ projectId, dokumente }) {
   const qc = useQueryClient();
-  const [filterKat, setFilterKat] = useState("alle");
-  const [nurWichtig, setNurWichtig] = useState(false);
+  const [openFolders, setOpenFolders] = useState(new Set(["angebotsunterlagen", "lv_unterlagen"]));
   const [showDialog, setShowDialog] = useState(false);
   const [editDok, setEditDok] = useState(null);
   const [form, setForm] = useState(EMPTY);
   const [uploading, setUploading] = useState(false);
+  const [aiDetecting, setAiDetecting] = useState(false);
   const [file, setFile] = useState(null);
+  const [bulkFiles, setBulkFiles] = useState([]);
+  const [bulkUploading, setBulkUploading] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState(null);
 
   const createMut = useMutation({
     mutationFn: (d) => base44.entities.ProjektDokument.create({ ...d, project_id: projectId }),
@@ -39,9 +100,40 @@ export default function DokumenteTab({ projectId, dokumente }) {
     mutationFn: ({ id, data }) => base44.entities.ProjektDokument.update(id, data),
     onSuccess: () => qc.invalidateQueries(["dokumente", projectId]),
   });
+  const deleteMut = useMutation({
+    mutationFn: (id) => base44.entities.ProjektDokument.delete(id),
+    onSuccess: () => qc.invalidateQueries(["dokumente", projectId]),
+  });
+
+  const toggleFolder = (kat) => {
+    setOpenFolders(prev => {
+      const next = new Set(prev);
+      if (next.has(kat)) next.delete(kat);
+      else next.add(kat);
+      return next;
+    });
+  };
 
   const handleOpen = (dok = null) => {
-    setEditDok(dok); setForm(dok ? { ...dok } : { ...EMPTY }); setFile(null); setShowDialog(true);
+    setEditDok(dok);
+    setForm(dok ? { ...dok } : { ...EMPTY });
+    setFile(null);
+    setShowDialog(true);
+  };
+
+  const handleFileSelect = async (selectedFile) => {
+    setFile(selectedFile);
+    if (!selectedFile) return;
+    // Auto-detect category from filename
+    setAiDetecting(true);
+    const kat = await detectCategory(selectedFile.name);
+    setForm(prev => ({
+      ...prev,
+      titel: selectedFile.name.replace(/\.[^/.]+$/, ""),
+      kategorie: kat,
+      dateiname: selectedFile.name,
+    }));
+    setAiDetecting(false);
   };
 
   const handleSave = async () => {
@@ -60,113 +152,250 @@ export default function DokumenteTab({ projectId, dokumente }) {
     setShowDialog(false);
   };
 
-  const filtered = dokumente.filter(d => {
-    const katOk = filterKat === "alle" || d.kategorie === filterKat;
-    const wOk = !nurWichtig || d.wichtig;
-    return katOk && wOk;
-  });
+  const handleBulkUpload = async (files) => {
+    if (!files.length) return;
+    setBulkUploading(true);
+    const fileArr = Array.from(files);
+    setBulkProgress({ current: 0, total: fileArr.length, currentName: "" });
+
+    for (let i = 0; i < fileArr.length; i++) {
+      const f = fileArr[i];
+      setBulkProgress({ current: i + 1, total: fileArr.length, currentName: f.name });
+      const [uploadRes, kat] = await Promise.all([
+        base44.integrations.Core.UploadFile({ file: f }),
+        detectCategory(f.name),
+      ]);
+      await base44.entities.ProjektDokument.create({
+        project_id: projectId,
+        titel: f.name.replace(/\.[^/.]+$/, ""),
+        kategorie: kat,
+        datei: uploadRes.file_url,
+        dateiname: f.name,
+        dokumentdatum: new Date().toISOString().split("T")[0],
+      });
+    }
+
+    qc.invalidateQueries(["dokumente", projectId]);
+    setBulkUploading(false);
+    setBulkProgress(null);
+    setBulkFiles([]);
+    // Auto-open all folders that got new files
+    setOpenFolders(prev => new Set([...prev, ...Object.keys(KAT_LABELS)]));
+  };
+
+  // Group by category
+  const grouped = {};
+  for (const d of dokumente) {
+    const kat = d.kategorie || "sonstiges";
+    if (!grouped[kat]) grouped[kat] = [];
+    grouped[kat].push(d);
+  }
+
+  const sortedKats = Object.keys(KAT_LABELS).filter(k => grouped[k]?.length > 0);
+  const totalCount = dokumente.length;
 
   return (
     <div className="space-y-4">
+      {/* Header actions */}
       <div className="flex flex-wrap gap-2 items-center justify-between">
-        <div className="flex gap-2 flex-wrap items-center">
-          <Select value={filterKat} onValueChange={setFilterKat}>
-            <SelectTrigger className="w-44 h-8 text-xs"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="alle">Alle Kategorien</SelectItem>
-              {Object.entries(KAT_LABELS).map(([k,v])=><SelectItem key={k} value={k}>{v}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <Button variant={nurWichtig?"default":"outline"} size="sm" className="h-8 text-xs gap-1"
-            onClick={()=>setNurWichtig(!nurWichtig)}>
-            <Star className="w-3 h-3" />Nur wichtige
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">{totalCount} Dokument{totalCount !== 1 ? "e" : ""}</span>
+        </div>
+        <div className="flex gap-2">
+          {/* Bulk Upload */}
+          <label className="cursor-pointer">
+            <Button variant="outline" size="sm" className="gap-1.5" asChild>
+              <span>
+                <Upload className="w-3.5 h-3.5" />
+                Mehrere hochladen
+              </span>
+            </Button>
+            <input
+              type="file"
+              multiple
+              className="hidden"
+              onChange={e => handleBulkUpload(e.target.files)}
+            />
+          </label>
+          <Button size="sm" className="gap-1.5" onClick={() => handleOpen()}>
+            <Plus className="w-3.5 h-3.5" />Dokument
           </Button>
         </div>
-        <Button size="sm" className="gap-1.5" onClick={()=>handleOpen()}>
-          <Plus className="w-3.5 h-3.5" />Dokument hinzufügen
-        </Button>
       </div>
 
-      {filtered.length === 0 ? (
-        <Card><CardContent className="py-10 text-center text-sm text-muted-foreground">Keine Dokumente gefunden</CardContent></Card>
-      ) : (
-        <div className="space-y-2">
-          {filtered.map(d => (
-            <Card key={d.id} className="hover:shadow-sm transition-all">
-              <CardContent className="p-4">
-                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                  <div className="flex items-start gap-3 flex-1 min-w-0">
-                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                      <FileText className="w-4 h-4 text-primary" />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-medium text-sm">{d.titel}</span>
-                        {d.wichtig && <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />}
-                        <Badge variant="outline" className="text-xs">{KAT_LABELS[d.kategorie]||d.kategorie}</Badge>
-                        {d.versionsstand && <Badge variant="secondary" className="text-xs">{d.versionsstand}</Badge>}
+      {/* Bulk upload progress */}
+      {bulkUploading && bulkProgress && (
+        <Card className="border-primary/30 bg-primary/5">
+          <CardContent className="p-4 flex items-center gap-3">
+            <Loader2 className="w-4 h-4 animate-spin text-primary shrink-0" />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between text-xs mb-1.5">
+                <span className="font-medium">KI kategorisiert & lädt hoch...</span>
+                <span className="text-muted-foreground">{bulkProgress.current}/{bulkProgress.total}</span>
+              </div>
+              <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-primary rounded-full transition-all"
+                  style={{ width: `${(bulkProgress.current / bulkProgress.total) * 100}%` }}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground mt-1 truncate">{bulkProgress.currentName}</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Empty state */}
+      {totalCount === 0 && !bulkUploading && (
+        <Card className="border-dashed">
+          <CardContent className="py-16 text-center">
+            <FolderOpen className="w-12 h-12 text-muted-foreground/40 mx-auto mb-3" />
+            <p className="text-sm font-medium text-muted-foreground">Noch keine Dokumente</p>
+            <p className="text-xs text-muted-foreground mt-1 mb-4">Lade Ausschreibungsunterlagen, Pläne und mehr hoch. Die KI kategorisiert automatisch.</p>
+            <label className="cursor-pointer">
+              <Button variant="outline" className="gap-2" asChild>
+                <span><Sparkles className="w-4 h-4 text-violet-500" />Unterlagen hochladen (KI-Kategorisierung)</span>
+              </Button>
+              <input type="file" multiple className="hidden" onChange={e => handleBulkUpload(e.target.files)} />
+            </label>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Folder tree */}
+      {sortedKats.length > 0 && (
+        <div className="space-y-1.5">
+          {sortedKats.map(kat => {
+            const items = grouped[kat] || [];
+            const isOpen = openFolders.has(kat);
+            return (
+              <div key={kat} className="rounded-xl border border-border overflow-hidden">
+                {/* Folder header */}
+                <button
+                  className="w-full flex items-center gap-2.5 px-4 py-3 bg-muted/40 hover:bg-muted/60 transition-colors text-left"
+                  onClick={() => toggleFolder(kat)}
+                >
+                  {isOpen
+                    ? <ChevronDown className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                    : <ChevronRight className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                  }
+                  <span className="text-base">{KAT_ICONS[kat]}</span>
+                  <span className="font-medium text-sm">{KAT_LABELS[kat]}</span>
+                  <Badge variant="secondary" className="ml-auto text-[10px] px-1.5 py-0">{items.length}</Badge>
+                </button>
+
+                {/* Folder contents */}
+                {isOpen && (
+                  <div className="divide-y divide-border">
+                    {items.map(d => (
+                      <div key={d.id} className="px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-2 hover:bg-accent/30 transition-colors">
+                        <div className="flex items-start gap-3 flex-1 min-w-0">
+                          <FileText className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="text-sm font-medium truncate">{d.titel}</span>
+                              {d.wichtig && <Star className="w-3 h-3 text-amber-500 fill-amber-500 shrink-0" />}
+                              {d.versionsstand && <Badge variant="secondary" className="text-[10px]">{d.versionsstand}</Badge>}
+                            </div>
+                            <div className="flex flex-wrap gap-x-3 text-xs text-muted-foreground mt-0.5">
+                              {d.dokumentdatum && <span>{format(parseISO(d.dokumentdatum), "dd.MM.yyyy")}</span>}
+                              {d.dateiname && <span className="truncate max-w-[200px]">{d.dateiname}</span>}
+                              {d.bemerkung && <span className="truncate max-w-[250px] italic">{d.bemerkung}</span>}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex gap-1.5 shrink-0">
+                          {d.datei && (
+                            <a href={d.datei} target="_blank" rel="noopener noreferrer">
+                              <Button size="sm" variant="outline" className="h-7 text-xs gap-1">
+                                <ExternalLink className="w-3 h-3" />Öffnen
+                              </Button>
+                            </a>
+                          )}
+                          <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => handleOpen(d)}>
+                            Bearbeiten
+                          </Button>
+                        </div>
                       </div>
-                      <div className="flex flex-wrap gap-x-3 text-xs text-muted-foreground mt-1">
-                        {d.dokumentdatum && <span>{format(parseISO(d.dokumentdatum),"dd.MM.yyyy")}</span>}
-                        {d.dateiname && <span>{d.dateiname}</span>}
-                        {d.bemerkung && <span className="truncate max-w-xs">{d.bemerkung}</span>}
-                      </div>
-                    </div>
+                    ))}
                   </div>
-                  <div className="flex gap-2 shrink-0">
-                    {d.datei && (
-                      <a href={d.datei} target="_blank" rel="noopener noreferrer">
-                        <Button size="sm" variant="outline" className="h-7 text-xs gap-1">
-                          <ExternalLink className="w-3 h-3" />Öffnen
-                        </Button>
-                      </a>
-                    )}
-                    <Button size="sm" variant="outline" className="h-7 text-xs" onClick={()=>handleOpen(d)}>Bearbeiten</Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 
+      {/* Dialog */}
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
         <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle>{editDok?"Dokument bearbeiten":"Neues Dokument"}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{editDok ? "Dokument bearbeiten" : "Neues Dokument"}</DialogTitle></DialogHeader>
           <div className="space-y-3">
-            <div><Label className="text-xs">Titel *</Label><Input value={form.titel} onChange={e=>setForm({...form,titel:e.target.value})} className="mt-1" /></div>
+            <div>
+              <Label className="text-xs">Datei hochladen</Label>
+              <div className="mt-1">
+                <input
+                  type="file"
+                  onChange={e => handleFileSelect(e.target.files[0])}
+                  className="text-xs w-full"
+                />
+              </div>
+              {form.datei && !file && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Vorhanden: <a href={form.datei} target="_blank" rel="noopener noreferrer" className="text-primary underline">{form.dateiname || "Datei"}</a>
+                </p>
+              )}
+            </div>
+
+            <div>
+              <Label className="text-xs">Titel *</Label>
+              <Input value={form.titel} onChange={e => setForm({ ...form, titel: e.target.value })} className="mt-1" />
+            </div>
+
             <div className="grid grid-cols-2 gap-3">
-              <div><Label className="text-xs">Kategorie</Label>
-                <Select value={form.kategorie} onValueChange={v=>setForm({...form,kategorie:v})}>
+              <div>
+                <Label className="text-xs flex items-center gap-1.5">
+                  Kategorie
+                  {aiDetecting && <span className="flex items-center gap-1 text-violet-600"><Loader2 className="w-2.5 h-2.5 animate-spin" />KI erkennt...</span>}
+                </Label>
+                <Select value={form.kategorie} onValueChange={v => setForm({ ...form, kategorie: v })}>
                   <SelectTrigger className="mt-1 text-xs"><SelectValue /></SelectTrigger>
-                  <SelectContent>{Object.entries(KAT_LABELS).map(([k,v])=><SelectItem key={k} value={k} className="text-xs">{v}</SelectItem>)}</SelectContent>
+                  <SelectContent>
+                    {Object.entries(KAT_LABELS).map(([k, v]) =>
+                      <SelectItem key={k} value={k} className="text-xs">{KAT_ICONS[k]} {v}</SelectItem>
+                    )}
+                  </SelectContent>
                 </Select>
               </div>
-              <div><Label className="text-xs">Datum</Label><Input type="date" value={form.dokumentdatum||""} onChange={e=>setForm({...form,dokumentdatum:e.target.value})} className="mt-1" /></div>
+              <div>
+                <Label className="text-xs">Datum</Label>
+                <Input type="date" value={form.dokumentdatum || ""} onChange={e => setForm({ ...form, dokumentdatum: e.target.value })} className="mt-1" />
+              </div>
             </div>
+
             <div className="grid grid-cols-2 gap-3">
-              <div><Label className="text-xs">Versionsstand</Label><Input value={form.versionsstand||""} onChange={e=>setForm({...form,versionsstand:e.target.value})} placeholder="z.B. V1.0" className="mt-1" /></div>
-              <div className="flex items-end pb-0.5">
+              <div>
+                <Label className="text-xs">Versionsstand</Label>
+                <Input value={form.versionsstand || ""} onChange={e => setForm({ ...form, versionsstand: e.target.value })} placeholder="z.B. V1.0" className="mt-1" />
+              </div>
+              <div className="flex items-end pb-1">
                 <label className="flex items-center gap-2 text-sm cursor-pointer">
-                  <input type="checkbox" checked={!!form.wichtig} onChange={e=>setForm({...form,wichtig:e.target.checked})} />
+                  <input type="checkbox" checked={!!form.wichtig} onChange={e => setForm({ ...form, wichtig: e.target.checked })} />
                   Als wichtig markieren
                 </label>
               </div>
             </div>
+
             <div>
-              <Label className="text-xs">Datei hochladen</Label>
-              <div className="mt-1 flex items-center gap-2">
-                <input type="file" onChange={e=>setFile(e.target.files[0])} className="text-xs" />
-              </div>
-              {form.datei && !file && (
-                <p className="text-xs text-muted-foreground mt-1">Vorhanden: <a href={form.datei} target="_blank" rel="noopener noreferrer" className="text-primary underline">{form.dateiname||"Datei"}</a></p>
-              )}
+              <Label className="text-xs">Bemerkung</Label>
+              <Textarea value={form.bemerkung || ""} onChange={e => setForm({ ...form, bemerkung: e.target.value })} className="mt-1 h-16" />
             </div>
-            <div><Label className="text-xs">Bemerkung</Label><Textarea value={form.bemerkung||""} onChange={e=>setForm({...form,bemerkung:e.target.value})} className="mt-1 h-16" /></div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={()=>setShowDialog(false)}>Abbrechen</Button>
-            <Button onClick={handleSave} disabled={!form.titel||uploading}>{uploading?"Hochladen...":"Speichern"}</Button>
+            <Button variant="outline" onClick={() => setShowDialog(false)}>Abbrechen</Button>
+            <Button onClick={handleSave} disabled={!form.titel || uploading || aiDetecting}>
+              {uploading ? "Hochladen..." : "Speichern"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -332,16 +332,12 @@ export default function ProjectDetail() {
           <TabsTrigger value="overview" className="gap-1.5 text-xs">
             <FolderOpen className="w-3.5 h-3.5" />Übersicht
           </TabsTrigger>
-          <TabsTrigger value="kalkulation" className="gap-1.5 text-xs">
-            <Calculator className="w-3.5 h-3.5" />Kalkulation
-          </TabsTrigger>
           <TabsTrigger value="dokumente" className="gap-1.5 text-xs">
             <FileText className="w-3.5 h-3.5" />Dokumente
             {dokumente.length > 0 && <span className="ml-1 text-[10px] bg-primary/10 text-primary px-1 rounded">{dokumente.length}</span>}
           </TabsTrigger>
-          <TabsTrigger value="fristen" className="gap-1.5 text-xs">
-            <AlarmClock className="w-3.5 h-3.5" />Fristen
-            {fristen.filter(f=>f.status!=="erledigt").length > 0 && <span className="ml-1 text-[10px] bg-amber-100 text-amber-700 px-1 rounded">{fristen.filter(f=>f.status!=="erledigt").length}</span>}
+          <TabsTrigger value="kalkulation" className="gap-1.5 text-xs">
+            <Calculator className="w-3.5 h-3.5" />Kalkulation
           </TabsTrigger>
           <TabsTrigger value="schriftverkehr" className="gap-1.5 text-xs">
             <Mail className="w-3.5 h-3.5" />Schriftverkehr
