@@ -7,7 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Users, Settings, Plus, Trash2, FolderOpen } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Users, UserPlus, Plus, Trash2, FolderOpen, Mail } from "lucide-react";
 
 const ROLLEN = {
   admin: "Admin",
@@ -28,8 +29,12 @@ const PROJEKT_ROLLEN = { bauleitung: "Bauleitung", kalkulation: "Kalkulation", b
 export default function Benutzerverwaltung() {
   const qc = useQueryClient();
   const [showZuordnungDialog, setShowZuordnungDialog] = useState(false);
+  const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [zuordnungForm, setZuordnungForm] = useState({ project_id: "", rolle: "nur_lesen" });
+  const [inviteForm, setInviteForm] = useState({ email: "", role: "kalkulation" });
+  const [inviteLoading, setInviteLoading] = useState(false);
+  const [inviteError, setInviteError] = useState("");
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ["users"],
@@ -61,7 +66,6 @@ export default function Benutzerverwaltung() {
 
   const handleAddZuordnung = () => {
     if (!zuordnungForm.project_id || !selectedUser) return;
-    const project = projects.find(p => p.id === zuordnungForm.project_id);
     createZuordnungMut.mutate({
       project_id: zuordnungForm.project_id,
       user_email: selectedUser.email,
@@ -70,13 +74,34 @@ export default function Benutzerverwaltung() {
     });
   };
 
+  const handleInvite = async () => {
+    if (!inviteForm.email) return;
+    setInviteLoading(true);
+    setInviteError("");
+    try {
+      await base44.users.inviteUser(inviteForm.email, inviteForm.role);
+      setShowInviteDialog(false);
+      setInviteForm({ email: "", role: "kalkulation" });
+      qc.invalidateQueries({ queryKey: ["users"] });
+    } catch (e) {
+      setInviteError(e?.message || "Einladung fehlgeschlagen.");
+    } finally {
+      setInviteLoading(false);
+    }
+  };
+
   return (
     <div className="max-w-5xl mx-auto space-y-6 animate-fade-in">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-          <Users className="w-6 h-6" />Benutzerverwaltung
-        </h1>
-        <p className="text-sm text-muted-foreground mt-0.5">Rollen, Aktivierung und Projektzuständigkeiten verwalten</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+            <Users className="w-6 h-6" />Benutzerverwaltung
+          </h1>
+          <p className="text-sm text-muted-foreground mt-0.5">Rollen, Aktivierung und Projektzuständigkeiten verwalten</p>
+        </div>
+        <Button onClick={() => { setInviteForm({ email: "", role: "kalkulation" }); setInviteError(""); setShowInviteDialog(true); }} className="shrink-0">
+          <UserPlus className="w-4 h-4 mr-1.5" />Benutzer einladen
+        </Button>
       </div>
 
       {/* Benutzerliste */}
@@ -176,6 +201,45 @@ export default function Benutzerverwaltung() {
         </CardContent>
       </Card>
 
+      {/* Einlade-Dialog */}
+      <Dialog open={showInviteDialog} onOpenChange={setShowInviteDialog}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Mail className="w-4 h-4" />Benutzer einladen</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label className="text-xs">E-Mail-Adresse</Label>
+              <Input
+                type="email"
+                placeholder="name@beispiel.de"
+                value={inviteForm.email}
+                onChange={e => setInviteForm(f => ({ ...f, email: e.target.value }))}
+                className="mt-1 text-sm"
+              />
+            </div>
+            <div>
+              <Label className="text-xs">Rolle</Label>
+              <Select value={inviteForm.role} onValueChange={v => setInviteForm(f => ({ ...f, role: v }))}>
+                <SelectTrigger className="mt-1 text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {Object.entries(ROLLEN).map(([k, v]) => (
+                    <SelectItem key={k} value={k} className="text-xs">{v}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {inviteError && <p className="text-xs text-destructive">{inviteError}</p>}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowInviteDialog(false)}>Abbrechen</Button>
+            <Button onClick={handleInvite} disabled={!inviteForm.email || inviteLoading}>
+              {inviteLoading ? "Sende..." : "Einladen"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Zuordnungs-Dialog */}
       <Dialog open={showZuordnungDialog} onOpenChange={setShowZuordnungDialog}>
         <DialogContent className="max-w-sm">
@@ -189,7 +253,12 @@ export default function Benutzerverwaltung() {
               <Select value={zuordnungForm.project_id} onValueChange={v => setZuordnungForm(f => ({ ...f, project_id: v }))}>
                 <SelectTrigger className="mt-1 text-xs"><SelectValue placeholder="Projekt wählen..." /></SelectTrigger>
                 <SelectContent>
-                  {projects.map(p => <SelectItem key={p.id} value={p.id} className="text-xs">{p.project_name} ({p.project_number})</SelectItem>)}
+                  {projects.map(p => (
+                <SelectItem key={p.id} value={p.id} className="text-xs">
+                  <span className="block max-w-[260px] truncate">{p.project_name}</span>
+                  <span className="text-[10px] text-muted-foreground ml-1">({p.project_number})</span>
+                </SelectItem>
+              ))}
                 </SelectContent>
               </Select>
             </div>
