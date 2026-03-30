@@ -370,44 +370,111 @@ export default function ProjectDetail() {
             const abgerechnet = rechnungen.filter(r => ["gestellt","teilbezahlt","bezahlt"].includes(r.status))
               .reduce((s, r) => s + (r.betrag_netto || 0), 0);
             const offen = Math.max(0, auftragssumme - abgerechnet);
-            const finanzFortschritt = auftragssumme > 0 ? Math.min(100, (abgerechnet / auftragssumme) * 100) : 0;
+            const finanzPct = auftragssumme > 0 ? Math.min(100, Math.round((abgerechnet / auftragssumme) * 100)) : 0;
             const fmt = (n) => n.toLocaleString("de-DE", { style: "currency", currency: "EUR" });
             const offeneFristen = fristen.filter(f => f.status !== "erledigt").length;
             const ueberfaelligFristen = fristen.filter(f => f.status !== "erledigt" && f.datum && isPast(parseISO(f.datum))).length;
             const offenerSchriftverkehr = schriftverkehr.filter(s => s.status !== "erledigt").length;
+            const offeneAufgaben = aufgaben.filter(a => !["erledigt","verworfen"].includes(a.status)).length;
+            const bauPct = project.fortschritt_prozent_manuell || 0;
+            const latestStunden = stundenstaende[0];
+            const kalkulierteStunden = project.kalkulierte_stunden_manuell || 0;
+            const gebuchteStunden = latestStunden?.gebuchte_stunden_gesamt || 0;
+            const stundenPct = kalkulierteStunden > 0 ? Math.min(100, Math.round((gebuchteStunden / kalkulierteStunden) * 100)) : 0;
 
-            // StatCard helper
-            const SC = ({ title, value, sub, icon: Icon, accent }) => (
-              <Card>
-                <CardContent className="p-4 flex items-start gap-3">
-                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${accent || "bg-primary/10"}`}>
-                    <Icon className="w-4 h-4 text-primary" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-xs text-muted-foreground">{title}</p>
-                    <p className="text-base font-bold mt-0.5 truncate">{value}</p>
-                    {sub && <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>}
-                  </div>
-                </CardContent>
-              </Card>
-            );
+            // SVG Progress Ring
+            const Ring = ({ pct, color, label, sub }) => {
+              const r = 28; const c = 2 * Math.PI * r;
+              const dash = (pct / 100) * c;
+              return (
+                <Card>
+                  <CardContent className="p-4 flex items-center gap-4">
+                    <svg width="72" height="72" viewBox="0 0 72 72" className="shrink-0">
+                      <circle cx="36" cy="36" r={r} fill="none" stroke="hsl(var(--muted))" strokeWidth="6" />
+                      <circle cx="36" cy="36" r={r} fill="none" stroke={color} strokeWidth="6"
+                        strokeDasharray={`${dash} ${c}`} strokeDashoffset={c / 4}
+                        strokeLinecap="round" transform="rotate(-90 36 36)" style={{ transition: "stroke-dasharray 0.5s" }} />
+                      <text x="36" y="40" textAnchor="middle" fontSize="14" fontWeight="700" fill="currentColor">{pct}%</text>
+                    </svg>
+                    <div className="min-w-0">
+                      <p className="text-xs text-muted-foreground">{label}</p>
+                      <p className="text-sm font-semibold mt-0.5 truncate">{sub}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            };
 
             return (
               <div className="space-y-6">
-                {/* KPI Row – identisches Design wie ursprüngliches Cockpit */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                  <SC title="Auftragssumme netto" value={auftragssumme ? fmt(auftragssumme) : "–"} icon={Euro} />
-                  <SC title="Abgerechnet" value={abgerechnet ? fmt(abgerechnet) : "–"}
-                    sub={auftragssumme ? `${Math.round(finanzFortschritt)}% der Auftragssumme` : undefined}
-                    icon={TrendingUp} accent="bg-green-50" />
-                  <SC title="Offen (Abrechnung)" value={auftragssumme ? fmt(offen) : "–"} icon={Euro} accent="bg-amber-50" />
-                  <SC title="Offene Fristen" value={offeneFristen}
-                    sub={ueberfaelligFristen > 0 ? `${ueberfaelligFristen} überfällig` : `${offenerSchriftverkehr} Schriftverkehr offen`}
-                    icon={AlarmClock} accent="bg-amber-50" />
-                </div>
 
-                {/* Projektdaten + Termine + Kalkulation */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* === POST-AWARD: Finanz-KPIs mit Progress-Rings === */}
+                {isPostAward && (
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <Ring pct={finanzPct} color="hsl(var(--primary))"
+                      label="Abgerechnet"
+                      sub={`${fmt(abgerechnet)} von ${auftragssumme ? fmt(auftragssumme) : "–"}`} />
+                    <Ring pct={bauPct} color="hsl(var(--chart-2))"
+                      label="Baufortschritt"
+                      sub={bauPct > 0 ? `${bauPct}% fertiggestellt` : "Manuell pflegbar"} />
+                    <Ring pct={stundenPct} color="hsl(var(--chart-3))"
+                      label="Stunden"
+                      sub={kalkulierteStunden > 0 ? `${gebuchteStunden}h / ${kalkulierteStunden}h` : "Keine kalk. Stunden"} />
+                  </div>
+                )}
+
+                {/* === PRE-AWARD: Einfache Status-Karten === */}
+                {!isPostAward && (
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    {[
+                      { title: "Offene Fristen", value: offeneFristen, sub: ueberfaelligFristen > 0 ? `${ueberfaelligFristen} überfällig` : undefined, icon: AlarmClock, accent: ueberfaelligFristen > 0 ? "bg-red-50" : "bg-amber-50", iconColor: ueberfaelligFristen > 0 ? "text-red-500" : "text-amber-600" },
+                      { title: "Offene Aufgaben", value: offeneAufgaben, icon: ListTodo, accent: "bg-primary/10", iconColor: "text-primary" },
+                      { title: "Schriftverkehr offen", value: offenerSchriftverkehr, icon: Mail, accent: "bg-blue-50", iconColor: "text-blue-600" },
+                      { title: "Dokumente", value: dokumente.length, icon: FileText, accent: "bg-muted", iconColor: "text-muted-foreground" },
+                    ].map(({ title, value, sub, icon: Icon, accent, iconColor }) => (
+                      <Card key={title}>
+                        <CardContent className="p-4 flex items-start gap-3">
+                          <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${accent}`}>
+                            <Icon className={`w-4 h-4 ${iconColor}`} />
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">{title}</p>
+                            <p className="text-base font-bold mt-0.5">{value}</p>
+                            {sub && <p className="text-xs text-red-500 mt-0.5">{sub}</p>}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+
+                {/* === POST-AWARD: Finanz-Detail-Karten === */}
+                {isPostAward && (
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    {[
+                      { title: "Auftragssumme netto", value: auftragssumme ? fmt(auftragssumme) : "–", icon: Euro, accent: "bg-primary/10", iconColor: "text-primary" },
+                      { title: "Abgerechnet", value: abgerechnet ? fmt(abgerechnet) : "–", icon: TrendingUp, accent: "bg-green-50", iconColor: "text-green-600" },
+                      { title: "Noch offen", value: fmt(offen), icon: Euro, accent: "bg-amber-50", iconColor: "text-amber-600" },
+                      { title: "Offene Fristen", value: offeneFristen, sub: ueberfaelligFristen > 0 ? `${ueberfaelligFristen} überfällig` : undefined, icon: AlarmClock, accent: ueberfaelligFristen > 0 ? "bg-red-50" : "bg-amber-50", iconColor: ueberfaelligFristen > 0 ? "text-red-500" : "text-amber-600" },
+                    ].map(({ title, value, sub, icon: Icon, accent, iconColor }) => (
+                      <Card key={title}>
+                        <CardContent className="p-4 flex items-start gap-3">
+                          <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${accent}`}>
+                            <Icon className={`w-4 h-4 ${iconColor}`} />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-xs text-muted-foreground">{title}</p>
+                            <p className="text-base font-bold mt-0.5 truncate">{value}</p>
+                            {sub && <p className="text-xs text-red-500 mt-0.5">{sub}</p>}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+
+                {/* Projektdaten + Termine */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <Card>
                     <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold">Projektdaten</CardTitle></CardHeader>
                     <CardContent className="space-y-2.5 text-sm">
@@ -448,35 +515,8 @@ export default function ProjectDetail() {
                           </span>
                         </div>
                       ))}
-                      {!project.project_start && !project.project_end && project.lv_positions?.length > 0 && (
-                        <p className="text-[11px] text-amber-600 bg-amber-50 rounded p-1.5 mt-1">
-                          Keine Fristen im LV gefunden → KI-Analyse im Kalkulation-Tab kann Bieterfragen vorschlagen.
-                        </p>
-                      )}
                     </CardContent>
                   </Card>
-                  {latestKalk ? (
-                    <Card>
-                      <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold flex items-center gap-2"><Euro className="w-4 h-4" />Kalkulation</CardTitle></CardHeader>
-                      <CardContent className="space-y-2 text-sm">
-                        <div className="flex justify-between"><span className="text-muted-foreground">Angebotssumme</span><span className="font-semibold">{latestKalk.angebotsumme?.toLocaleString("de-DE", { style: "currency", currency: "EUR" }) || "–"}</span></div>
-                        <div className="flex justify-between"><span className="text-muted-foreground">Deckungsbeitrag</span><span className="font-medium">{latestKalk.deckungsbeitrag?.toLocaleString("de-DE", { style: "currency", currency: "EUR" }) || "–"}</span></div>
-                        <Button size="sm" variant="outline" className="w-full mt-2 gap-1" onClick={() => setActiveTab("kalkulation")}>
-                          Zur Kalkulation <ChevronRight className="w-3.5 h-3.5" />
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  ) : (
-                    <Card className="border-dashed">
-                      <CardContent className="py-8 flex flex-col items-center justify-center gap-2 text-center">
-                        <Calculator className="w-8 h-8 text-muted-foreground/40" />
-                        <p className="text-sm text-muted-foreground">Noch keine Kalkulation</p>
-                        <Button size="sm" variant="outline" className="gap-1 mt-1" onClick={() => setActiveTab("kalkulation")}>
-                          LV hochladen & kalkulieren <ChevronRight className="w-3.5 h-3.5" />
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  )}
                 </div>
               </div>
             );
