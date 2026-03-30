@@ -51,7 +51,7 @@ export async function generateKalkulationPDF(project, kalkulation, options = {})
   }
 
   // Erste Seite
-  addHeaderSection(doc, company, project, client, kalkulation, MARGIN_TOP, MARGIN_LEFT, pageWidth);
+  addHeaderSection(doc, company, project, client, kalkulation, MARGIN_TOP, MARGIN_LEFT, pageWidth, unserZeichen);
   
   let yPos = MARGIN_TOP + 60;
   const pageBottom = pageHeight - MARGIN_BOTTOM;
@@ -299,7 +299,7 @@ export async function generateKalkulationPDF(project, kalkulation, options = {})
   doc.save(filename);
 }
 
-function addHeaderSection(doc, company, project, client, kalkulation, topMargin, leftMargin, pageWidth) {
+function addHeaderSection(doc, company, project, client, kalkulation, topMargin, leftMargin, pageWidth, unserZeichen = "") {
   const rightMargin = MARGIN_RIGHT;
   const contentWidth = pageWidth - leftMargin - rightMargin;
   

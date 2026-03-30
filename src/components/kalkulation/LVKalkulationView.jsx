@@ -361,7 +361,9 @@ const LVKalkulationView = forwardRef(function LVKalkulationView({ project }, ref
   };
 
   const handleExportWithOptions = async (options) => {
-    await generateKalkulationPDF(project, kalk, options);
+    // Aktuelle lokale Positionen (inkl. ungespeicherter Änderungen) für den Export verwenden
+    const kalkForExport = buildKalkWithLocalPositions();
+    await generateKalkulationPDF(project, kalkForExport, options);
   };
 
   const handleSaveAndContinue = async () => {
