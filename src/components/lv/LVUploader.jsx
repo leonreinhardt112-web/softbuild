@@ -102,8 +102,8 @@ function parseX83(xmlText) {
     // Oder: <Description><CompleteText><TextOutlFmt/><DetailTxt><Text>Langtext</Text></DetailTxt></CompleteText></Description>
     // ShortText="Yes/No" ist nur ein Boolean-Flag, kein echter Kurztext!
 
-    // Priorität 1: OutlineText > OutlTxt > Text (GAEB X83 Kurztext)
-    const outlineTextEl = node.querySelector("OutlineText OutlTxt Text") || node.querySelector("OutlTxt Text");
+    // Priorität 1: OutlineText > OutlTxt > TextOutlTxt (GAEB X83 Kurztext - CaliforniaX Format)
+    const outlineTextEl = node.querySelector("TextOutlTxt") || node.querySelector("OutlineText OutlTxt Text") || node.querySelector("OutlTxt Text");
     if (outlineTextEl) shortText = getNonBoolText(outlineTextEl);
 
     // Priorität 2: LblTx > Text oder LblTx direkt (Gruppenbezeichnung in Items)
