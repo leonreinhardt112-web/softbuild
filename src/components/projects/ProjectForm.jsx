@@ -296,7 +296,7 @@ export default function ProjectForm({ open, onOpenChange, onSave, initialData })
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Abbrechen</Button>
             <Button type="submit"
-              disabled={!form.project_name || !form.project_number || !form.client_id}>
+              disabled={!form.project_name || (initialData && !form.project_number) || !form.client_id}>
               {initialData ? "Speichern" : "Projekt anlegen"}
             </Button>
           </DialogFooter>
