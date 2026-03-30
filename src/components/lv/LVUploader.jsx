@@ -81,67 +81,55 @@ function parseX83(xmlText) {
     }
   };
 
+  // Helper: get text from element only if it's not a boolean flag value
+  const getNonBoolText = (el) => {
+    if (!el) return "";
+    const t = el.textContent?.trim();
+    if (!t) return "";
+    const lower = t.toLowerCase();
+    // Reject pure boolean flags
+    if (lower === "yes" || lower === "no" || lower === "true" || lower === "false") return "";
+    return t;
+  };
+
   const processItem = (node, parentOz) => {
     let oz = getText(node, "ItemNo", "OZ", "Pos") || node.getAttribute("RNoPart") || "";
     
     let shortText = "";
     let longText = "";
 
-    // Kurztext: suche ShortText-Element, aber ignoriere Elemente die nur einen Boolean-Wert enthalten
-    // (manche GAEB-Varianten haben <ShortText> mit Boolean-Attributen als Kindelemente)
-    const shortCandidates = ["ShortText", "KurzText", "Description ShortText"];
-    for (const sel of shortCandidates) {
-      const el = node.querySelector(sel);
-      if (el) {
-        // Sammle nur Textnoten dieses Elements (nicht verschachtelter Kindelemente die Boolean-Flags sind)
-        let text = "";
-        for (const child of el.childNodes) {
-          if (child.nodeType === 3) { // direkte TEXT_NODEs
-            text += child.textContent;
-          } else if (child.nodeType === 1 && child.children.length === 0) {
-            // Leaf-Elemente: nur übernehmen wenn kein Boolean
-            const val = child.textContent?.trim();
-            const lower = val?.toLowerCase();
-            if (val && lower !== "yes" && lower !== "no" && lower !== "true" && lower !== "false") {
-              text += val;
-            }
-          }
-        }
-        shortText = text.trim();
-        // Falls nichts gefunden, ganzen textContent nehmen (außer reiner Boolean)
-        if (!shortText) {
-          const full = el.textContent?.trim();
-          const lower = full?.toLowerCase();
-          if (full && lower !== "yes" && lower !== "no" && lower !== "true" && lower !== "false") {
-            shortText = full;
-          }
-        }
-        if (shortText) break;
-      }
-    }
-    // Letzter Fallback: Description-Element direkt
+    // GAEB X83 Struktur: <Description><OutlineText><OutlTxt><TextOutlFmt>...</TextOutlFmt><Sums>...</Sums><Text>Kurztext hier</Text></OutlTxt></OutlineText>...
+    // Oder: <Description><CompleteText><TextOutlFmt/><DetailTxt><Text>Langtext</Text></DetailTxt></CompleteText></Description>
+    // ShortText="Yes/No" ist nur ein Boolean-Flag, kein echter Kurztext!
+
+    // Priorität 1: OutlineText > OutlTxt > Text (GAEB X83 Kurztext)
+    const outlineTextEl = node.querySelector("OutlineText OutlTxt Text") || node.querySelector("OutlTxt Text");
+    if (outlineTextEl) shortText = getNonBoolText(outlineTextEl);
+
+    // Priorität 2: LblTx > Text oder LblTx direkt (Gruppenbezeichnung in Items)
     if (!shortText) {
-      const descEl = node.querySelector("Description");
-      if (descEl) {
-        let text = "";
-        for (const child of descEl.childNodes) {
-          if (child.nodeType === 3) text += child.textContent;
-        }
-        shortText = text.trim();
-        if (!shortText) {
-          const full = descEl.textContent?.trim();
-          const lower = full?.toLowerCase();
-          if (full && lower !== "yes" && lower !== "no" && lower !== "true" && lower !== "false") {
-            shortText = full;
-          }
-        }
-      }
+      const lblEl = node.querySelector("LblTx Text") || node.querySelector("LblTx");
+      if (lblEl) shortText = getNonBoolText(lblEl);
     }
 
-    // Suche Langtext NICHT in ShortText, nur in DetailText/LongText Elementen
-    const longEl = node.querySelector("DetailTxt Text") || node.querySelector("CompleteText") || node.querySelector("LongText") || node.querySelector("LangText");
-    if (longEl?.textContent?.trim()) {
-      longText = longEl.textContent.trim();
+    // Priorität 3: KurzText / KurzTxt Element
+    if (!shortText) {
+      const kurzEl = node.querySelector("KurzText") || node.querySelector("KurzTxt");
+      if (kurzEl) shortText = getNonBoolText(kurzEl);
+    }
+
+    // Langtext: DetailTxt > Text
+    const detailEl = node.querySelector("DetailTxt Text") || node.querySelector("DetailTxt");
+    if (detailEl) longText = detailEl.textContent?.trim() || "";
+
+    // Falls kein Langtext, CompleteText versuchen (aber nicht ShortText-Boolean darin)
+    if (!longText) {
+      const completeEl = node.querySelector("CompleteText");
+      if (completeEl) {
+        // Nur den DetailTxt-Teil, nicht den ShortText-Boolean
+        const detailInComplete = completeEl.querySelector("DetailTxt Text") || completeEl.querySelector("DetailTxt");
+        if (detailInComplete) longText = detailInComplete.textContent?.trim() || "";
+      }
     }
     
     const qty = getText(node, "Qty", "Menge") || "";
