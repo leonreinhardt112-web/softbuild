@@ -25,7 +25,7 @@ import { cn } from "@/lib/utils";
 const NAV_ITEMS = [
   { name: "Dashboard", page: "Dashboard", icon: LayoutDashboard },
   { name: "Projekte", page: "Projects", icon: FolderOpen },
-  { name: "Schriftverkehr", page: "Schriftverkehr", icon: Mail },
+  { name: "Postfächer", page: "Postfaecher", icon: Mail },
   { name: "Baustelle", page: "Baustelle", icon: HardHat },
   { name: "Abrechnung", page: "Abrechnung", icon: Receipt },
   { name: "Controlling", page: "Controlling", icon: BarChart3 },

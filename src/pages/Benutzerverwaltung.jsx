@@ -4,12 +4,12 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Users, UserPlus, Trash2, FolderOpen, Pencil, Mail, CheckCircle2, XCircle, Inbox, Plus, Globe } from "lucide-react";
+import { Users, UserPlus, Trash2, FolderOpen, Pencil, Mail, CheckCircle2, XCircle, Plus } from "lucide-react";
 
 const ROLLEN = {
   admin: "Admin",
@@ -34,15 +34,7 @@ const PROJEKT_ROLLEN = {
   nur_lesen: "Nur lesen",
 };
 
-const ANBIETER_LABELS = {
-  google_workspace: "Google Workspace",
-  outlook_365: "Outlook / Microsoft 365",
-  web_de: "web.de",
-  sonstiges: "Sonstiges",
-};
-
 const DEFAULT_ANLEGEN = { vorname: "", nachname: "", email: "", role: "kalkulation" };
-const DEFAULT_POSTFACH = { email_adresse: "", bezeichnung: "", typ: "persoenlich", anbieter: "google_workspace", user_emails: [], notiz: "" };
 
 function normalizeToEmail(str) {
   return str
@@ -58,8 +50,6 @@ export default function Benutzerverwaltung() {
   const [showAnlegenDialog, setShowAnlegenDialog] = useState(false);
   const [showBearbeitenDialog, setShowBearbeitenDialog] = useState(false);
   const [showZuordnungDialog, setShowZuordnungDialog] = useState(false);
-  const [showPostfachDialog, setShowPostfachDialog] = useState(false);
-
   const [anlegenForm, setAnlegenForm] = useState(DEFAULT_ANLEGEN);
   const [anlegenLoading, setAnlegenLoading] = useState(false);
   const [anlegenError, setAnlegenError] = useState("");
@@ -67,8 +57,6 @@ export default function Benutzerverwaltung() {
   const [selectedUser, setSelectedUser] = useState(null);
   const [bearbeitenForm, setBearbeitenForm] = useState({});
   const [zuordnungForm, setZuordnungForm] = useState({ project_id: "", rolle: "nur_lesen" });
-  const [postfachForm, setPostfachForm] = useState(DEFAULT_POSTFACH);
-  const [editingPostfach, setEditingPostfach] = useState(null);
 
   // Data
   const { data: users = [], isLoading } = useQuery({
@@ -82,10 +70,6 @@ export default function Benutzerverwaltung() {
   const { data: zustaendigkeiten = [] } = useQuery({
     queryKey: ["zustaendigkeiten"],
     queryFn: () => base44.entities.ProjektZustaendigkeit.list("-created_date", 500),
-  });
-  const { data: postfaecher = [] } = useQuery({
-    queryKey: ["postfaecher"],
-    queryFn: () => base44.entities.Postfach.list("bezeichnung", 200),
   });
   // Domain aus Unternehmens-Stammdaten
   const { data: companyData } = useQuery({
@@ -103,7 +87,8 @@ export default function Benutzerverwaltung() {
     const v = normalizeToEmail(anlegenForm.vorname);
     const n = normalizeToEmail(anlegenForm.nachname);
     const local = [v, n].filter(Boolean).join(".");
-    return emailDomain ? `${local}@${emailDomain}` : local;
+    if (!emailDomain) return "";
+    return `${local}@${emailDomain}`;
   })();
 
   // Wenn Vorschlag sich ändert und E-Mail noch nicht manuell geändert wurde
@@ -122,19 +107,6 @@ export default function Benutzerverwaltung() {
     mutationFn: (id) => base44.entities.ProjektZustaendigkeit.delete(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["zustaendigkeiten"] }),
   });
-  const createPostfachMut = useMutation({
-    mutationFn: (d) => base44.entities.Postfach.create(d),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["postfaecher"] }); setShowPostfachDialog(false); setPostfachForm(DEFAULT_POSTFACH); },
-  });
-  const updatePostfachMut = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Postfach.update(id, data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["postfaecher"] }); setShowPostfachDialog(false); setEditingPostfach(null); },
-  });
-  const deletePostfachMut = useMutation({
-    mutationFn: (id) => base44.entities.Postfach.delete(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["postfaecher"] }),
-  });
-
   const handleAnlegen = async () => {
     const emailToUse = emailManuell ? anlegenForm.email : (emailVorschlag || anlegenForm.email);
     if (!emailToUse || !anlegenForm.role) return;
@@ -193,36 +165,6 @@ export default function Benutzerverwaltung() {
     });
   };
 
-  const openPostfachDialog = (pf = null) => {
-    if (pf) {
-      setEditingPostfach(pf);
-      setPostfachForm({ ...pf, user_emails: pf.user_emails || [] });
-    } else {
-      setEditingPostfach(null);
-      setPostfachForm(DEFAULT_POSTFACH);
-    }
-    setShowPostfachDialog(true);
-  };
-
-  const handlePostfachSave = () => {
-    if (editingPostfach) {
-      updatePostfachMut.mutate({ id: editingPostfach.id, data: postfachForm });
-    } else {
-      createPostfachMut.mutate(postfachForm);
-    }
-  };
-
-  // Postfach: Benutzer-Chips
-  const [postfachUserInput, setPostfachUserInput] = useState("");
-  const addPostfachUser = () => {
-    if (!postfachUserInput.trim()) return;
-    setPostfachForm(f => ({ ...f, user_emails: [...(f.user_emails || []), postfachUserInput.trim()] }));
-    setPostfachUserInput("");
-  };
-  const removePostfachUser = (email) => {
-    setPostfachForm(f => ({ ...f, user_emails: f.user_emails.filter(e => e !== email) }));
-  };
-
   const displayName = (u) => {
     if (u.vorname || u.nachname) return `${u.vorname || ""} ${u.nachname || ""}`.trim();
     return u.full_name || "–";
@@ -248,14 +190,7 @@ export default function Benutzerverwaltung() {
         </Button>
       </div>
 
-      <Tabs defaultValue="mitarbeiter">
-        <TabsList>
-          <TabsTrigger value="mitarbeiter" className="gap-1.5"><Users className="w-3.5 h-3.5" />Mitarbeiter ({users.length})</TabsTrigger>
-          <TabsTrigger value="postfaecher" className="gap-1.5"><Inbox className="w-3.5 h-3.5" />Postfächer ({postfaecher.length})</TabsTrigger>
-        </TabsList>
-
-        {/* ── Tab: Mitarbeiter ── */}
-        <TabsContent value="mitarbeiter" className="mt-4">
+      <div className="mt-4">
           <Card>
             <CardContent className="p-0">
               {isLoading ? (
@@ -334,81 +269,7 @@ export default function Benutzerverwaltung() {
               )}
             </CardContent>
           </Card>
-        </TabsContent>
-
-        {/* ── Tab: Postfächer ── */}
-        <TabsContent value="postfaecher" className="mt-4 space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">
-                Persönliche und geteilte E-Mail-Postfächer verwalten
-              </p>
-              {emailDomain && (
-                <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                  <Globe className="w-3 h-3" />Domain: <span className="font-mono font-medium">{emailDomain}</span>
-                </p>
-              )}
-            </div>
-            <Button size="sm" className="gap-1.5" onClick={() => openPostfachDialog()}>
-              <Plus className="w-3.5 h-3.5" />Postfach anlegen
-            </Button>
-          </div>
-
-          {/* Persönliche Postfächer */}
-          {["persoenlich", "geteilt"].map(typ => {
-            const gefiltert = postfaecher.filter(p => p.typ === typ);
-            return (
-              <Card key={typ}>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                    <Inbox className="w-4 h-4" />
-                    {typ === "persoenlich" ? "Persönliche Postfächer" : "Geteilte Postfächer"}
-                    <span className="text-muted-foreground font-normal">({gefiltert.length})</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-0">
-                  {gefiltert.length === 0 ? (
-                    <div className="px-6 pb-6 text-sm text-muted-foreground">Noch keine {typ === "persoenlich" ? "persönlichen" : "geteilten"} Postfächer angelegt.</div>
-                  ) : (
-                    <div className="divide-y divide-border">
-                      {gefiltert.map(pf => (
-                        <div key={pf.id} className="px-6 py-3 flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                            <Mail className="w-3.5 h-3.5 text-primary" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <p className="font-semibold text-sm">{pf.bezeichnung}</p>
-                              <span className="text-[10px] bg-muted px-2 py-0.5 rounded-full text-muted-foreground">
-                                {ANBIETER_LABELS[pf.anbieter] || pf.anbieter}
-                              </span>
-                              {!pf.aktiv && <span className="text-[10px] bg-muted px-2 py-0.5 rounded-full text-muted-foreground">Inaktiv</span>}
-                            </div>
-                            <p className="text-xs text-muted-foreground font-mono">{pf.email_adresse}</p>
-                            {pf.user_emails?.length > 0 && (
-                              <p className="text-[11px] text-muted-foreground mt-0.5">
-                                Zugriff: {pf.user_emails.join(", ")}
-                              </p>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-1 shrink-0">
-                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openPostfachDialog(pf)}>
-                              <Pencil className="w-3.5 h-3.5" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => deletePostfachMut.mutate(pf.id)}>
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })}
-        </TabsContent>
-      </Tabs>
+      </div>
 
       {/* ── Mitarbeiter anlegen Dialog ── */}
       <Dialog open={showAnlegenDialog} onOpenChange={setShowAnlegenDialog}>
@@ -625,108 +486,7 @@ export default function Benutzerverwaltung() {
         </DialogContent>
       </Dialog>
 
-      {/* ── Postfach Dialog ── */}
-      <Dialog open={showPostfachDialog} onOpenChange={setShowPostfachDialog}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Inbox className="w-4 h-4" />{editingPostfach ? "Postfach bearbeiten" : "Postfach anlegen"}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3 py-1">
-            <div>
-              <Label className="text-xs font-medium">Bezeichnung <span className="text-destructive">*</span></Label>
-              <Input
-                placeholder="z.B. Persönlich Max, Rechnung, Info"
-                value={postfachForm.bezeichnung}
-                onChange={e => setPostfachForm(f => ({ ...f, bezeichnung: e.target.value }))}
-                className="mt-1 text-sm"
-              />
-            </div>
-            <div>
-              <Label className="text-xs font-medium">E-Mail-Adresse <span className="text-destructive">*</span></Label>
-              <Input
-                type="email"
-                placeholder={emailDomain ? `rechnung@${emailDomain}` : "rechnung@meinefirma.de"}
-                value={postfachForm.email_adresse}
-                onChange={e => setPostfachForm(f => ({ ...f, email_adresse: e.target.value }))}
-                className="mt-1 text-sm"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label className="text-xs font-medium">Typ</Label>
-                <Select value={postfachForm.typ} onValueChange={v => setPostfachForm(f => ({ ...f, typ: v }))}>
-                  <SelectTrigger className="mt-1 text-xs"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="persoenlich" className="text-xs">Persönlich</SelectItem>
-                    <SelectItem value="geteilt" className="text-xs">Geteilt</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label className="text-xs font-medium">Anbieter</Label>
-                <Select value={postfachForm.anbieter} onValueChange={v => setPostfachForm(f => ({ ...f, anbieter: v }))}>
-                  <SelectTrigger className="mt-1 text-xs"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(ANBIETER_LABELS).map(([k, v]) => (
-                      <SelectItem key={k} value={k} className="text-xs">{v}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
 
-            <div>
-              <Label className="text-xs font-medium">Benutzer mit Zugriff</Label>
-              <div className="flex gap-2 mt-1">
-                <Input
-                  type="email"
-                  placeholder="E-Mail des Benutzers"
-                  value={postfachUserInput}
-                  onChange={e => setPostfachUserInput(e.target.value)}
-                  onKeyDown={e => e.key === "Enter" && addPostfachUser()}
-                  className="text-sm"
-                />
-                <Button type="button" size="sm" variant="outline" onClick={addPostfachUser}>
-                  <Plus className="w-3.5 h-3.5" />
-                </Button>
-              </div>
-              {postfachForm.user_emails?.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mt-2">
-                  {postfachForm.user_emails.map(e => (
-                    <div key={e} className="flex items-center gap-1 bg-muted rounded-full px-2.5 py-1">
-                      <span className="text-xs">{e}</span>
-                      <button onClick={() => removePostfachUser(e)} className="text-muted-foreground hover:text-destructive ml-1">
-                        <XCircle className="w-3 h-3" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div>
-              <Label className="text-xs font-medium">Notiz</Label>
-              <Input
-                placeholder="Interne Notiz..."
-                value={postfachForm.notiz || ""}
-                onChange={e => setPostfachForm(f => ({ ...f, notiz: e.target.value }))}
-                className="mt-1 text-sm"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowPostfachDialog(false)}>Abbrechen</Button>
-            <Button
-              onClick={handlePostfachSave}
-              disabled={!postfachForm.bezeichnung || !postfachForm.email_adresse || createPostfachMut.isPending || updatePostfachMut.isPending}
-            >
-              {(createPostfachMut.isPending || updatePostfachMut.isPending) ? "Speichern..." : "Speichern"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
