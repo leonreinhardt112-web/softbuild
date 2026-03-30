@@ -49,6 +49,7 @@
  */
 import Abrechnung from './pages/Abrechnung';
 import Baustelle from './pages/Baustelle';
+import Benutzerverwaltung from './pages/Benutzerverwaltung';
 import Controlling from './pages/Controlling';
 import Dashboard from './pages/Dashboard';
 import Kalkulation from './pages/Kalkulation';
@@ -62,6 +63,7 @@ import __Layout from './Layout.jsx';
 export const PAGES = {
     "Abrechnung": Abrechnung,
     "Baustelle": Baustelle,
+    "Benutzerverwaltung": Benutzerverwaltung,
     "Controlling": Controlling,
     "Dashboard": Dashboard,
     "Kalkulation": Kalkulation,

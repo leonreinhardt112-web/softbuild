@@ -1,0 +1,33 @@
+{
+  "name": "ProjektZustaendigkeit",
+  "type": "object",
+  "properties": {
+    "project_id": {
+      "type": "string",
+      "description": "Projekt-ID"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "E-Mail des zugeordneten Benutzers"
+    },
+    "user_name": {
+      "type": "string",
+      "description": "Name des Benutzers (Anzeige)"
+    },
+    "rolle": {
+      "type": "string",
+      "enum": [
+        "bauleitung",
+        "kalkulation",
+        "buchhaltung",
+        "nur_lesen"
+      ],
+      "description": "Projektzust\u00e4ndigkeit"
+    }
+  },
+  "required": [
+    "project_id",
+    "user_email",
+    "rolle"
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "name": "User",
+  "type": "object",
+  "properties": {
+    "role": {
+      "type": "string",
+      "description": "Rolle des Benutzers",
+      "enum": [
+        "admin",
+        "geschaeftsfuehrung",
+        "kalkulation",
+        "bauleitung",
+        "buchhaltung"
+      ]
+    },
+    "aktiv": {
+      "type": "boolean",
+      "default": true,
+      "description": "Benutzer aktiv"
+    }
+  },
+  "required": [
+    "role"
+  ]
+}

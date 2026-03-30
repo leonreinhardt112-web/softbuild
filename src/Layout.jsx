@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { useUnsavedChanges, UnsavedChangesProvider } from "@/components/common/UnsavedChangesContext";
+import { base44 } from "@/api/base44Client";
 
 import {
   LayoutDashboard,
@@ -15,6 +16,7 @@ import {
   ChevronRight,
   Building2,
   Mail,
+  Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -28,12 +30,18 @@ const NAV_ITEMS = [
   { name: "Abrechnung", page: "Abrechnung", icon: Receipt },
   { name: "Controlling", page: "Controlling", icon: BarChart3 },
   { name: "Stammdaten", page: "Stammdaten", icon: Database },
+  { name: "Benutzer", page: "Benutzerverwaltung", icon: Users, adminOnly: true },
 ];
 
 function LayoutContent({ children, currentPageName }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
   const navigate = useNavigate();
   const { unsavedState, setUnsavedState } = useUnsavedChanges();
+
+  useEffect(() => {
+    base44.auth.me().then(u => setCurrentUser(u)).catch(() => {});
+  }, []);
 
   const handleNavigation = (e, page) => {
     if (unsavedState?.hasChanges) {
@@ -105,7 +113,7 @@ function LayoutContent({ children, currentPageName }) {
 
           {/* Nav */}
           <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto">
-            {NAV_ITEMS.map((item) => {
+            {NAV_ITEMS.filter(item => !item.adminOnly || currentUser?.role === "admin").map((item) => {
               const isActive = currentPageName === item.page;
               const Icon = item.icon;
               return (
