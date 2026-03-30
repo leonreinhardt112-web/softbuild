@@ -81,70 +81,63 @@ function parseX83(xmlText) {
     }
   };
 
-  // Filter out boolean/flag values that are not real text
-  const isBooleanValue = (text) => {
-    const lower = text.toLowerCase().trim();
-    return lower === "yes" || lower === "no" || lower === "true" || lower === "false" || lower === "1" || lower === "0";
-  };
-
-  // Get direct text content of an element (only direct child text nodes, not nested elements)
-  const getDirectText = (el) => {
-    if (!el) return "";
-    let text = "";
-    for (const child of el.childNodes) {
-      if (child.nodeType === 3) { // TEXT_NODE
-        text += child.textContent;
-      }
-    }
-    return text.trim();
-  };
-
-  // Find element by tag name (case-insensitive) among direct and shallow children
-  const findEl = (node, ...tagNames) => {
-    for (const tag of tagNames) {
-      const upper = tag.toUpperCase();
-      // Try querySelector first (HTML-mode, case-insensitive)
-      const found = node.querySelector(tag);
-      if (found) return found;
-      // Manual case-insensitive search in children
-      for (const child of node.children) {
-        if (child.tagName?.toUpperCase() === upper) return child;
-      }
-    }
-    return null;
-  };
-
   const processItem = (node, parentOz) => {
     let oz = getText(node, "ItemNo", "OZ", "Pos") || node.getAttribute("RNoPart") || "";
     
     let shortText = "";
     let longText = "";
-    
-    // Try to find ShortText — prefer direct text content to avoid picking up boolean child elements
-    const shortEl = findEl(node, "ShortText", "KurzText");
-    if (shortEl) {
-      // First try direct text only (avoids nested boolean elements)
-      const direct = getDirectText(shortEl);
-      if (direct && !isBooleanValue(direct)) {
-        shortText = direct;
-      } else {
-        // Fall back to full textContent but filter out booleans
-        const full = shortEl.textContent?.trim();
-        if (full && !isBooleanValue(full)) shortText = full;
+
+    // Kurztext: suche ShortText-Element, aber ignoriere Elemente die nur einen Boolean-Wert enthalten
+    // (manche GAEB-Varianten haben <ShortText> mit Boolean-Attributen als Kindelemente)
+    const shortCandidates = ["ShortText", "KurzText", "Description ShortText"];
+    for (const sel of shortCandidates) {
+      const el = node.querySelector(sel);
+      if (el) {
+        // Sammle nur Textnoten dieses Elements (nicht verschachtelter Kindelemente die Boolean-Flags sind)
+        let text = "";
+        for (const child of el.childNodes) {
+          if (child.nodeType === 3) { // direkte TEXT_NODEs
+            text += child.textContent;
+          } else if (child.nodeType === 1 && child.children.length === 0) {
+            // Leaf-Elemente: nur übernehmen wenn kein Boolean
+            const val = child.textContent?.trim();
+            const lower = val?.toLowerCase();
+            if (val && lower !== "yes" && lower !== "no" && lower !== "true" && lower !== "false") {
+              text += val;
+            }
+          }
+        }
+        shortText = text.trim();
+        // Falls nichts gefunden, ganzen textContent nehmen (außer reiner Boolean)
+        if (!shortText) {
+          const full = el.textContent?.trim();
+          const lower = full?.toLowerCase();
+          if (full && lower !== "yes" && lower !== "no" && lower !== "true" && lower !== "false") {
+            shortText = full;
+          }
+        }
+        if (shortText) break;
       }
     }
-    
-    // If still no shortText, try Description element (but only direct text)
+    // Letzter Fallback: Description-Element direkt
     if (!shortText) {
-      const descEl = findEl(node, "Description");
+      const descEl = node.querySelector("Description");
       if (descEl) {
-        const direct = getDirectText(descEl);
-        if (direct && !isBooleanValue(direct)) {
-          shortText = direct;
+        let text = "";
+        for (const child of descEl.childNodes) {
+          if (child.nodeType === 3) text += child.textContent;
+        }
+        shortText = text.trim();
+        if (!shortText) {
+          const full = descEl.textContent?.trim();
+          const lower = full?.toLowerCase();
+          if (full && lower !== "yes" && lower !== "no" && lower !== "true" && lower !== "false") {
+            shortText = full;
+          }
         }
       }
     }
-    
+
     // Suche Langtext NICHT in ShortText, nur in DetailText/LongText Elementen
     const longEl = node.querySelector("DetailTxt Text") || node.querySelector("CompleteText") || node.querySelector("LongText") || node.querySelector("LangText");
     if (longEl?.textContent?.trim()) {
