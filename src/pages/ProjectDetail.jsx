@@ -308,7 +308,7 @@ export default function ProjectDetail() {
         </div>
       </div>
       {/* Projektstatus ändern */}
-      <ProjektStatusChanger project={project} onUpdate={(s) => updateProjectMutation.mutate({ status: s })} />
+      <ProjektStatusChanger project={project} onUpdate={(updates) => updateProjectMutation.mutate(updates)} />
       </div>
 
       {/* Unsaved-changes guard */}

@@ -5,8 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { ArrowLeft, Plus, Trash2, Save, Lock, AlertTriangle, Info } from "lucide-react";
-import { format } from "date-fns";
+import { ArrowLeft, Plus, Trash2, Save, Lock, AlertTriangle } from "lucide-react";
 
 const fmt = (n) => (n || 0).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const fmtEur = (n) => (n || 0).toLocaleString("de-DE", { style: "currency", currency: "EUR" });
@@ -18,11 +17,6 @@ export default function AufmassErfassung({ aufmass, project, vorherigeAufmasse, 
   const [status, setStatus] = useState(aufmass.status || "entwurf");
   const [rechnungsnummer, setRechnungsnummer] = useState(aufmass.rechnungsnummer || "");
   const [nrLoading, setNrLoading] = useState(false);
-
-  // Skonto / Einbehalt – nur informativ, kein Abzug
-  const [skonto_prozent, setSkoontoProzent] = useState(aufmass.skonto_prozent ?? "");
-  const [skonto_tage, setSkontoTage] = useState(aufmass.skonto_tage ?? "");
-  const [einbehalt_info, setEinbehaltInfo] = useState(aufmass.einbehalt_info ?? "");
 
   const isFreigegeben = status === "freigegeben" || status === "abgerechnet" || status === "storniert";
 
@@ -85,7 +79,22 @@ export default function AufmassErfassung({ aufmass, project, vorherigeAufmasse, 
   const betrag_vorperioden = positionen.reduce((s, p) => s + ((p.menge_vorperioden || 0) * (p.ep || 0)), 0);
   const betrag_netto = betrag_vorperioden + betrag_aktuell;
 
-  // Rechnungsnummer automatisch ziehen (GoBD: wird einmalig gezogen und fixiert)
+  const buildSaveData = (overrideStatus, overrideNr) => ({
+    positionen,
+    datum,
+    abrechner,
+    status: overrideStatus || status,
+    rechnungsnummer: overrideNr || rechnungsnummer,
+    betrag_aktuell,
+    betrag_vorperioden,
+    betrag_netto,
+  });
+
+  const handleSave = async () => {
+    await saveMut.mutateAsync(buildSaveData());
+  };
+
+  // Rechnungsnummer automatisch ziehen (GoBD: einmalig, dann unveränderlich)
   const handleFreigeben = async () => {
     setNrLoading(true);
     let nr = rechnungsnummer;
@@ -94,43 +103,13 @@ export default function AufmassErfassung({ aufmass, project, vorherigeAufmasse, 
       nr = res.data?.rechnungNummer || "";
       setRechnungsnummer(nr);
     }
-    const data = {
-      positionen,
-      datum,
-      abrechner,
-      status: "freigegeben",
-      rechnungsnummer: nr,
-      skonto_prozent: skonto_prozent !== "" ? parseFloat(skonto_prozent) : null,
-      skonto_tage: skonto_tage !== "" ? parseInt(skonto_tage) : null,
-      einbehalt_info,
-      betrag_aktuell,
-      betrag_vorperioden,
-      betrag_netto,
-    };
-    await saveMut.mutateAsync(data);
+    await saveMut.mutateAsync(buildSaveData("freigegeben", nr));
     setStatus("freigegeben");
     setNrLoading(false);
   };
 
-  const handleSave = async () => {
-    await saveMut.mutateAsync({
-      positionen,
-      datum,
-      abrechner,
-      status,
-      rechnungsnummer,
-      skonto_prozent: skonto_prozent !== "" ? parseFloat(skonto_prozent) : null,
-      skonto_tage: skonto_tage !== "" ? parseInt(skonto_tage) : null,
-      einbehalt_info,
-      betrag_aktuell,
-      betrag_vorperioden,
-      betrag_netto,
-    });
-  };
-
   const handleStornieren = async () => {
-    // GoBD: Storno erzeugt neuen Datensatz mit negiertem Betrag – Originalnummer bleibt erhalten
-    await saveMut.mutateAsync({ status: "storniert" });
+    await saveMut.mutateAsync(buildSaveData("storniert"));
     setStatus("storniert");
   };
 
@@ -177,18 +156,17 @@ export default function AufmassErfassung({ aufmass, project, vorherigeAufmasse, 
         </div>
       </div>
 
-      {/* GoBD-Hinweis wenn freigegeben */}
+      {/* Status-Hinweise */}
       {isFreigegeben && status !== "storniert" && (
         <div className="flex items-start gap-2 text-xs bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 text-blue-800">
           <Lock className="w-3.5 h-3.5 mt-0.5 shrink-0" />
-          <span>Diese Rechnung ist freigegeben. Rechnungsnummer und Betrag sind gemäß GoBD unveränderlich gespeichert. Für Korrekturen bitte stornieren und neu anlegen.</span>
+          <span>Diese Rechnung ist freigegeben. Rechnungsnummer und Betrag sind gemäß GoBD unveränderlich. Für Korrekturen: Stornieren und neue AR anlegen.</span>
         </div>
       )}
-
       {status === "storniert" && (
         <div className="flex items-start gap-2 text-xs bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-red-800">
           <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
-          <span>Diese Rechnung wurde storniert. Die Rechnungsnummer bleibt gemäß GoBD erhalten. Bitte eine neue AR mit korrigierten Werten anlegen.</span>
+          <span>Storniert. Die Rechnungsnummer {rechnungsnummer} bleibt gemäß GoBD erhalten. Bitte eine neue AR mit korrigierten Werten anlegen.</span>
         </div>
       )}
 
@@ -202,47 +180,17 @@ export default function AufmassErfassung({ aufmass, project, vorherigeAufmasse, 
           <label className="text-xs text-muted-foreground block mb-1">Abrechner</label>
           <Input value={abrechner} onChange={e => setAbrechner(e.target.value)} placeholder="Name..." className="text-sm h-8" disabled={isFreigegeben} />
         </div>
-        <div className="sm:col-span-2 flex items-end gap-4">
+        <div className="sm:col-span-2 flex items-end gap-3">
           <div className="flex-1 bg-muted/40 rounded-lg px-3 py-2">
             <p className="text-xs text-muted-foreground">Diese Periode</p>
             <p className="font-bold text-primary text-sm">{fmtEur(betrag_aktuell)}</p>
           </div>
           <div className="flex-1 bg-muted/40 rounded-lg px-3 py-2">
-            <p className="text-xs text-muted-foreground">Kumuliert</p>
+            <p className="text-xs text-muted-foreground">Kumuliert netto</p>
             <p className="font-bold text-sm">{fmtEur(betrag_netto)}</p>
           </div>
         </div>
       </div>
-
-      {/* Skonto & Einbehalt – nur informativ */}
-      <Card className="border-dashed">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <Info className="w-4 h-4 text-muted-foreground" />
-            <span className="text-xs font-medium text-muted-foreground">Vertragskonditionen (nur informativ – kein Abzug in der Rechnung)</span>
-          </div>
-          <div className="grid grid-cols-3 gap-3">
-            <div>
-              <label className="text-xs text-muted-foreground block mb-1">Skonto %</label>
-              <Input type="number" value={skonto_prozent} onChange={e => setSkoontoProzent(e.target.value)}
-                placeholder="z.B. 2" className="text-sm h-8" disabled={isFreigegeben} />
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground block mb-1">Skonto-Frist (Tage)</label>
-              <Input type="number" value={skonto_tage} onChange={e => setSkontoTage(e.target.value)}
-                placeholder="z.B. 14" className="text-sm h-8" disabled={isFreigegeben} />
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground block mb-1">Einbehalt-Hinweis</label>
-              <Input value={einbehalt_info} onChange={e => setEinbehaltInfo(e.target.value)}
-                placeholder="z.B. 5% Sicherheitseinbehalt lt. Vertrag" className="text-sm h-8" disabled={isFreigegeben} />
-            </div>
-          </div>
-          <p className="text-[11px] text-muted-foreground mt-2">
-            Sicherheitseinbehalt und Skonto werden <strong>nicht</strong> vom Rechnungsbetrag abgezogen – das ist Sache des Auftraggebers.
-          </p>
-        </CardContent>
-      </Card>
 
       {/* Positionstabelle */}
       <div className="space-y-3">
@@ -337,18 +285,10 @@ export default function AufmassErfassung({ aufmass, project, vorherigeAufmasse, 
               <p className="font-semibold text-primary">{fmtEur(betrag_aktuell)}</p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Kumuliert netto (Rechnungsbetrag)</p>
+              <p className="text-xs text-muted-foreground">Rechnungsbetrag netto</p>
               <p className="font-bold text-lg">{fmtEur(betrag_netto)}</p>
             </div>
           </div>
-          {skonto_prozent && (
-            <p className="text-xs text-muted-foreground mt-2 border-t border-border/50 pt-2">
-              Skonto: {skonto_prozent}% bei Zahlung innerhalb {skonto_tage || "–"} Tagen = {fmtEur(betrag_netto * parseFloat(skonto_prozent) / 100)} (vom AG abzuziehen, nicht von uns)
-            </p>
-          )}
-          {einbehalt_info && (
-            <p className="text-xs text-muted-foreground mt-1">{einbehalt_info}</p>
-          )}
         </CardContent>
       </Card>
     </div>

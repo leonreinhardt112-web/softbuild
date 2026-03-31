@@ -19,13 +19,14 @@ export const TRADE_LABELS = {
 };
 
 export const STATUS_LABELS = {
-  entwurf: "Entwurf",
   kalkulation: "In Kalkulation",
   eingereicht: "Eingereicht",
   beauftragt: "Beauftragt",
-  verloren: "Verloren",
-  in_ausfuehrung: "In Ausführung",
   abgeschlossen: "Abgeschlossen",
+  verloren: "Verloren / Archiviert",
+  // Fallback für alte Datensätze
+  entwurf: "In Kalkulation",
+  in_ausfuehrung: "Beauftragt",
   // AFU
   in_pruefung: "In Prüfung",
   ausfuehrungsreif: "Ausführungsreif",
@@ -33,13 +34,14 @@ export const STATUS_LABELS = {
 };
 
 export const STATUS_COLORS = {
-  entwurf: "bg-secondary text-secondary-foreground",
   kalkulation: "bg-amber-100 text-amber-800",
   eingereicht: "bg-blue-100 text-blue-800",
   beauftragt: "bg-green-100 text-green-800",
-  verloren: "bg-destructive/10 text-destructive",
-  in_ausfuehrung: "bg-primary/10 text-primary",
   abgeschlossen: "bg-gray-100 text-gray-700",
+  verloren: "bg-destructive/10 text-destructive",
+  // Fallback für alte Datensätze
+  entwurf: "bg-amber-100 text-amber-800",
+  in_ausfuehrung: "bg-green-100 text-green-800",
   // AFU
   in_pruefung: "bg-primary/10 text-primary",
   ausfuehrungsreif: "bg-green-100 text-green-800",

@@ -8,25 +8,34 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Archive } from "lucide-react";
 
+// Vereinfachte Status-Kette
 const STATUS_FLOW = [
-  { value: "entwurf",        label: "Entwurf",           color: "bg-secondary text-secondary-foreground" },
-  { value: "kalkulation",    label: "Kalkulation",        color: "bg-blue-100 text-blue-700" },
-  { value: "eingereicht",    label: "Eingereicht",        color: "bg-amber-100 text-amber-700" },
-  { value: "beauftragt",     label: "Beauftragt",         color: "bg-green-100 text-green-700" },
-  { value: "in_ausfuehrung", label: "In Ausführung",      color: "bg-primary/10 text-primary" },
-  { value: "abgeschlossen",  label: "Abgeschlossen",      color: "bg-green-200 text-green-800" },
-  { value: "verloren",       label: "Verloren / Abgesagt", color: "bg-red-100 text-red-700" },
+  { value: "kalkulation",   label: "In Kalkulation",      color: "bg-amber-100 text-amber-800" },
+  { value: "eingereicht",   label: "Eingereicht",          color: "bg-blue-100 text-blue-800" },
+  { value: "beauftragt",    label: "Beauftragt",           color: "bg-green-100 text-green-800" },
+  { value: "abgeschlossen", label: "Abgeschlossen",        color: "bg-gray-100 text-gray-700" },
 ];
+
+const ARCHIV_STATUS = { value: "verloren", label: "Verloren / Archivieren", color: "bg-destructive/10 text-destructive" };
 
 export default function ProjektStatusChanger({ project, onUpdate }) {
   const [loading, setLoading] = useState(false);
-  const current = STATUS_FLOW.find(s => s.value === project.status) || STATUS_FLOW[0];
+
+  // Aktuellen Status finden – Fallback für alte Werte
+  const normalized = project.status === "entwurf" ? "kalkulation"
+    : project.status === "in_ausfuehrung" ? "beauftragt"
+    : project.status;
+
+  const current = [...STATUS_FLOW, ARCHIV_STATUS].find(s => s.value === normalized) || STATUS_FLOW[0];
 
   const handleChange = async (newStatus) => {
     setLoading(true);
-    await onUpdate(newStatus);
+    // "verloren" → automatisch archivieren
+    const updates = { status: newStatus };
+    if (newStatus === "verloren") updates.archiviert = true;
+    await onUpdate(updates);
     setLoading(false);
   };
 
@@ -34,7 +43,7 @@ export default function ProjektStatusChanger({ project, onUpdate }) {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="outline" size="sm" className="gap-2 shrink-0" disabled={loading}>
-          <span className={`inline-block w-2 h-2 rounded-full ${current.color.replace("text-", "bg-").split(" ")[0]}`} />
+          <span className={`inline-block w-2 h-2 rounded-full ${current.color.split(" ")[0]}`} />
           {current.label}
           <ChevronDown className="w-3 h-3 opacity-60" />
         </Button>
@@ -45,14 +54,23 @@ export default function ProjektStatusChanger({ project, onUpdate }) {
         {STATUS_FLOW.map(s => (
           <DropdownMenuItem
             key={s.value}
-            disabled={s.value === project.status}
+            disabled={s.value === normalized}
             onClick={() => handleChange(s.value)}
             className="gap-2 cursor-pointer"
           >
             <Badge className={`text-[10px] py-0 ${s.color}`}>{s.label}</Badge>
-            {s.value === project.status && <span className="ml-auto text-[10px] text-muted-foreground">Aktuell</span>}
+            {s.value === normalized && <span className="ml-auto text-[10px] text-muted-foreground">Aktuell</span>}
           </DropdownMenuItem>
         ))}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          disabled={normalized === "verloren"}
+          onClick={() => handleChange("verloren")}
+          className="gap-2 cursor-pointer text-destructive focus:text-destructive"
+        >
+          <Archive className="w-3.5 h-3.5" />
+          {ARCHIV_STATUS.label}
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

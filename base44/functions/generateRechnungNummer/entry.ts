@@ -37,8 +37,8 @@ Deno.serve(async (req) => {
       rechnung_nummer_jahr: rechnungJahr
     });
 
-    // Formatiere die Nummer (z.B. 26001)
-    const formattedNummer = `${rechnungJahr}${String(rechnungNummer).padStart(3, '0')}`;
+    // Formatiere die Nummer (z.B. RE 26001)
+    const formattedNummer = `RE ${rechnungJahr}${String(rechnungNummer).padStart(3, '0')}`;
 
     return Response.json({ rechnungNummer: formattedNummer });
   } catch (error) {

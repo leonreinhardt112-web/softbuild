@@ -20,13 +20,21 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const STATUS_GROUPS = {
-  vorbereitung: {
-    label: "In Vorbereitung",
-    statuses: ["entwurf", "kalkulation", "eingereicht"],
+  kalkulation: {
+    label: "Kalkulation",
+    statuses: ["entwurf", "kalkulation"],
   },
-  aktiv: {
-    label: "Aktiv & Abgeschlossen",
-    statuses: ["beauftragt", "in_ausfuehrung", "verloren", "abgeschlossen"],
+  eingereicht: {
+    label: "Eingereicht",
+    statuses: ["eingereicht"],
+  },
+  beauftragt: {
+    label: "Beauftragt / Aktiv",
+    statuses: ["beauftragt", "in_ausfuehrung"],
+  },
+  abgeschlossen: {
+    label: "Abgeschlossen",
+    statuses: ["abgeschlossen"],
   },
 };
 
@@ -93,7 +101,8 @@ export default function Projects() {
   const [search, setSearch] = useState("");
   const [deleteId, setDeleteId] = useState(null);
   const [viewMode, setViewMode] = useState("tabs");
-  const [activeTab, setActiveTab] = useState("vorbereitung");
+  const [activeTab, setActiveTab] = useState("kalkulation");
+  const [showArchiv, setShowArchiv] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: projects = [], isLoading } = useQuery({
@@ -122,11 +131,14 @@ export default function Projects() {
     else createMutation.mutate(formData);
   };
 
-  const searchFiltered = projects.filter(p =>
-    p.project_name?.toLowerCase().includes(search.toLowerCase()) ||
-    p.project_number?.toLowerCase().includes(search.toLowerCase()) ||
-    p.client?.toLowerCase().includes(search.toLowerCase())
-  );
+  const searchFiltered = projects.filter(p => {
+    const matchSearch = p.project_name?.toLowerCase().includes(search.toLowerCase()) ||
+      p.project_number?.toLowerCase().includes(search.toLowerCase()) ||
+      p.client?.toLowerCase().includes(search.toLowerCase());
+    if (!matchSearch) return false;
+    if (showArchiv) return p.archiviert === true || p.status === "verloren";
+    return !p.archiviert && p.status !== "verloren";
+  });
 
   const getGroupProjects = (groupKey) => {
     const statuses = STATUS_GROUPS[groupKey].statuses;
@@ -136,6 +148,8 @@ export default function Projects() {
   const displayedProjects = viewMode === "all"
     ? searchFiltered
     : getGroupProjects(activeTab);
+
+  const archivCount = projects.filter(p => p.archiviert || p.status === "verloren").length;
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 animate-fade-in">
@@ -158,13 +172,17 @@ export default function Projects() {
             onChange={e => setSearch(e.target.value)} className="pl-9" />
         </div>
         <div className="flex items-center gap-1 border border-border rounded-lg p-1">
-          <Button variant={viewMode === "tabs" ? "default" : "ghost"} size="sm"
-            className="h-7 text-xs px-3" onClick={() => setViewMode("tabs")}>
+          <Button variant={!showArchiv && viewMode === "tabs" ? "default" : "ghost"} size="sm"
+            className="h-7 text-xs px-3" onClick={() => { setViewMode("tabs"); setShowArchiv(false); }}>
             Nach Status
           </Button>
-          <Button variant={viewMode === "all" ? "default" : "ghost"} size="sm"
-            className="h-7 text-xs px-3" onClick={() => setViewMode("all")}>
+          <Button variant={!showArchiv && viewMode === "all" ? "default" : "ghost"} size="sm"
+            className="h-7 text-xs px-3" onClick={() => { setViewMode("all"); setShowArchiv(false); }}>
             <LayoutGrid className="w-3.5 h-3.5 mr-1" />Alle
+          </Button>
+          <Button variant={showArchiv ? "default" : "ghost"} size="sm"
+            className="h-7 text-xs px-3" onClick={() => setShowArchiv(v => !v)}>
+            Archiv {archivCount > 0 && <span className="ml-1 opacity-70">({archivCount})</span>}
           </Button>
         </div>
       </div>
