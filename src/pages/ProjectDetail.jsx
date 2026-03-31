@@ -47,7 +47,9 @@ export default function ProjectDetail() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { setUnsavedState } = useUnsavedChanges();
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState(() => {
+    return localStorage.getItem(`project_${projectId}_tab`) || "overview";
+  });
   const [pendingTab, setPendingTab] = useState(null);
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState(null);
@@ -83,6 +85,7 @@ export default function ProjectDetail() {
         return;
       }
     }
+    localStorage.setItem(`project_${projectId}_tab`, newTab);
     setActiveTab(newTab);
   };
 

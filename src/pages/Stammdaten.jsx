@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Archive, Trash2, Search, Database, Users, Truck, Package, Edit2 } from "lucide-react";
+import { Plus, Archive, Trash2, Search, Database, Users, Truck, Package, Edit2, Zap } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 const TYP_LABELS = {
   auftraggeber: "Auftraggeber", nachunternehmer: "Nachunternehmer", lieferant: "Lieferant",
@@ -120,11 +121,17 @@ export default function Stammdaten() {
   const [showForm, setShowForm] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [search, setSearch] = useState("");
+  const [showFixDialog, setShowFixDialog] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const { data: stammdaten = [], isLoading } = useQuery({
     queryKey: ["stammdaten"],
     queryFn: () => base44.entities.Stammdatum.list("name", 500),
   });
+
+  useEffect(() => {
+    base44.auth.me().then(u => setIsAdmin(u?.role === "admin")).catch(() => {});
+  }, []);
 
   const createMut = useMutation({
     mutationFn: async (d) => {
@@ -173,6 +180,14 @@ export default function Stammdaten() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["stammdaten"] }),
   });
 
+  const fixDuplicatesMut = useMutation({
+    mutationFn: () => base44.functions.invoke("fixDuplicateKundennummern", {}),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["stammdaten"] });
+      setShowFixDialog(false);
+    },
+  });
+
   const filtered = stammdaten.filter(s => {
     // Archivierte Auftraggeber Tab
     if (activeTab === "auftraggeber_archiv") {
@@ -202,9 +217,34 @@ export default function Stammdaten() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 animate-fade-in">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Stammdaten</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">Zentrale Datenbasis – Auftraggeber, NU, Mitarbeiter, Geräte, Materialien</p>
+      {/* Admin: Fix Duplikate Dialog */}
+      {isAdmin && (
+        <AlertDialog open={showFixDialog} onOpenChange={setShowFixDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Kundennummern-Duplikate bereinigen?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Dies werden alle doppelt vergebenen Kundennummern automatisch korrigiert. Jeder Auftraggeber erhält eine eindeutige Nummer.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+              <AlertDialogAction onClick={() => fixDuplicatesMut.mutate()}>Bereinigen</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
+
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Stammdaten</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">Zentrale Datenbasis – Auftraggeber, NU, Mitarbeiter, Geräte, Materialien</p>
+        </div>
+        {isAdmin && (
+          <Button size="sm" variant="outline" className="gap-2 text-amber-600 border-amber-200 hover:bg-amber-50" onClick={() => setShowFixDialog(true)}>
+            <Zap className="w-4 h-4" />Fix Duplikate
+          </Button>
+        )}
       </div>
 
       {/* Summary cards */}
