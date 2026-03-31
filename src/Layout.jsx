@@ -25,20 +25,26 @@ const NAV_ITEMS = [
   { name: "Dashboard", page: "Dashboard", icon: LayoutDashboard },
   { name: "Projekte", page: "Projects", icon: FolderOpen },
   { name: "Postfächer", page: "Postfaecher", icon: Mail },
-  { name: "Abrechnung", page: "Abrechnung", icon: Receipt, allowedRoles: ["admin", "geschaeftsfuehrung", "buchhaltung"] },
-  { name: "Controlling", page: "Controlling", icon: BarChart3, allowedRoles: ["admin", "geschaeftsfuehrung", "kalkulation", "buchhaltung"] },
-  { name: "Stammdaten", page: "Stammdaten", icon: Database, allowedRoles: ["admin", "geschaeftsfuehrung"] },
+  { name: "Abrechnung", page: "Abrechnung", icon: Receipt },
+  { name: "Controlling", page: "Controlling", icon: BarChart3 },
+  { name: "Stammdaten", page: "Stammdaten", icon: Database },
   { name: "Benutzer", page: "Benutzerverwaltung", icon: Users, adminOnly: true },
 ];
+
+const ALWAYS_VISIBLE = ["Dashboard", "Projects", "Postfaecher", "Benutzerverwaltung"];
 
 function LayoutContent({ children, currentPageName }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
+  const [navRechte, setNavRechte] = useState({});
   const navigate = useNavigate();
   const { unsavedState, setUnsavedState } = useUnsavedChanges();
 
   useEffect(() => {
     base44.auth.me().then(u => setCurrentUser(u)).catch(() => {});
+    base44.entities.Stammdatum.filter({ typ: "unternehmen", aktiv: true }, undefined, 1)
+      .then(list => { if (list?.[0]?.nav_rechte) setNavRechte(list[0].nav_rechte); })
+      .catch(() => {});
   }, []);
 
   const handleNavigation = (e, page) => {
@@ -113,8 +119,11 @@ function LayoutContent({ children, currentPageName }) {
           <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto">
             {NAV_ITEMS.filter(item => {
               if (item.adminOnly) return currentUser?.role === "admin";
-              if (item.allowedRoles) return !currentUser || item.allowedRoles.includes(currentUser.role);
-              return true;
+              if (currentUser?.role === "admin") return true;
+              if (ALWAYS_VISIBLE.includes(item.page)) return true;
+              const allowed = navRechte[item.page];
+              if (!allowed) return true; // default: sichtbar wenn keine Regel
+              return allowed.includes(currentUser?.role);
             }).map((item) => {
               const isActive = currentPageName === item.page;
               const Icon = item.icon;

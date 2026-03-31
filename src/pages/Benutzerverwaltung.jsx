@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Users, UserPlus, Trash2, FolderOpen, Pencil, Mail, CheckCircle2, XCircle, Plus } from "lucide-react";
+import NavigationsrechteEditor from "@/components/benutzerverwaltung/NavigationsrechteEditor";
 
 const ROLLEN = {
   admin: "Admin",
@@ -197,7 +198,8 @@ export default function Benutzerverwaltung() {
         </Button>
       </div>
 
-      <div className="mt-4">
+      <div className="mt-4 space-y-6">
+        <NavigationsrechteEditor />
           <Card>
             <CardContent className="p-0">
               {isLoading ? (
@@ -276,7 +278,7 @@ export default function Benutzerverwaltung() {
               )}
             </CardContent>
           </Card>
-      </div>
+        </div>
 
       {/* ── Mitarbeiter anlegen Dialog ── */}
       <Dialog open={showAnlegenDialog} onOpenChange={setShowAnlegenDialog}>

@@ -1,0 +1,172 @@
+{
+  "name": "Stammdatum",
+  "type": "object",
+  "properties": {
+    "typ": {
+      "type": "string",
+      "enum": [
+        "auftraggeber",
+        "nachunternehmer",
+        "lieferant",
+        "mitarbeiter",
+        "geraet",
+        "material",
+        "unternehmen"
+      ],
+      "description": "Typ"
+    },
+    "name": {
+      "type": "string",
+      "description": "Name / Bezeichnung"
+    },
+    "kundennummer": {
+      "type": "string",
+      "description": "Kundennummer (auto-generiert f\u00fcr Auftraggeber)"
+    },
+    "kuerzel": {
+      "type": "string",
+      "description": "K\u00fcrzel"
+    },
+    "kontakt_name": {
+      "type": "string",
+      "description": "Ansprechpartner"
+    },
+    "email": {
+      "type": "string",
+      "description": "E-Mail"
+    },
+    "telefon": {
+      "type": "string",
+      "description": "Telefon"
+    },
+    "adresse": {
+      "type": "string",
+      "description": "Adresse"
+    },
+    "kategorie": {
+      "type": "string",
+      "description": "Kategorie / Gewerk"
+    },
+    "einheit": {
+      "type": "string",
+      "description": "Einheit (f\u00fcr Materialien)"
+    },
+    "kostensatz": {
+      "type": "number",
+      "description": "Kostensatz (\u20ac/h oder \u20ac/ME)"
+    },
+    "qualifikation": {
+      "type": "string",
+      "description": "Qualifikation / Bemerkung"
+    },
+    "aktiv": {
+      "type": "boolean",
+      "default": true,
+      "description": "Aktiv"
+    },
+    "briefkopf_logo_url": {
+      "type": "string",
+      "description": "Logo-URL f\u00fcr Briefkopf"
+    },
+    "briefkopf_strasse": {
+      "type": "string",
+      "description": "Stra\u00dfe f\u00fcr Briefkopf"
+    },
+    "briefkopf_plz": {
+      "type": "string",
+      "description": "PLZ f\u00fcr Briefkopf"
+    },
+    "briefkopf_stadt": {
+      "type": "string",
+      "description": "Stadt f\u00fcr Briefkopf"
+    },
+    "briefkopf_telefon": {
+      "type": "string",
+      "description": "Telefon f\u00fcr Briefkopf"
+    },
+    "briefkopf_email": {
+      "type": "string",
+      "description": "E-Mail f\u00fcr Briefkopf"
+    },
+    "briefkopf_website": {
+      "type": "string",
+      "description": "Website f\u00fcr Briefkopf"
+    },
+    "angebot_header_farbe": {
+      "type": "string",
+      "default": "#4682B4",
+      "description": "Farbe der Angebots-Header (Hex-Format, z.B. #4682B4)"
+    },
+    "angebot_vortext": {
+      "type": "string",
+      "description": "Vortext f\u00fcr Angebote (oben)"
+    },
+    "angebot_schlusstext": {
+      "type": "string",
+      "description": "Schlusstext f\u00fcr Angebote (unten)"
+    },
+    "rechnung_vortext": {
+      "type": "string",
+      "description": "Vortext f\u00fcr Rechnungen (oben)"
+    },
+    "rechnung_schlusstext": {
+      "type": "string",
+      "description": "Schlusstext f\u00fcr Rechnungen (unten)"
+    },
+    "pdf_footer_links": {
+      "type": "string",
+      "description": "PDF-Footer linke Spalte (z.B. Adresse, Kontakt)"
+    },
+    "pdf_footer_mitte": {
+      "type": "string",
+      "description": "PDF-Footer mittlere Spalte (z.B. Gesch\u00e4ftsf\u00fchrer, HRB)"
+    },
+    "pdf_footer_rechts": {
+      "type": "string",
+      "description": "PDF-Footer rechte Spalte (z.B. Bank, IBAN)"
+    },
+    "pdf_footer_farbe": {
+      "type": "string",
+      "default": "#666666",
+      "description": "PDF-Footer Hintergrundfarbe (Hex-Format, z.B. #666666)"
+    },
+    "angebot_nummer_jahr": {
+      "type": "number",
+      "description": "Jahr f\u00fcr Angebotsnummern (z.B. 26)"
+    },
+    "angebot_nummer_laufend": {
+      "type": "number",
+      "default": 0,
+      "description": "Laufende Nummer f\u00fcr Angebote"
+    },
+    "rechnung_nummer_jahr": {
+      "type": "number",
+      "description": "Jahr f\u00fcr Rechnungsnummern (z.B. 26)"
+    },
+    "rechnung_nummer_laufend": {
+      "type": "number",
+      "default": 0,
+      "description": "Laufende Nummer f\u00fcr Rechnungen"
+    },
+    "projekt_nummer_laufend": {
+      "type": "number",
+      "default": 0,
+      "description": "Laufende Nummer f\u00fcr Projekte"
+    },
+    "unser_zeichen_optionen": {
+      "type": "array",
+      "description": "Dropdown-Optionen f\u00fcr 'Unser Zeichen' im Angebot",
+      "items": {
+        "type": "string"
+      }
+    },
+    "nav_rechte": {
+      "type": "object",
+      "description": "Navigations-Sichtbarkeit je Rolle (page -> array of roles)"
+    }
+  },
+  "required": [
+    "typ",
+    "name"
+  ]
+}
