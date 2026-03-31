@@ -4,7 +4,28 @@
   "properties": {
     "project_id": {
       "type": "string",
-      "description": "Projekt-ID"
+      "description": "Projekt-ID (leer = allgemeine Kosten / AGK)"
+    },
+    "kostenverteilung": {
+      "type": "array",
+      "description": "Kostenverteilung auf mehrere Projekte (optional)",
+      "items": {
+        "type": "object",
+        "properties": {
+          "project_id": {
+            "type": "string"
+          },
+          "project_name": {
+            "type": "string"
+          },
+          "anteil_prozent": {
+            "type": "number"
+          },
+          "betrag_netto": {
+            "type": "number"
+          }
+        }
+      }
     },
     "kreditor_id": {
       "type": "string",
@@ -103,9 +124,9 @@
       "default": "eingegangen",
       "description": "Status"
     },
-    "gewerk": {
+    "beschreibung": {
       "type": "string",
-      "description": "Gewerk / Leistungsart"
+      "description": "Beschreibung / Leistung"
     },
     "notes": {
       "type": "string",

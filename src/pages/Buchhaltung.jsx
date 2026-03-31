@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Plus, BookOpen, TrendingUp, TrendingDown, Scale } from "lucide-react";
 import OffenePostenTabelle from "@/components/buchhaltung/OffenePostenTabelle";
 import PartnerSaldoTabelle from "@/components/buchhaltung/PartnerSaldoTabelle";
-import EingangsRechnungForm from "@/components/buchhaltung/EingangsRechnungForm";
+import EingangsRechnungForm from "@/components/buchhaltung/EingangsRechnungForm.jsx";
 import KIBelegErfassung from "@/components/buchhaltung/KIBelegErfassung";
 
 const fmt = (v) => v.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";

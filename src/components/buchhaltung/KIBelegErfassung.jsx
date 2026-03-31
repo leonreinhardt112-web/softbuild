@@ -311,15 +311,15 @@ function BelegCard({ beleg, projects, stammdaten, expanded, onToggle, onSave, on
             <EditableField label="Fällig am" value={d.faellig_am} onChange={v => onFieldChange("faellig_am", v)} type="date" />
             <EditableField label="Betrag netto (€)" value={d.betrag_netto} onChange={v => onFieldChange("betrag_netto", parseFloat(v))} type="number" />
             <EditableField label="Betrag brutto (€)" value={d.betrag_brutto} onChange={v => onFieldChange("betrag_brutto", parseFloat(v))} type="number" />
-            <EditableField label="Gewerk" value={d.gewerk} onChange={v => onFieldChange("gewerk", v)} />
+            <EditableField label="Beschreibung / Leistung" value={d.beschreibung} onChange={v => onFieldChange("beschreibung", v)} />
             <div>
-              <label className="text-muted-foreground font-medium block mb-1">Projekt</label>
+              <label className="text-muted-foreground font-medium block mb-1">Projekt <span className="text-[10px] opacity-60">(optional)</span></label>
               <select
                 className="w-full border border-input rounded-md px-2 py-1.5 text-xs bg-background"
                 value={d.project_id || ""}
                 onChange={e => onFieldChange("project_id", e.target.value)}
               >
-                <option value="">– kein Projekt –</option>
+                <option value="">– kein Projekt (AGK) –</option>
                 {projects.map(p => (
                   <option key={p.id} value={p.id}>{p.project_name}</option>
                 ))}
