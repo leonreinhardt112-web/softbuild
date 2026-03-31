@@ -7,7 +7,6 @@ import { base44 } from "@/api/base44Client";
 import {
   LayoutDashboard,
   FolderOpen,
-  HardHat,
   Receipt,
   BarChart3,
   Database,
@@ -26,10 +25,9 @@ const NAV_ITEMS = [
   { name: "Dashboard", page: "Dashboard", icon: LayoutDashboard },
   { name: "Projekte", page: "Projects", icon: FolderOpen },
   { name: "Postfächer", page: "Postfaecher", icon: Mail },
-  { name: "Baustelle", page: "Baustelle", icon: HardHat },
-  { name: "Abrechnung", page: "Abrechnung", icon: Receipt },
-  { name: "Controlling", page: "Controlling", icon: BarChart3 },
-  { name: "Stammdaten", page: "Stammdaten", icon: Database },
+  { name: "Abrechnung", page: "Abrechnung", icon: Receipt, allowedRoles: ["admin", "geschaeftsfuehrung", "buchhaltung"] },
+  { name: "Controlling", page: "Controlling", icon: BarChart3, allowedRoles: ["admin", "geschaeftsfuehrung", "kalkulation", "buchhaltung"] },
+  { name: "Stammdaten", page: "Stammdaten", icon: Database, allowedRoles: ["admin", "geschaeftsfuehrung"] },
   { name: "Benutzer", page: "Benutzerverwaltung", icon: Users, adminOnly: true },
 ];
 
@@ -113,7 +111,11 @@ function LayoutContent({ children, currentPageName }) {
 
           {/* Nav */}
           <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto">
-            {NAV_ITEMS.filter(item => !item.adminOnly || currentUser?.role === "admin").map((item) => {
+            {NAV_ITEMS.filter(item => {
+              if (item.adminOnly) return currentUser?.role === "admin";
+              if (item.allowedRoles) return !currentUser || item.allowedRoles.includes(currentUser.role);
+              return true;
+            }).map((item) => {
               const isActive = currentPageName === item.page;
               const Icon = item.icon;
               return (
