@@ -35,6 +35,7 @@ import {
   Euro, Clock, Lock, ChevronRight, FolderOpen, FileText, AlarmClock, Mail, ListTodo, TrendingUp,
 } from "lucide-react";
 import ProjektAbrechnung from "@/components/abrechnung/ProjektAbrechnung";
+import ProjektStatusChanger from "@/components/projects/ProjektStatusChanger";
 import { format } from "date-fns";
 
 const POST_AWARD_STATUSES = ["beauftragt", "in_ausfuehrung", "abgeschlossen"];
@@ -279,33 +280,35 @@ export default function ProjectDetail() {
     <div className="max-w-6xl mx-auto space-y-6 animate-fade-in">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-        <div className="flex items-start gap-3">
-          <Button variant="ghost" size="icon" className="mt-0.5" onClick={() => {
-            if (activeTab === "kalkulation" && kalkulationRef.current?.hasDirtyChanges()) {
-              setPendingNavigation(() => () => navigate(createPageUrl("Projects")));
-              setShowUnsavedDialog(true);
-            } else {
-              navigate(createPageUrl("Projects"));
-            }
-          }}>
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
-          <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-xl font-bold text-foreground">{project.project_name}</h1>
-              <Badge className={`text-[10px] ${STATUS_COLORS[project.status]}`}>
-                {STATUS_LABELS[project.status]}
-              </Badge>
-            </div>
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-xs text-muted-foreground">
-              <span>{project.project_number}</span>
-              {project.client && <span className="flex items-center gap-1"><Building2 className="w-3 h-3" />{project.client}</span>}
-              {project.location && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{project.location}</span>}
-              {project.reviewer && <span className="flex items-center gap-1"><User className="w-3 h-3" />{project.reviewer}</span>}
-              {project.review_date && <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{format(new Date(project.review_date), "dd.MM.yyyy")}</span>}
-            </div>
+      <div className="flex items-start gap-3">
+        <Button variant="ghost" size="icon" className="mt-0.5" onClick={() => {
+          if (activeTab === "kalkulation" && kalkulationRef.current?.hasDirtyChanges()) {
+            setPendingNavigation(() => () => navigate(createPageUrl("Projects")));
+            setShowUnsavedDialog(true);
+          } else {
+            navigate(createPageUrl("Projects"));
+          }
+        }}>
+          <ArrowLeft className="w-4 h-4" />
+        </Button>
+        <div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h1 className="text-xl font-bold text-foreground">{project.project_name}</h1>
+            <Badge className={`text-[10px] ${STATUS_COLORS[project.status]}`}>
+              {STATUS_LABELS[project.status]}
+            </Badge>
+          </div>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-xs text-muted-foreground">
+            <span>{project.project_number}</span>
+            {project.client && <span className="flex items-center gap-1"><Building2 className="w-3 h-3" />{project.client}</span>}
+            {project.location && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{project.location}</span>}
+            {project.reviewer && <span className="flex items-center gap-1"><User className="w-3 h-3" />{project.reviewer}</span>}
+            {project.review_date && <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{format(new Date(project.review_date), "dd.MM.yyyy")}</span>}
           </div>
         </div>
+      </div>
+      {/* Projektstatus ändern */}
+      <ProjektStatusChanger project={project} onUpdate={(s) => updateProjectMutation.mutate({ status: s })} />
       </div>
 
       {/* Unsaved-changes guard */}

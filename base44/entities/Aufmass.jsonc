@@ -18,6 +18,10 @@
       "type": "string",
       "description": "Bezeichnung (z.B. '3. Abschlagsrechnung')"
     },
+    "rechnungsnummer": {
+      "type": "string",
+      "description": "Automatisch vergebene Rechnungsnummer (GoBD-konform, unver\u00e4nderlich nach Vergabe)"
+    },
     "datum": {
       "type": "string",
       "format": "date",
@@ -32,10 +36,23 @@
       "enum": [
         "entwurf",
         "freigegeben",
-        "abgerechnet"
+        "abgerechnet",
+        "storniert"
       ],
       "default": "entwurf",
       "description": "Status"
+    },
+    "skonto_prozent": {
+      "type": "number",
+      "description": "Skontosatz % (nur informativ, wird nicht abgezogen)"
+    },
+    "skonto_tage": {
+      "type": "number",
+      "description": "Skontofrist in Tagen (nur informativ)"
+    },
+    "einbehalt_info": {
+      "type": "string",
+      "description": "Hinweis zum Sicherheitseinbehalt (nur informativ, nicht abgezogen)"
     },
     "positionen": {
       "type": "array",
