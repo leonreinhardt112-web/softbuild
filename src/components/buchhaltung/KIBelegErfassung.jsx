@@ -143,7 +143,7 @@ Extrahiere:
       <CardHeader className="pb-3">
         <CardTitle className="text-sm font-semibold flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-primary" />
-          KI-Belegs­erfassung – Massen-Upload Eingangsrechnungen
+          KI-Belegserfassung – Upload Eingangsrechnungen
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
