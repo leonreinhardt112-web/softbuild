@@ -8,15 +8,15 @@
     },
     "kreditor_id": {
       "type": "string",
-      "description": "Kreditor-ID aus Stammdaten (NU oder Lieferant)"
+      "description": "Kreditor-ID aus Stammdaten"
     },
     "kreditor_name": {
       "type": "string",
-      "description": "Kreditor Name (Nachunternehmer / Lieferant)"
+      "description": "Rechnungssteller"
     },
     "rechnungsnummer": {
       "type": "string",
-      "description": "Rechnungsnummer des Kreditors"
+      "description": "Rechnungsnummer"
     },
     "rechnungsart": {
       "type": "string",
@@ -28,6 +28,25 @@
       ],
       "default": "eingangsrechnung",
       "description": "Rechnungsart"
+    },
+    "kostenkategorie": {
+      "type": "string",
+      "enum": [
+        "nachunternehmer",
+        "material",
+        "geraete_maschinen",
+        "kraftstoff",
+        "miete_leasing",
+        "versicherung",
+        "buero_verwaltung",
+        "fahrzeuge",
+        "personal_fremd",
+        "entsorgung",
+        "gebuehren_abgaben",
+        "sonstiges"
+      ],
+      "default": "sonstiges",
+      "description": "Kostenkategorie (f\u00fcr Auswertung & AGK)"
     },
     "rechnungsdatum": {
       "type": "string",

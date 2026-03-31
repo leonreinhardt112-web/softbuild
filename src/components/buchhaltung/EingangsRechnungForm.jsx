@@ -5,9 +5,25 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
 
+const KOSTENKATEGORIEN = [
+  { value: "nachunternehmer",   label: "Nachunternehmer" },
+  { value: "material",          label: "Material / Baustoffe" },
+  { value: "geraete_maschinen", label: "Geräte & Maschinen" },
+  { value: "kraftstoff",        label: "Kraftstoff / Energie" },
+  { value: "miete_leasing",     label: "Miete / Leasing" },
+  { value: "versicherung",      label: "Versicherung" },
+  { value: "buero_verwaltung",  label: "Büro & Verwaltung" },
+  { value: "fahrzeuge",         label: "Fahrzeuge / Kfz" },
+  { value: "personal_fremd",    label: "Fremdpersonal" },
+  { value: "entsorgung",        label: "Entsorgung" },
+  { value: "gebuehren_abgaben", label: "Gebühren / Abgaben / Strafen" },
+  { value: "sonstiges",         label: "Sonstiges" },
+];
+
 const EMPTY = {
   project_id: "", kreditor_name: "", rechnungsnummer: "",
-  rechnungsart: "eingangsrechnung", rechnungsdatum: format(new Date(), "yyyy-MM-dd"),
+  rechnungsart: "eingangsrechnung", kostenkategorie: "sonstiges",
+  rechnungsdatum: format(new Date(), "yyyy-MM-dd"),
   faellig_am: "", betrag_netto: "", mwst_satz: 19, gewerk: "",
 };
 
@@ -81,6 +97,15 @@ export default function EingangsRechnungForm({ projects, stammdaten, onSave, onC
           <div>
             <label className="text-xs font-medium text-muted-foreground mb-1.5 block">MwSt (%)</label>
             <Input type="number" value={form.mwst_satz} onChange={e => set("mwst_satz", +e.target.value)} />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Kostenkategorie *</label>
+            <Select value={form.kostenkategorie} onValueChange={v => set("kostenkategorie", v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {KOSTENKATEGORIEN.map(k => <SelectItem key={k.value} value={k.value}>{k.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
           </div>
           <div>
             <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Gewerk</label>

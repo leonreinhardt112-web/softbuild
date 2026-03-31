@@ -162,7 +162,7 @@ export default function Buchhaltung() {
             <CardContent className="p-0">
               <div className="px-4 py-3 border-b border-border bg-red-50/40">
                 <p className="text-xs text-red-800 font-semibold">
-                  Eingangsrechnungen · Verbindlichkeiten (NU, Lieferanten, Miete, Versicherungen, sonstige Kosten)
+                  Eingangsrechnungen · alle Verbindlichkeiten
                 </p>
               </div>
               <OffenePostenTabelle
