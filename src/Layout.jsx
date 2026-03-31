@@ -52,6 +52,16 @@ function LayoutContent({ children, currentPageName }) {
   const navigate = useNavigate();
   const { unsavedState, setUnsavedState } = useUnsavedChanges();
 
+  // Track recently visited pages
+  useEffect(() => {
+    if (currentPageName) {
+      const saved = JSON.parse(localStorage.getItem("recent_pages") || "[]");
+      const filtered = saved.filter(p => p !== currentPageName);
+      const updated = [currentPageName, ...filtered].slice(0, 10);
+      localStorage.setItem("recent_pages", JSON.stringify(updated));
+    }
+  }, [currentPageName]);
+
   useEffect(() => {
     base44.auth.me().then(u => setCurrentUser(u)).catch(() => {});
     base44.entities.Stammdatum.filter({ typ: "unternehmen", aktiv: true }, undefined, 1)

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -46,7 +46,25 @@ function KpiCard({ title, value, sub, icon: Icon, color, alert }) {
   );
 }
 
+const PAGE_LABELS = {
+  Dashboard: "Dashboard",
+  Projects: "Projekte",
+  Controlling: "Controlling",
+  Buchhaltung: "Buchhaltung",
+  Stammdaten: "Stammdaten",
+  Postfaecher: "Postfächer",
+  Abrechnung: "Abrechnung",
+  Baustelle: "Baustelle",
+};
+
 export default function UnternehmensDashboard({ projects, rechnungen, fristen, schriftverkehr, aufgaben, isLoading }) {
+  const [recentPages, setRecentPages] = React.useState([]);
+
+  React.useEffect(() => {
+    const saved = JSON.parse(localStorage.getItem("recent_pages") || "[]");
+    setRecentPages(saved);
+  }, []);
+
   const fmt = (n) => n >= 1000000
     ? `${(n / 1000000).toFixed(2).replace(".", ",")} Mio. €`
     : `${(n / 1000).toFixed(0)}k €`;
@@ -168,16 +186,19 @@ export default function UnternehmensDashboard({ projects, rechnungen, fristen, s
           <Card>
             <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold">Zuletzt geöffnet</CardTitle></CardHeader>
             <CardContent className="p-0">
-              {projects.slice(0, 4).map(p => (
-                <Link key={p.id} to={createPageUrl(`ProjectDetail?id=${p.id}`)}
-                  className="flex items-center justify-between px-4 py-2.5 hover:bg-accent/40 transition-colors group border-b border-border last:border-0">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium truncate">{p.project_name}</p>
-                    <p className="text-[10px] text-muted-foreground">{p.project_number}</p>
-                  </div>
-                  <ArrowRight className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                </Link>
-              ))}
+              {recentPages.length === 0 ? (
+                <p className="px-4 py-3 text-xs text-muted-foreground text-center">Noch keine besuchten Seiten</p>
+              ) : (
+                recentPages.slice(0, 3).map((page, i) => (
+                  <Link key={i} to={createPageUrl(page)}
+                    className="flex items-center justify-between px-4 py-2.5 hover:bg-accent/40 transition-colors group border-b border-border last:border-0">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium truncate">{PAGE_LABELS[page] || page}</p>
+                    </div>
+                    <ArrowRight className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </Link>
+                ))
+              )}
             </CardContent>
           </Card>
 
