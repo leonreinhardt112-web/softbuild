@@ -17,6 +17,7 @@ import {
   Mail,
   Users,
   Settings,
+  BookOpen,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -27,6 +28,7 @@ const NAV_ITEMS = [
   { name: "Projekte", page: "Projects", icon: FolderOpen },
   { name: "Postfächer", page: "Postfaecher", icon: Mail },
   { name: "Abrechnung", page: "Abrechnung", icon: Receipt },
+  { name: "Buchhaltung", page: "Buchhaltung", icon: BookOpen },
   { name: "Controlling", page: "Controlling", icon: BarChart3 },
   {
     name: "Stammdaten",

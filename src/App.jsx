@@ -5,6 +5,7 @@ import { pagesConfig } from './pages.config'
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import PostfaecherPage from './pages/Postfaecher';
+import BuchhaltungPage from './pages/Buchhaltung';
 import KonfigurationPage from './pages/Konfiguration';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
@@ -61,6 +62,7 @@ const AuthenticatedApp = () => {
       ))}
       <Route path="/Postfaecher" element={<LayoutWrapper currentPageName="Postfaecher"><PostfaecherPage /></LayoutWrapper>} />
       <Route path="/Konfiguration" element={<LayoutWrapper currentPageName="Konfiguration"><KonfigurationPage /></LayoutWrapper>} />
+      <Route path="/Buchhaltung" element={<LayoutWrapper currentPageName="Buchhaltung"><BuchhaltungPage /></LayoutWrapper>} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
