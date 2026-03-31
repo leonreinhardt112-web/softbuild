@@ -20,6 +20,7 @@ export default function AufmassErfassung({ aufmass, project, vorherigeAufmasse, 
   const [nrLoading, setNrLoading] = useState(false);
   const [showNrConfirm, setShowNrConfirm] = useState(false);
   const [showStornoConfirm, setShowStornoConfirm] = useState(false);
+  const [convertLoading, setConvertLoading] = useState(false);
 
   const isFreigegeben = status === "freigegeben" || status === "abgerechnet" || status === "storniert";
 
@@ -126,6 +127,43 @@ export default function AufmassErfassung({ aufmass, project, vorherigeAufmasse, 
     setStatus("storniert");
   };
 
+  // Aufmass → Rechnung konvertieren
+  const handleAufmassToRechnung = async () => {
+    setConvertLoading(true);
+    const rechnungsPositionen = positionen.map(p => ({
+      oz: p.oz,
+      short_text: p.short_text,
+      einheit: p.einheit,
+      ep: p.ep || 0,
+      menge_kalk: p.menge_lv || 0,
+      menge_vorperiode: p.menge_vorperioden || 0,
+      menge_aktuell: p.menge_aktuell || 0,
+      menge_kumuliert: p.menge_kumuliert || 0,
+      gp_aktuell: p.gp_aktuell || 0,
+    }));
+    
+    const newRechnung = await base44.entities.Rechnung.create({
+      project_id: aufmass.project_id,
+      kalkulation_id: aufmass.kalkulation_id,
+      rechnungsnummer: rechnungsnummer,
+      rechnungsart: aufmass.ar_nummer === 1 ? "abschlagsrechnung" : "abschlagsrechnung",
+      rechnungsdatum: datum,
+      faellig_am: new Date(new Date(datum).getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+      leistungszeitraum_von: datum,
+      leistungszeitraum_bis: datum,
+      positionen: rechnungsPositionen,
+      betrag_netto: betrag_netto,
+      mwst_satz: 19,
+      betrag_brutto: betrag_netto * 1.19,
+      status: "gestellt",
+    });
+    
+    // Aufmass als "abgerechnet" markieren
+    await saveMut.mutateAsync(buildSaveData("abgerechnet"));
+    setStatus("abgerechnet");
+    setConvertLoading(false);
+  };
+
   return (
     <div className="space-y-6">
       {/* Bestätigungsdialog Rechnungsnummer */}
@@ -194,9 +232,14 @@ export default function AufmassErfassung({ aufmass, project, vorherigeAufmasse, 
             </Button>
           )}
           {status === "freigegeben" && (
-            <Button size="sm" variant="destructive" onClick={handleStornieren} disabled={saveMut.isPending}>
-              Stornieren
-            </Button>
+            <>
+              <Button size="sm" variant="outline" onClick={handleAufmassToRechnung} disabled={saveMut.isPending || convertLoading} className="gap-1.5">
+                {convertLoading ? "Wird konvertiert…" : "→ Zu Rechnung"}
+              </Button>
+              <Button size="sm" variant="destructive" onClick={handleStornieren} disabled={saveMut.isPending}>
+                Stornieren
+              </Button>
+            </>
           )}
         </div>
       </div>
