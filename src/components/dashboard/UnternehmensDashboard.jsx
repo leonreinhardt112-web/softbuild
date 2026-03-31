@@ -62,7 +62,8 @@ export default function UnternehmensDashboard({ projects, rechnungen, fristen, s
 
   React.useEffect(() => {
     const saved = JSON.parse(localStorage.getItem("recent_pages") || "[]");
-    setRecentPages(saved);
+    // Aktuelle Seite (Dashboard) filtern
+    setRecentPages(saved.filter(p => p !== "Dashboard"));
   }, []);
 
   const fmt = (n) => n >= 1000000
