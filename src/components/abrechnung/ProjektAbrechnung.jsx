@@ -31,6 +31,12 @@ export default function ProjektAbrechnung({ project, kalkulationen }) {
     enabled: !!project.id,
   });
 
+  const { data: rechnungen = [] } = useQuery({
+    queryKey: ["rechnungen", project.id],
+    queryFn: () => base44.entities.Rechnung.filter({ project_id: project.id }, "-rechnungsdatum"),
+    enabled: !!project.id,
+  });
+
   const createMut = useMutation({
     mutationFn: (d) => base44.entities.Aufmass.create(d),
     onSuccess: (neu) => {
@@ -128,17 +134,22 @@ export default function ProjektAbrechnung({ project, kalkulationen }) {
                   <Receipt className="w-5 h-5 text-primary" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold text-sm">{a.bezeichnung}</span>
-                    <Badge className={`text-[10px] ${STATUS_COLORS[a.status]}`}>{STATUS_LABELS[a.status]}</Badge>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {a.datum ? format(new Date(a.datum), "dd.MM.yyyy") : "–"}
-                    {a.abrechner ? ` · ${a.abrechner}` : ""}
-                    {" · "}
-                    <span className="font-medium text-foreground">{fmt(a.betrag_aktuell)} diese Periode</span>
-                    {a.betrag_netto ? <span> · {fmt(a.betrag_netto)} kumuliert</span> : null}
-                  </p>
+                 <div className="flex items-center gap-2 flex-wrap">
+                   <span className="font-semibold text-sm">{a.bezeichnung}</span>
+                   <Badge className={`text-[10px] ${STATUS_COLORS[a.status]}`}>{STATUS_LABELS[a.status]}</Badge>
+                   {a.rechnungsnummer && (
+                     <span className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded border text-muted-foreground flex items-center gap-1">
+                       <Lock className="w-2.5 h-2.5" /> {a.rechnungsnummer}
+                     </span>
+                   )}
+                 </div>
+                 <p className="text-xs text-muted-foreground mt-0.5">
+                   {a.datum ? format(new Date(a.datum), "dd.MM.yyyy") : "–"}
+                   {a.abrechner ? ` · ${a.abrechner}` : ""}
+                   {" · "}
+                   <span className="font-medium text-foreground">{fmt(a.betrag_aktuell)} diese Periode</span>
+                   {a.betrag_netto ? <span> · {fmt(a.betrag_netto)} kumuliert</span> : null}
+                 </p>
                 </div>
                 <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
               </CardContent>

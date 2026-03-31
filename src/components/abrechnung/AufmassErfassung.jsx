@@ -154,8 +154,42 @@ export default function AufmassErfassung({ aufmass, project, vorherigeAufmasse, 
 
   const confirmStornieren = async () => {
     setShowStornoConfirm(false);
+    
+    // Markiere Aufmass als storniert
     await saveMut.mutateAsync(buildSaveData("storniert"));
     setStatus("storniert");
+    
+    // Erstelle automatisch eine Stornierungsrechnung (negative Werte)
+    if (rechnungsnummer) {
+      const rechnungsPositionen = positionen.map(p => ({
+        oz: p.oz,
+        short_text: p.short_text,
+        einheit: p.einheit,
+        ep: p.ep || 0,
+        menge_kalk: p.menge_lv || 0,
+        menge_vorperiode: p.menge_vorperioden || 0,
+        menge_aktuell: -(p.menge_aktuell || 0),
+        menge_kumuliert: p.menge_kumuliert || 0,
+        gp_aktuell: -(p.gp_aktuell || 0),
+      }));
+      
+      await base44.entities.Rechnung.create({
+        project_id: aufmass.project_id,
+        kalkulation_id: aufmass.kalkulation_id,
+        rechnungsnummer: `STORNO-${rechnungsnummer}`,
+        rechnungsart: "abschlagsrechnung",
+        rechnungsdatum: datum,
+        faellig_am: datum,
+        leistungszeitraum_von: datum,
+        leistungszeitraum_bis: datum,
+        positionen: rechnungsPositionen,
+        betrag_netto: -betrag_netto,
+        mwst_satz: 19,
+        betrag_brutto: -betrag_netto * 1.19,
+        status: "gestellt",
+        notes: `Stornierung von ${rechnungsnummer}`,
+      });
+    }
   };
 
 

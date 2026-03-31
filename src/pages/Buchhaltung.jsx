@@ -58,7 +58,8 @@ export default function Buchhaltung() {
   const nettosaldo = sumOffenDebitor - sumOffenKreditor;
 
   const handleDebitorZahlung = (r) => {
-    updateRechnung.mutate({ id: r.id, data: { status: "bezahlt", zahlungseingang: r.betrag_brutto } });
+    // Dialog statt direktes Abbuchen – wird über EinzelZahlungDialog gehandhabt
+    setZahlungRechnung(r);
   };
 
   // Einzelzahlung (mit Skonto)
@@ -217,12 +218,20 @@ export default function Buchhaltung() {
         </TabsContent>
       </Tabs>
 
-      {/* Einzelzahlung-Dialog */}
+      {/* Einzelzahlung-Dialog (für Debitoren und Kreditoren) */}
       <EinzelZahlungDialog
         rechnung={zahlungRechnung}
         open={!!zahlungRechnung}
         onClose={() => setZahlungRechnung(null)}
-        onSave={handleEinzelZahlungSave}
+        onSave={(id, data) => {
+          if (zahlungRechnung?.kreditor_name) {
+            // Kreditor
+            handleEinzelZahlungSave(id, data);
+          } else {
+            // Debitor
+            updateRechnung.mutate({ id, data });
+          }
+        }}
       />
 
       {/* A-Konto-Dialog */}
