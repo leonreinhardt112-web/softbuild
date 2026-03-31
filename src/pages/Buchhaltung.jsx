@@ -8,6 +8,7 @@ import { Plus, BookOpen, TrendingUp, TrendingDown, Scale } from "lucide-react";
 import OffenePostenTabelle from "@/components/buchhaltung/OffenePostenTabelle";
 import PartnerSaldoTabelle from "@/components/buchhaltung/PartnerSaldoTabelle";
 import EingangsRechnungForm from "@/components/buchhaltung/EingangsRechnungForm";
+import KIBelegErfassung from "@/components/buchhaltung/KIBelegErfassung";
 
 const fmt = (v) => v.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
 
@@ -136,9 +137,14 @@ export default function Buchhaltung() {
 
         {/* --- KREDITOREN --- */}
         <TabsContent value="kreditoren" className="mt-4 space-y-4">
+          <KIBelegErfassung
+            projects={projects}
+            stammdaten={stammdaten}
+            onSaved={() => qc.invalidateQueries({ queryKey: ["eingangsRechnungen"] })}
+          />
           <div className="flex justify-end">
             <Button className="gap-2" onClick={() => setShowKreditorForm(true)}>
-              <Plus className="w-4 h-4" /> Eingangsrechnung anlegen
+              <Plus className="w-4 h-4" /> Einzelne Eingangsrechnung anlegen
             </Button>
           </div>
 

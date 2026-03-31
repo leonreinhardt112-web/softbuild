@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { BarChart3, TrendingUp, TrendingDown, AlertTriangle, ArrowRight } from "lucide-react";
+import KIRisikoAnalyse from "@/components/controlling/KIRisikoAnalyse";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 import { format } from "date-fns";
 
@@ -17,10 +18,6 @@ export default function Controlling() {
     queryKey: ["projects"],
     queryFn: () => base44.entities.Project.list("-created_date", 100),
   });
-  const { data: kalks = [] } = useQuery({
-    queryKey: ["kalkulationen"],
-    queryFn: () => base44.entities.Kalkulation.list("-created_date", 100),
-  });
   const { data: rechnungen = [] } = useQuery({
     queryKey: ["rechnungen"],
     queryFn: () => base44.entities.Rechnung.list("-created_date", 100),
@@ -28,6 +25,10 @@ export default function Controlling() {
   const { data: nachtraege = [] } = useQuery({
     queryKey: ["nachtraege"],
     queryFn: () => base44.entities.Nachtrag.list("-created_date", 100),
+  });
+  const { data: kalks = [] } = useQuery({
+    queryKey: ["kalkulationen"],
+    queryFn: () => base44.entities.Kalkulation.list("-created_date", 100),
   });
 
   const filterP = selectedProject === "alle" ? projects : projects.filter(p => p.id === selectedProject);
@@ -138,6 +139,14 @@ export default function Controlling() {
           </CardContent>
         </Card>
       )}
+
+      {/* KI-Risikoanalyse */}
+      <KIRisikoAnalyse
+        projects={filterP}
+        rechnungen={rechnungen}
+        nachtraege={nachtraege}
+        kalks={kalks}
+      />
 
       {/* Projekttabelle */}
       <Card>

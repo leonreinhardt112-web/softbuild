@@ -12,8 +12,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import {
   Plus, CheckCircle2, AlertTriangle, Mail, Star, Search,
-  Inbox, Pencil, Trash2, XCircle, Globe, Users
+  Inbox, Pencil, Trash2, XCircle, Globe, Users, Sparkles
 } from "lucide-react";
+import KIEmailTriage from "@/components/postfach/KIEmailTriage";
 import { format, isPast, parseISO } from "date-fns";
 
 const TYP_LABELS = { email: "E-Mail", brief: "Brief", pdf_schreiben: "PDF-Schreiben", protokoll: "Protokoll", telefonnotiz: "Telefonnotiz", sonstiges: "Sonstiges" };
@@ -144,6 +145,9 @@ export default function Postfaecher() {
           <TabsTrigger value="inbox" className="gap-1.5">
             <Mail className="w-3.5 h-3.5" />Schriftverkehr ({eintraege.length})
           </TabsTrigger>
+          <TabsTrigger value="ki-triage" className="gap-1.5">
+            <Sparkles className="w-3.5 h-3.5" />KI-Triage
+          </TabsTrigger>
           <TabsTrigger value="postfaecher" className="gap-1.5">
             <Inbox className="w-3.5 h-3.5" />Postfächer ({postfaecher.length})
           </TabsTrigger>
@@ -238,6 +242,11 @@ export default function Postfaecher() {
               })}
             </div>
           )}
+        </TabsContent>
+
+        {/* ── Tab: KI-Triage ── */}
+        <TabsContent value="ki-triage" className="mt-4">
+          <KIEmailTriage emails={eintraege} projects={projects} />
         </TabsContent>
 
         {/* ── Tab: Postfach-Verwaltung ── */}
