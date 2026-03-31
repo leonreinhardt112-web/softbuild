@@ -13,7 +13,7 @@ const EMPTY = {
 
 export default function EingangsRechnungForm({ projects, stammdaten, onSave, onCancel, isPending }) {
   const [form, setForm] = useState(EMPTY);
-  const kreditoren = stammdaten.filter(s => ["nachunternehmer", "lieferant"].includes(s.typ) && s.aktiv !== false);
+  const kreditoren = stammdaten.filter(s => s.aktiv !== false && s.typ !== "unternehmen");
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
@@ -26,21 +26,21 @@ export default function EingangsRechnungForm({ projects, stammdaten, onSave, onC
   return (
     <Card className="border-primary/20">
       <CardHeader className="pb-3">
-        <CardTitle className="text-sm font-semibold">Neue Eingangsrechnung (Kreditor)</CardTitle>
+        <CardTitle className="text-sm font-semibold">Neue Eingangsrechnung</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
-            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Kreditor (NU / Lieferant) *</label>
+            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Absender / Rechnungssteller *</label>
             <Select value={form.kreditor_name} onValueChange={v => set("kreditor_name", v)}>
-              <SelectTrigger><SelectValue placeholder="Kreditor auswählen..." /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder="Auswählen oder manuell..." /></SelectTrigger>
               <SelectContent>
                 {kreditoren.map(k => <SelectItem key={k.id} value={k.name}>{k.name}</SelectItem>)}
                 <SelectItem value="__manuell__">– Manuell eingeben –</SelectItem>
               </SelectContent>
             </Select>
             {form.kreditor_name === "__manuell__" && (
-              <Input className="mt-2" placeholder="Kreditorname..." onChange={e => set("kreditor_name", e.target.value)} />
+              <Input className="mt-2" placeholder="z.B. Vermieter, Versicherung, Behörde..." onChange={e => set("kreditor_name", e.target.value)} />
             )}
           </div>
           <div>
