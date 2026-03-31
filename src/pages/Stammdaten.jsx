@@ -236,7 +236,7 @@ export default function Stammdaten() {
           <AlertDialogHeader>
             <AlertDialogTitle>Auftraggeber wirklich löschen?</AlertDialogTitle>
             <AlertDialogDescription>
-              Der Auftraggeber "{deleteConfirmDialog?.name}" wird unwiederbringlich gelöscht. Projekte, die diesem Auftraggeber zugewiesen sind, müssen vorher angepasst werden.
+              Der Auftraggeber "{deleteConfirmDialog?.name}" wird unwiederbringlich gelöscht. Verknüpfte Projekte werden ohne Auftraggeber beibehalten.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ArrowLeft, Plus, Trash2, Save, Lock, AlertTriangle } from "lucide-react";
 
 const fmt = (n) => (n || 0).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -17,6 +18,8 @@ export default function AufmassErfassung({ aufmass, project, vorherigeAufmasse, 
   const [status, setStatus] = useState(aufmass.status || "entwurf");
   const [rechnungsnummer, setRechnungsnummer] = useState(aufmass.rechnungsnummer || "");
   const [nrLoading, setNrLoading] = useState(false);
+  const [showNrConfirm, setShowNrConfirm] = useState(false);
+  const [showStornoConfirm, setShowStornoConfirm] = useState(false);
 
   const isFreigegeben = status === "freigegeben" || status === "abgerechnet" || status === "storniert";
 
@@ -103,18 +106,60 @@ export default function AufmassErfassung({ aufmass, project, vorherigeAufmasse, 
       nr = res.data?.rechnungNummer || "";
       setRechnungsnummer(nr);
     }
-    await saveMut.mutateAsync(buildSaveData("freigegeben", nr));
-    setStatus("freigegeben");
     setNrLoading(false);
+    setShowNrConfirm(true);
+  };
+
+  const confirmFreigeben = async () => {
+    setShowNrConfirm(false);
+    await saveMut.mutateAsync(buildSaveData("freigegeben", rechnungsnummer));
+    setStatus("freigegeben");
   };
 
   const handleStornieren = async () => {
+    setShowStornoConfirm(true);
+  };
+
+  const confirmStornieren = async () => {
+    setShowStornoConfirm(false);
     await saveMut.mutateAsync(buildSaveData("storniert"));
     setStatus("storniert");
   };
 
   return (
     <div className="space-y-6">
+      {/* Bestätigungsdialog Rechnungsnummer */}
+      <AlertDialog open={showNrConfirm} onOpenChange={setShowNrConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Rechnungsnummer vergeben?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Sie sind im Begriff, die Rechnungsnummer <strong className="text-foreground">{rechnungsnummer}</strong> zu vergeben. Gemäß GoBD ist diese danach unveränderlich. Fortfahren?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmFreigeben}>Ja, Rechnungsnummer vergeben</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bestätigungsdialog Stornieren */}
+      <AlertDialog open={showStornoConfirm} onOpenChange={setShowStornoConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Rechnung stornieren?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Diese Rechnung wird storniert. Eine neue Gegenbuchung wird erzeugt und Sie können eine neue Abschlagsrechnung mit korrigierten Werten anlegen. Fortfahren?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction variant="destructive" onClick={confirmStornieren}>Ja, stornieren</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Header */}
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" onClick={onClose}><ArrowLeft className="w-4 h-4" /></Button>
