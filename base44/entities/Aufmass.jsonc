@@ -1,0 +1,128 @@
+{
+  "name": "Aufmass",
+  "type": "object",
+  "properties": {
+    "project_id": {
+      "type": "string",
+      "description": "Projekt-ID"
+    },
+    "kalkulation_id": {
+      "type": "string",
+      "description": "Kalkulation-ID (beauftragte, eingefrorene Kalkulation)"
+    },
+    "ar_nummer": {
+      "type": "number",
+      "description": "Abschlagsrechnungs-Nummer (1, 2, 3, ...)"
+    },
+    "bezeichnung": {
+      "type": "string",
+      "description": "Bezeichnung (z.B. '3. Abschlagsrechnung')"
+    },
+    "datum": {
+      "type": "string",
+      "format": "date",
+      "description": "Datum der Aufma\u00dferstellung"
+    },
+    "abrechner": {
+      "type": "string",
+      "description": "Erstellt von"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "entwurf",
+        "freigegeben",
+        "abgerechnet"
+      ],
+      "default": "entwurf",
+      "description": "Status"
+    },
+    "positionen": {
+      "type": "array",
+      "description": "Aufma\u00dfpositionen (eine pro Kalkulations-Position)",
+      "items": {
+        "type": "object",
+        "properties": {
+          "oz": {
+            "type": "string"
+          },
+          "short_text": {
+            "type": "string"
+          },
+          "einheit": {
+            "type": "string"
+          },
+          "ep": {
+            "type": "number",
+            "description": "Einheitspreis aus Kalkulation"
+          },
+          "menge_lv": {
+            "type": "number",
+            "description": "Menge aus LV/Kalkulation"
+          },
+          "aufmass_zeilen": {
+            "type": "array",
+            "description": "Aufma\u00dfzeilen (Berechnungen/Notizen)",
+            "items": {
+              "type": "object",
+              "properties": {
+                "beschreibung": {
+                  "type": "string",
+                  "description": "Beschreibung / Formel (z.B. '179,07m + 53,76m')"
+                },
+                "menge": {
+                  "type": "number",
+                  "description": "Berechnete Menge dieser Zeile"
+                }
+              }
+            }
+          },
+          "menge_aktuell": {
+            "type": "number",
+            "description": "Menge diese Periode (Summe der Aufma\u00dfzeilen)"
+          },
+          "menge_vorperioden": {
+            "type": "number",
+            "description": "Kumulierte Menge aus allen Vorperioden"
+          },
+          "menge_kumuliert": {
+            "type": "number",
+            "description": "Kumulierte Gesamtmenge (Vorperioden + aktuell)"
+          },
+          "gp_aktuell": {
+            "type": "number",
+            "description": "GP diese Periode"
+          },
+          "gp_kumuliert": {
+            "type": "number",
+            "description": "GP kumuliert"
+          }
+        }
+      }
+    },
+    "betrag_netto": {
+      "type": "number",
+      "description": "Rechnungsbetrag netto (kumuliert)"
+    },
+    "betrag_vorperioden": {
+      "type": "number",
+      "description": "Summe Vorperioden netto"
+    },
+    "betrag_aktuell": {
+      "type": "number",
+      "description": "Betrag diese Periode netto"
+    },
+    "rechnung_id": {
+      "type": "string",
+      "description": "Verkn\u00fcpfte Rechnung (nach Umwandlung)"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "project_id",
+    "kalkulation_id",
+    "ar_nummer"
+  ]
+}

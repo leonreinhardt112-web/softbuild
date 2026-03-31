@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, Calculator } from "lucide-react";
+import { Plus, Trash2, Calculator, Lock } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import GaebX84Export from "@/components/kalkulation/GaebX84Export";
@@ -62,6 +62,8 @@ export default function KalkulationDetailDialog({ kalkulation, projekt, open, on
 
   if (!kalkulation) return null;
 
+  const isBeauftragt = status === "beauftragt";
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
@@ -69,14 +71,22 @@ export default function KalkulationDetailDialog({ kalkulation, projekt, open, on
           <DialogTitle className="flex items-center gap-2">
             <Calculator className="w-4 h-4" />
             {projekt?.project_name || "Projekt"} – {kalkulation.version_name}
+            {isBeauftragt && <Badge className="bg-green-100 text-green-700 gap-1 text-xs"><Lock className="w-3 h-3" />Beauftragt – gesperrt</Badge>}
           </DialogTitle>
         </DialogHeader>
+
+        {isBeauftragt && (
+          <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-800">
+            <Lock className="w-3.5 h-3.5 shrink-0" />
+            Diese Kalkulation ist beauftragt und kann nicht mehr verändert werden. Das schützt die beauftragten Einheitspreise für die Abrechnung.
+          </div>
+        )}
 
         {/* Header-Info */}
         <div className="flex flex-wrap gap-4 items-center text-sm">
           <div className="flex items-center gap-2">
             <span className="text-muted-foreground text-xs">Status:</span>
-            <Select value={status} onValueChange={setStatus}>
+            <Select value={status} onValueChange={isBeauftragt ? undefined : setStatus} disabled={isBeauftragt}>
               <SelectTrigger className="h-7 text-xs w-36">
                 <SelectValue />
               </SelectTrigger>
@@ -114,28 +124,30 @@ export default function KalkulationDetailDialog({ kalkulation, projekt, open, on
               {positions.map((p, idx) => (
                 <tr key={idx} className="border-b border-border/60 hover:bg-accent/20">
                   <td className="px-2 py-1.5">
-                    <Input value={p.oz} onChange={e => setPos(idx, "oz", e.target.value)} className="h-7 text-xs w-14" />
+                    <Input value={p.oz} onChange={e => setPos(idx, "oz", e.target.value)} className="h-7 text-xs w-14" disabled={isBeauftragt} />
                   </td>
                   <td className="px-2 py-1.5">
-                    <Input value={p.short_text} onChange={e => setPos(idx, "short_text", e.target.value)} className="h-7 text-xs min-w-[180px]" />
+                    <Input value={p.short_text} onChange={e => setPos(idx, "short_text", e.target.value)} className="h-7 text-xs min-w-[180px]" disabled={isBeauftragt} />
                   </td>
                   <td className="px-2 py-1.5">
-                    <Input type="number" value={p.menge} onChange={e => setPos(idx, "menge", e.target.value)} className="h-7 text-xs text-right w-20" />
+                    <Input type="number" value={p.menge} onChange={e => setPos(idx, "menge", e.target.value)} className="h-7 text-xs text-right w-20" disabled={isBeauftragt} />
                   </td>
                   <td className="px-2 py-1.5">
-                    <Input value={p.einheit} onChange={e => setPos(idx, "einheit", e.target.value)} className="h-7 text-xs w-14" />
+                    <Input value={p.einheit} onChange={e => setPos(idx, "einheit", e.target.value)} className="h-7 text-xs w-14" disabled={isBeauftragt} />
                   </td>
                   {["lohn_ep","material_ep","geraet_ep","nu_ep"].map(f => (
                     <td key={f} className="px-2 py-1.5">
-                      <Input type="number" value={p[f] || 0} onChange={e => setPos(idx, f, e.target.value)} className="h-7 text-xs text-right w-20" />
+                      <Input type="number" value={p[f] || 0} onChange={e => setPos(idx, f, e.target.value)} className="h-7 text-xs text-right w-20" disabled={isBeauftragt} />
                     </td>
                   ))}
                   <td className="px-3 py-1.5 text-right font-medium">{(p.ep || 0).toFixed(2)}</td>
                   <td className="px-3 py-1.5 text-right font-semibold text-primary">{(p.gp || 0).toLocaleString("de-DE", { minimumFractionDigits: 2 })}</td>
                   <td className="px-2 py-1.5">
-                    <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={() => removePos(idx)}>
-                      <Trash2 className="w-3 h-3" />
-                    </Button>
+                    {!isBeauftragt && (
+                      <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={() => removePos(idx)}>
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -150,21 +162,25 @@ export default function KalkulationDetailDialog({ kalkulation, projekt, open, on
           </table>
         </div>
 
-        <Button variant="outline" size="sm" className="gap-2 w-fit" onClick={addPos}>
-          <Plus className="w-3.5 h-3.5" /> Position hinzufügen
-        </Button>
+        {!isBeauftragt && (
+          <Button variant="outline" size="sm" className="gap-2 w-fit" onClick={addPos}>
+            <Plus className="w-3.5 h-3.5" /> Position hinzufügen
+          </Button>
+        )}
 
         {/* Notizen */}
         <div>
           <label className="text-xs font-medium text-muted-foreground mb-1 block">Anmerkungen</label>
-          <Input value={notes} onChange={e => setNotes(e.target.value)} placeholder="Notizen zur Kalkulation..." className="text-sm" />
+          <Input value={notes} onChange={e => setNotes(e.target.value)} placeholder="Notizen zur Kalkulation..." className="text-sm" disabled={isBeauftragt} />
         </div>
 
         <div className="flex justify-between items-center pt-2">
           <GaebX84Export kalkulation={{ ...kalkulation, positions }} projekt={projekt} />
           <div className="flex gap-2">
             <Button variant="outline" onClick={onClose}>Schließen</Button>
-            <Button onClick={handleSave} disabled={saveMut.isPending}>Speichern</Button>
+            {!isBeauftragt && (
+              <Button onClick={handleSave} disabled={saveMut.isPending}>Speichern</Button>
+            )}
           </div>
         </div>
       </DialogContent>

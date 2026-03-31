@@ -34,6 +34,7 @@ import {
   Building2, MapPin, Calendar, User, Calculator, Receipt, HardHat,
   Euro, Clock, Lock, ChevronRight, FolderOpen, FileText, AlarmClock, Mail, ListTodo, TrendingUp,
 } from "lucide-react";
+import ProjektAbrechnung from "@/components/abrechnung/ProjektAbrechnung";
 import { format } from "date-fns";
 
 const POST_AWARD_STATUSES = ["beauftragt", "in_ausfuehrung", "abgeschlossen"];
@@ -355,6 +356,12 @@ export default function ProjectDetail() {
           {isPostAward && (
             <TabsTrigger value="ausfuehrung" className="gap-1.5 text-xs">
               <HardHat className="w-3.5 h-3.5" />Ausführung
+            </TabsTrigger>
+          )}
+          {isPostAward && (
+            <TabsTrigger value="abrechnung" className="gap-1.5 text-xs">
+              <Receipt className="w-3.5 h-3.5" />Abrechnung
+              {rechnungen.length > 0 && <span className="ml-1 text-[10px] bg-green-100 text-green-700 px-1 rounded">{rechnungen.length}</span>}
             </TabsTrigger>
           )}
         </TabsList>
@@ -710,25 +717,12 @@ export default function ProjectDetail() {
                 </CardContent>
               </Card>
             </Link>
-            <Link to={createPageUrl("Abrechnung")}>
-              <Card className="hover:shadow-md transition-all cursor-pointer">
-                <CardContent className="p-6 flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center">
-                    <Receipt className="w-6 h-6 text-green-600" />
-                  </div>
-                  <div>
-                    <p className="font-semibold">Abrechnung</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {rechnungen.length > 0
-                        ? `${rechnungen.length} Rechnung(en) · ${totalRechnungen.toLocaleString("de-DE", { style: "currency", currency: "EUR" })} netto`
-                        : "Rechnungen & Zahlungsverfolgung"}
-                    </p>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-muted-foreground ml-auto" />
-                </CardContent>
-              </Card>
-            </Link>
           </div>
+        </TabsContent>
+
+        {/* ABRECHNUNG */}
+        <TabsContent value="abrechnung" className="mt-6">
+          <ProjektAbrechnung project={project} kalkulationen={kalkulationen} />
         </TabsContent>
       </Tabs>
     </div>
