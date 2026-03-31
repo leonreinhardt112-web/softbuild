@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import { Search as SearchIcon } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
@@ -24,6 +25,7 @@ export default function ProjectForm({ open, onOpenChange, onSave, initialData })
   const [form, setForm] = useState(initialData || EMPTY_FORM);
   const [showNewClient, setShowNewClient] = useState(false);
   const [newClientForm, setNewClientForm] = useState({ name: "", strasse: "", plz: "", ort: "", kontakt_name: "", email: "", telefon: "" });
+  const [clientSearch, setClientSearch] = useState("");
   const [plzLoading, setPlzLoading] = useState(false);
   const [projektNummerLoading, setProjektNummerLoading] = useState(false);
 
@@ -153,21 +155,42 @@ export default function ProjectForm({ open, onOpenChange, onSave, initialData })
             <Label>Auftraggeber *</Label>
             {!showNewClient ? (
               <div className="flex gap-2">
-                <Select value={form.client_id || ""} onValueChange={handleClientSelect} required>
+                <Select value={form.client_id || ""} onValueChange={(id) => { handleClientSelect(id); setClientSearch(""); }} required>
                   <SelectTrigger className={`flex-1 ${!form.client_id ? "border-amber-400" : ""}`}>
                     <SelectValue placeholder="Auftraggeber aus Stammdaten wählen..." />
                   </SelectTrigger>
                   <SelectContent>
+                    <div className="p-2 border-b border-border">
+                      <div className="relative">
+                        <SearchIcon className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                        <input
+                          className="w-full pl-7 pr-2 py-1 text-xs bg-background border border-input rounded-md outline-none focus:ring-1 focus:ring-ring"
+                          placeholder="Auftraggeber suchen..."
+                          value={clientSearch}
+                          onChange={e => setClientSearch(e.target.value)}
+                          onKeyDown={e => e.stopPropagation()}
+                          onClick={e => e.stopPropagation()}
+                        />
+                      </div>
+                    </div>
                     {auftraggeber.length === 0 ? (
                       <div className="px-3 py-4 text-xs text-muted-foreground text-center">
                         Noch keine Auftraggeber in Stammdaten.<br />Bitte zuerst anlegen.
                       </div>
-                    ) : auftraggeber.map(ag => (
-                      <SelectItem key={ag.id} value={ag.id}>
-                        <span className="font-medium">{ag.name}</span>
-                        {ag.kundennummer && <span className="text-muted-foreground ml-2 text-xs">({ag.kundennummer})</span>}
-                      </SelectItem>
-                    ))}
+                    ) : (() => {
+                      const filtered = auftraggeber.filter(ag =>
+                        !clientSearch || ag.name.toLowerCase().includes(clientSearch.toLowerCase()) ||
+                        (ag.kundennummer || "").toLowerCase().includes(clientSearch.toLowerCase())
+                      );
+                      return filtered.length === 0 ? (
+                        <div className="px-3 py-4 text-xs text-muted-foreground text-center">Keine Treffer</div>
+                      ) : filtered.map(ag => (
+                        <SelectItem key={ag.id} value={ag.id}>
+                          <span className="font-medium">{ag.name}</span>
+                          {ag.kundennummer && <span className="text-muted-foreground ml-2 text-xs">({ag.kundennummer})</span>}
+                        </SelectItem>
+                      ));
+                    })()}
                   </SelectContent>
                 </Select>
                 <Button type="button" variant="outline" size="icon" title="Neuen Auftraggeber anlegen"

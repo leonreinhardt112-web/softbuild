@@ -82,14 +82,14 @@ export default function ProjektAbrechnung({ project, kalkulationen }) {
   return (
     <div className="space-y-6">
 
-      {/* Hinweis wenn keine beauftragte Kalkulation */}
+      {/* Hinweis wenn kein beauftragtes Angebot */}
       {!beauftragt && (
         <Card className="border-amber-200 bg-amber-50">
           <CardContent className="p-4 flex items-start gap-3 text-sm text-amber-800">
             <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
             <div>
-              <p className="font-medium">Keine beauftragte Kalkulation</p>
-              <p className="text-xs mt-1">Um Abschlagsrechnungen zu erstellen, muss zuerst eine Kalkulation auf Status „Beauftragt" gesetzt werden. Diese wird dann eingefroren und dient als Basis für alle Rechnungen.</p>
+              <p className="font-medium">Kein beauftragtes Angebot vorhanden</p>
+              <p className="text-xs mt-1">Um Abschlagsrechnungen zu erstellen, muss zuerst ein Angebot im Reiter „Kalkulation" auf Status „Beauftragt" gesetzt werden. Das Angebot wird dann eingefroren und dient als Basis für alle Rechnungen.</p>
             </div>
           </CardContent>
         </Card>

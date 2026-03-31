@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import ProjectForm from "@/components/projects/ProjectForm";
 import {
-  Plus, Search, ArrowRight, FileText, Trash2, Pencil, MapPin, Building2, LayoutGrid,
+  Plus, Search, ArrowRight, FileText, Trash2, Pencil, MapPin, Building2,
 } from "lucide-react";
 import { STATUS_LABELS, STATUS_COLORS } from "@/components/checklistData";
 import { format } from "date-fns";
@@ -100,7 +100,6 @@ export default function Projects() {
   const [editProject, setEditProject] = useState(null);
   const [search, setSearch] = useState("");
   const [deleteId, setDeleteId] = useState(null);
-  const [viewMode, setViewMode] = useState("tabs");
   const [activeTab, setActiveTab] = useState("kalkulation");
   const [showArchiv, setShowArchiv] = useState(false);
   const queryClient = useQueryClient();
@@ -131,25 +130,23 @@ export default function Projects() {
     else createMutation.mutate(formData);
   };
 
-  const searchFiltered = projects.filter(p => {
-    const matchSearch = p.project_name?.toLowerCase().includes(search.toLowerCase()) ||
-      p.project_number?.toLowerCase().includes(search.toLowerCase()) ||
-      p.client?.toLowerCase().includes(search.toLowerCase());
-    if (!matchSearch) return false;
-    if (showArchiv) return p.archiviert === true || p.status === "verloren";
-    return !p.archiviert && p.status !== "verloren";
-  });
+  const activeProjects = projects.filter(p => !p.archiviert && p.status !== "verloren");
+  const archivProjects = projects.filter(p => p.archiviert || p.status === "verloren");
+
+  const searchFiltered = (showArchiv ? archivProjects : activeProjects).filter(p =>
+    p.project_name?.toLowerCase().includes(search.toLowerCase()) ||
+    p.project_number?.toLowerCase().includes(search.toLowerCase()) ||
+    p.client?.toLowerCase().includes(search.toLowerCase())
+  );
 
   const getGroupProjects = (groupKey) => {
+    if (groupKey === "alle") return searchFiltered;
     const statuses = STATUS_GROUPS[groupKey].statuses;
     return searchFiltered.filter(p => statuses.includes(p.status));
   };
 
-  const displayedProjects = viewMode === "all"
-    ? searchFiltered
-    : getGroupProjects(activeTab);
-
-  const archivCount = projects.filter(p => p.archiviert || p.status === "verloren").length;
+  const displayedProjects = getGroupProjects(activeTab);
+  const archivCount = archivProjects.length;
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 animate-fade-in">
@@ -171,40 +168,49 @@ export default function Projects() {
           <Input placeholder="Projekte suchen..." value={search}
             onChange={e => setSearch(e.target.value)} className="pl-9" />
         </div>
-        <div className="flex items-center gap-1 border border-border rounded-lg p-1">
-          <Button variant={!showArchiv && viewMode === "tabs" ? "default" : "ghost"} size="sm"
-            className="h-7 text-xs px-3" onClick={() => { setViewMode("tabs"); setShowArchiv(false); }}>
-            Nach Status
-          </Button>
-          <Button variant={!showArchiv && viewMode === "all" ? "default" : "ghost"} size="sm"
-            className="h-7 text-xs px-3" onClick={() => { setViewMode("all"); setShowArchiv(false); }}>
-            <LayoutGrid className="w-3.5 h-3.5 mr-1" />Alle
-          </Button>
-          <Button variant={showArchiv ? "default" : "ghost"} size="sm"
-            className="h-7 text-xs px-3" onClick={() => setShowArchiv(v => !v)}>
-            Archiv {archivCount > 0 && <span className="ml-1 opacity-70">({archivCount})</span>}
-          </Button>
-        </div>
       </div>
 
-      {viewMode === "tabs" && (
-        <div className="flex gap-2 border-b border-border">
-          {Object.entries(STATUS_GROUPS).map(([key, group]) => {
+      {/* Status-Tabs */}
+      {!showArchiv && (
+        <div className="flex gap-0 border-b border-border overflow-x-auto">
+          {/* "Alle" ganz links */}
+          {[
+            { key: "alle", label: "Alle" },
+            ...Object.entries(STATUS_GROUPS).map(([key, g]) => ({ key, label: g.label }))
+          ].map(({ key, label }) => {
             const count = getGroupProjects(key).length;
             return (
-              <button key={key} onClick={() => setActiveTab(key)}
-                className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-all -mb-px ${
-                  activeTab === key
+              <button key={key} onClick={() => { setActiveTab(key); setShowArchiv(false); }}
+                className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-all -mb-px shrink-0 ${
+                  !showArchiv && activeTab === key
                     ? "border-primary text-primary"
                     : "border-transparent text-muted-foreground hover:text-foreground"
                 }`}>
-                {group.label}
+                {label}
                 <span className={`ml-2 text-xs px-1.5 py-0.5 rounded-full ${
-                  activeTab === key ? "bg-primary/10 text-primary" : "bg-secondary text-muted-foreground"
+                  !showArchiv && activeTab === key ? "bg-primary/10 text-primary" : "bg-secondary text-muted-foreground"
                 }`}>{count}</span>
               </button>
             );
           })}
+          {/* Archiv ganz rechts */}
+          <button onClick={() => { setShowArchiv(true); setActiveTab("alle"); }}
+            className={`ml-auto px-4 py-2.5 text-sm font-medium border-b-2 transition-all -mb-px shrink-0 border-transparent text-muted-foreground hover:text-foreground`}>
+            Archiv
+            {archivCount > 0 && <span className="ml-2 text-xs px-1.5 py-0.5 rounded-full bg-secondary text-muted-foreground">{archivCount}</span>}
+          </button>
+        </div>
+      )}
+      {showArchiv && (
+        <div className="flex gap-0 border-b border-border">
+          <button onClick={() => { setShowArchiv(false); setActiveTab("kalkulation"); }}
+            className="px-4 py-2.5 text-sm font-medium border-b-2 border-transparent text-muted-foreground hover:text-foreground transition-all -mb-px">
+            ← Zurück
+          </button>
+          <span className="px-4 py-2.5 text-sm font-medium border-b-2 border-primary text-primary -mb-px">
+            Archiv
+            {archivCount > 0 && <span className="ml-2 text-xs px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">{archivCount}</span>}
+          </span>
         </div>
       )}
 

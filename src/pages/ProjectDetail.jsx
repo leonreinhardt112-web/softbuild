@@ -36,6 +36,7 @@ import {
 } from "lucide-react";
 import ProjektAbrechnung from "@/components/abrechnung/ProjektAbrechnung";
 import ProjektStatusChanger from "@/components/projects/ProjektStatusChanger";
+import KalkulationTabContent from "@/components/kalkulation/KalkulationTabContent";
 import { format } from "date-fns";
 
 const POST_AWARD_STATUSES = ["beauftragt", "in_ausfuehrung", "abgeschlossen"];
@@ -551,43 +552,14 @@ export default function ProjectDetail() {
 
         {/* KALKULATION */}
         <TabsContent value="kalkulation" className="mt-6">
-          <div className="space-y-6">
-            {/* LV-Upload + KI-Analyse als Vorbereitung */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-1">
-                <LVUploader project={project} onUpdate={handleLVUpdate} onTradesDetected={handleTradesDetected} />
-              </div>
-              <div className="lg:col-span-2">
-                <LVAnalyseErgebnisse
-                  project={project}
-                  onUpdate={handleLVUpdate}
-                  onFristenUebernehmen={async (kiFristen) => {
-                    // Fristen als ProjektFrist-Einträge anlegen und Projektdaten ergänzen
-                    const startFrist = kiFristen.find(f => f.typ === "vertragsbeginn");
-                    const endFrist = kiFristen.find(f => f.typ === "vertragsende");
-                    const updates = {};
-                    if (startFrist?.datum && !project.project_start) updates.project_start = startFrist.datum;
-                    if (endFrist?.datum && !project.project_end) updates.project_end = endFrist.datum;
-                    if (Object.keys(updates).length > 0) await handleLVUpdate(updates);
-                    // Als ProjektFrist speichern
-                    for (const f of kiFristen) {
-                      await base44.entities.ProjektFrist.create({
-                        project_id: projectId,
-                        titel: f.titel,
-                        datum: f.datum || null,
-                        typ: f.typ || "sonstiges",
-                        status: "offen",
-                      });
-                    }
-                    queryClient.invalidateQueries({ queryKey: ["fristen", projectId] });
-                    await handleLVUpdate({ ki_gefundene_fristen: [] });
-                  }}
-                />
-              </div>
-            </div>
-            {/* Kalkulations-Tabelle */}
-            <LVKalkulationView ref={kalkulationRef} project={project} />
-          </div>
+          <KalkulationTabContent
+            project={project}
+            projectId={projectId}
+            kalkulationRef={kalkulationRef}
+            handleLVUpdate={handleLVUpdate}
+            handleTradesDetected={handleTradesDetected}
+            queryClient={queryClient}
+          />
         </TabsContent>
 
         {/* AFU-PRÜFUNG */}
