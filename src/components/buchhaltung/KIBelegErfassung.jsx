@@ -21,6 +21,8 @@ export default function KIBelegErfassung({ projects, stammdaten, onSaved }) {
   const [uploading, setUploading] = useState(false);
   const [savingIds, setSavingIds] = useState(new Set());
   const [expandedId, setExpandedId] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragCounter = useRef(0);
   const fileRef = useRef();
 
   const handleFiles = async (files) => {
@@ -103,8 +105,27 @@ Extrahiere:
     setUploading(false);
   };
 
+  const handleDragEnter = (e) => {
+    e.preventDefault();
+    dragCounter.current++;
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    dragCounter.current--;
+    if (dragCounter.current === 0) setIsDragging(false);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+  };
+
   const handleDrop = (e) => {
     e.preventDefault();
+    dragCounter.current = 0;
+    setIsDragging(false);
     const files = Array.from(e.dataTransfer.files).filter(f => f.type === "application/pdf" || f.type.startsWith("image/"));
     if (files.length) handleFiles(files);
   };
@@ -150,9 +171,15 @@ Extrahiere:
         {/* Dropzone */}
         <div
           onDrop={handleDrop}
-          onDragOver={(e) => e.preventDefault()}
+          onDragOver={handleDragOver}
+          onDragEnter={handleDragEnter}
+          onDragLeave={handleDragLeave}
           onClick={() => fileRef.current?.click()}
-          className="border-2 border-dashed border-border rounded-xl p-8 text-center cursor-pointer hover:border-primary/60 hover:bg-primary/5 transition-all"
+          className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
+            isDragging
+              ? "border-primary bg-primary/10 scale-[1.01]"
+              : "border-border hover:border-primary/60 hover:bg-primary/5"
+          }`}
         >
           <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
           <p className="text-sm font-medium text-foreground">PDF-Rechnungen hierher ziehen oder klicken</p>
