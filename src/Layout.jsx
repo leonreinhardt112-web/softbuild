@@ -11,11 +11,12 @@ import {
   BarChart3,
   Database,
   Menu,
-  X,
   ChevronRight,
+  ChevronDown,
   Building2,
   Mail,
   Users,
+  Settings,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -27,16 +28,25 @@ const NAV_ITEMS = [
   { name: "Postfächer", page: "Postfaecher", icon: Mail },
   { name: "Abrechnung", page: "Abrechnung", icon: Receipt },
   { name: "Controlling", page: "Controlling", icon: BarChart3 },
-  { name: "Stammdaten", page: "Stammdaten", icon: Database },
-  { name: "Benutzer", page: "Benutzerverwaltung", icon: Users, adminOnly: true },
+  {
+    name: "Stammdaten",
+    icon: Database,
+    group: true,
+    children: [
+      { name: "Stammdaten", page: "Stammdaten", icon: Database },
+      { name: "Konfiguration", page: "Konfiguration", icon: Settings },
+      { name: "Benutzer", page: "Benutzerverwaltung", icon: Users, adminOnly: true },
+    ],
+  },
 ];
 
-const ALWAYS_VISIBLE = ["Dashboard", "Projects", "Postfaecher", "Benutzerverwaltung"];
+const ALWAYS_VISIBLE = ["Dashboard", "Projects", "Postfaecher", "Benutzerverwaltung", "Stammdaten", "Konfiguration"];
 
 function LayoutContent({ children, currentPageName }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [navRechte, setNavRechte] = useState({});
+  const [openGroups, setOpenGroups] = useState(["Stammdaten"]);
   const navigate = useNavigate();
   const { unsavedState, setUnsavedState } = useUnsavedChanges();
 
@@ -117,14 +127,73 @@ function LayoutContent({ children, currentPageName }) {
 
           {/* Nav */}
           <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto">
-            {NAV_ITEMS.filter(item => {
-              if (item.adminOnly) return currentUser?.role === "admin";
-              if (currentUser?.role === "admin") return true;
-              if (ALWAYS_VISIBLE.includes(item.page)) return true;
-              const allowed = navRechte[item.page];
-              if (!allowed) return true; // default: sichtbar wenn keine Regel
-              return allowed.includes(currentUser?.role);
-            }).map((item) => {
+            {NAV_ITEMS.map((item) => {
+              // --- Group item ---
+              if (item.group) {
+                const isGroupOpen = openGroups.includes(item.name);
+                const GroupIcon = item.icon;
+                const visibleChildren = item.children.filter(child => {
+                  if (child.adminOnly) return currentUser?.role === "admin";
+                  if (currentUser?.role === "admin") return true;
+                  if (ALWAYS_VISIBLE.includes(child.page)) return true;
+                  const allowed = navRechte[child.page];
+                  if (!allowed) return true;
+                  return allowed.includes(currentUser?.role);
+                });
+                if (visibleChildren.length === 0) return null;
+                const isChildActive = visibleChildren.some(c => c.page === currentPageName);
+                return (
+                  <div key={item.name}>
+                    <button
+                      onClick={() => setOpenGroups(g => g.includes(item.name) ? g.filter(x => x !== item.name) : [...g, item.name])}
+                      className={cn(
+                        "w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all",
+                        isChildActive
+                          ? "text-foreground bg-accent"
+                          : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                      )}
+                    >
+                      <GroupIcon className="w-4 h-4 shrink-0" />
+                      <span className="flex-1 truncate text-left">{item.name}</span>
+                      {isGroupOpen
+                        ? <ChevronDown className="w-3 h-3 opacity-60" />
+                        : <ChevronRight className="w-3 h-3 opacity-60" />}
+                    </button>
+                    {isGroupOpen && (
+                      <div className="ml-3 mt-0.5 pl-3 border-l border-border space-y-0.5">
+                        {visibleChildren.map(child => {
+                          const isActive = currentPageName === child.page;
+                          const CIcon = child.icon;
+                          return (
+                            <button
+                              key={child.page}
+                              onClick={(e) => handleNavigation(e, child.page)}
+                              className={cn(
+                                "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all",
+                                isActive
+                                  ? "bg-primary text-primary-foreground shadow-sm"
+                                  : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                              )}
+                            >
+                              <CIcon className="w-3.5 h-3.5 shrink-0" />
+                              <span className="flex-1 truncate text-left">{child.name}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+
+              // --- Regular item ---
+              if (item.adminOnly && currentUser?.role !== "admin") return null;
+              if (!item.adminOnly && currentUser?.role !== "admin") {
+                if (!ALWAYS_VISIBLE.includes(item.page)) {
+                  const allowed = navRechte[item.page];
+                  if (allowed && !allowed.includes(currentUser?.role)) return null;
+                }
+              }
               const isActive = currentPageName === item.page;
               const Icon = item.icon;
               return (

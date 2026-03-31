@@ -9,7 +9,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Trash2, Search, Database, Users, Truck, Package, Edit2 } from "lucide-react";
-import CompanyHeaderForm from "@/components/stammdaten/CompanyHeaderForm";
 
 const TYP_LABELS = {
   auftraggeber: "Auftraggeber", nachunternehmer: "Nachunternehmer", lieferant: "Lieferant",
@@ -166,9 +165,6 @@ export default function Stammdaten() {
         <h1 className="text-2xl font-bold text-foreground">Stammdaten</h1>
         <p className="text-sm text-muted-foreground mt-0.5">Zentrale Datenbasis – Auftraggeber, NU, Mitarbeiter, Geräte, Materialien</p>
       </div>
-
-      {/* Company Header Section */}
-      <CompanyHeaderForm />
 
       {/* Summary cards */}
       <div className="grid grid-cols-3 lg:grid-cols-6 gap-3">
