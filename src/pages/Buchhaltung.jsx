@@ -4,17 +4,20 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, BookOpen, TrendingUp, TrendingDown, Scale } from "lucide-react";
+import { Plus, BookOpen, TrendingUp, TrendingDown, Scale, CreditCard } from "lucide-react";
 import OffenePostenTabelle from "@/components/buchhaltung/OffenePostenTabelle";
 import PartnerSaldoTabelle from "@/components/buchhaltung/PartnerSaldoTabelle";
 import EingangsRechnungForm from "@/components/buchhaltung/EingangsRechnungForm.jsx";
 import KIBelegErfassung from "@/components/buchhaltung/KIBelegErfassung";
+import { EinzelZahlungDialog, AKontoDialog } from "@/components/buchhaltung/ZahlungBuchenDialog";
 
 const fmt = (v) => v.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
 
 export default function Buchhaltung() {
   const qc = useQueryClient();
   const [showKreditorForm, setShowKreditorForm] = useState(false);
+  const [zahlungRechnung, setZahlungRechnung] = useState(null); // für Einzelzahlung
+  const [aKontoKreditor, setAKontoKreditor] = useState(null);   // für A-Konto
 
   const { data: rechnungen = [], isLoading: rLoading } = useQuery({
     queryKey: ["rechnungen"],
@@ -47,9 +50,7 @@ export default function Buchhaltung() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["eingangsRechnungen"] }),
   });
 
-  // Offene Debitoren (nicht bezahlt, nicht storniert)
   const offeneDebitoren = rechnungen.filter(r => !["bezahlt", "storniert"].includes(r.status));
-  // Offene Kreditoren (nicht bezahlt, nicht storniert)
   const offeneKreditoren = eingangsRechnungen.filter(r => !["bezahlt", "storniert"].includes(r.status));
 
   const sumOffenDebitor = offeneDebitoren.reduce((s, r) => s + Math.max(0, (r.betrag_brutto || 0) - (r.zahlungseingang || 0) - (r.einbehalt || 0)), 0);
@@ -59,9 +60,19 @@ export default function Buchhaltung() {
   const handleDebitorZahlung = (r) => {
     updateRechnung.mutate({ id: r.id, data: { status: "bezahlt", zahlungseingang: r.betrag_brutto } });
   };
-  const handleKreditorZahlung = (r) => {
-    updateEingang.mutate({ id: r.id, data: { status: "bezahlt", zahlungsausgang: r.betrag_brutto } });
+
+  // Einzelzahlung (mit Skonto)
+  const handleEinzelZahlungSave = (id, data) => {
+    updateEingang.mutate({ id, data });
   };
+
+  // A-Konto: mehrere Rechnungen auf einmal
+  const handleAKontoSave = (updates) => {
+    updates.forEach(u => updateEingang.mutate({ id: u.id, data: u.data }));
+  };
+
+  // Eindeutige Kreditoren aus offenen Rechnungen
+  const kreditoren = [...new Set(offeneKreditoren.map(r => r.kreditor_name).filter(Boolean))];
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 animate-fade-in">
@@ -142,6 +153,26 @@ export default function Buchhaltung() {
             stammdaten={stammdaten}
             onSaved={() => qc.invalidateQueries({ queryKey: ["eingangsRechnungen"] })}
           />
+
+          {/* A-Konto Schnellzugriff */}
+          {kreditoren.length > 0 && (
+            <Card>
+              <CardContent className="p-4">
+                <p className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1.5">
+                  <CreditCard className="w-3.5 h-3.5" /> A-Konto-Zahlung (Sammelzahlung je Kreditor)
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {kreditoren.map(k => (
+                    <Button key={k} variant="outline" size="sm" className="text-xs gap-1.5 h-7"
+                      onClick={() => setAKontoKreditor(k)}>
+                      <CreditCard className="w-3 h-3" /> {k}
+                    </Button>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <div className="flex justify-end">
             <Button className="gap-2" onClick={() => setShowKreditorForm(true)}>
               <Plus className="w-4 h-4" /> Einzelne Eingangsrechnung anlegen
@@ -169,7 +200,7 @@ export default function Buchhaltung() {
                 rows={eingangsRechnungen.filter(r => r.status !== "storniert")}
                 typ="kreditor"
                 projects={projects}
-                onZahlung={handleKreditorZahlung}
+                onZahlung={(r) => setZahlungRechnung(r)}
                 isLoading={eLoading}
               />
             </CardContent>
@@ -185,6 +216,23 @@ export default function Buchhaltung() {
           />
         </TabsContent>
       </Tabs>
+
+      {/* Einzelzahlung-Dialog */}
+      <EinzelZahlungDialog
+        rechnung={zahlungRechnung}
+        open={!!zahlungRechnung}
+        onClose={() => setZahlungRechnung(null)}
+        onSave={handleEinzelZahlungSave}
+      />
+
+      {/* A-Konto-Dialog */}
+      <AKontoDialog
+        kreditorName={aKontoKreditor}
+        offeneRechnungen={offeneKreditoren.filter(r => r.kreditor_name === aKontoKreditor)}
+        open={!!aKontoKreditor}
+        onClose={() => setAKontoKreditor(null)}
+        onSave={handleAKontoSave}
+      />
     </div>
   );
 }

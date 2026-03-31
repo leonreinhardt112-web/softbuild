@@ -33,6 +33,8 @@ export default function EingangsRechnungForm({ projects = [], stammdaten = [], o
     betrag_netto: "",
     mwst_satz: 19,
     betrag_brutto: "",
+    skonto_prozent: "",
+    skonto_frist: "",
     project_id: "",
     beschreibung: "",
     notes: "",
@@ -172,7 +174,17 @@ export default function EingangsRechnungForm({ projects = [], stammdaten = [], o
               <Input type="number" step="0.01" value={form.betrag_brutto} onChange={e => set("betrag_brutto", e.target.value)} placeholder="0,00" />
             </div>
 
-            {/* Projekt (optional) */}
+            {/* Skonto */}
+            <div className="space-y-1.5">
+              <Label>Skonto (%)</Label>
+              <Input type="number" step="0.1" min="0" max="100" value={form.skonto_prozent} onChange={e => set("skonto_prozent", e.target.value)} placeholder="z. B. 2" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Skontofrist (bis)</Label>
+              <Input type="date" value={form.skonto_frist} onChange={e => set("skonto_frist", e.target.value)} />
+            </div>
+
+          {/* Projekt (optional) */}
             <div className="space-y-1.5">
               <Label>Projekt (optional – leer = AGK)</Label>
               <Select value={form.project_id || "__none__"} onValueChange={v => set("project_id", v === "__none__" ? "" : v)}>

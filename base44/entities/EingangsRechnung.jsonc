@@ -79,6 +79,21 @@
       "format": "date",
       "description": "F\u00e4lligkeitsdatum"
     },
+    "skonto_prozent": {
+      "type": "number",
+      "default": 0,
+      "description": "Skontosatz (%)"
+    },
+    "skonto_frist": {
+      "type": "string",
+      "format": "date",
+      "description": "Skontofrist (bis wann Skonto gilt)"
+    },
+    "skonto_betrag": {
+      "type": "number",
+      "default": 0,
+      "description": "Skontobetrag (\u20ac) \u2013 berechnet beim Bezahlen"
+    },
     "leistungszeitraum_von": {
       "type": "string",
       "format": "date"
@@ -109,6 +124,27 @@
       "type": "number",
       "default": 0,
       "description": "Bereits gezahlter Betrag (\u20ac)"
+    },
+    "zahlungen": {
+      "type": "array",
+      "description": "Einzelne Zahlungsbuchungen",
+      "items": {
+        "type": "object",
+        "properties": {
+          "datum": {
+            "type": "string"
+          },
+          "betrag": {
+            "type": "number"
+          },
+          "typ": {
+            "type": "string"
+          },
+          "notiz": {
+            "type": "string"
+          }
+        }
+      }
     },
     "status": {
       "type": "string",

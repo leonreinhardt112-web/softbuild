@@ -2,8 +2,8 @@ import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CheckCircle2, AlertTriangle } from "lucide-react";
-import { format, isPast, parseISO } from "date-fns";
+import { AlertTriangle, Percent } from "lucide-react";
+import { format, isPast, isAfter, parseISO } from "date-fns";
 
 const fmt = (v) => v ? v.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €" : "–";
 const fmtDate = (d) => { try { return d ? format(parseISO(d), "dd.MM.yy") : "–"; } catch { return "–"; } };
@@ -56,6 +56,11 @@ export default function OffenePostenTabelle({ rows, typ, projects, onZahlung, is
                     {ueberfaellig && <AlertTriangle className="w-3 h-3" />}
                     {fmtDate(r.faellig_am)}
                   </span>
+                  {!isDebitor && r.skonto_prozent > 0 && r.skonto_frist && isAfter(parseISO(r.skonto_frist), new Date()) && (
+                    <span className="flex items-center gap-0.5 text-green-600 font-medium mt-0.5">
+                      <Percent className="w-2.5 h-2.5" />{r.skonto_prozent}% bis {fmtDate(r.skonto_frist)}
+                    </span>
+                  )}
                 </td>
                 <td className="px-4 py-3 text-xs text-right">{fmt(r.betrag_brutto)}</td>
                 <td className={`px-4 py-3 text-xs text-right font-semibold ${offen > 0 ? "text-amber-600" : "text-green-600"}`}>
