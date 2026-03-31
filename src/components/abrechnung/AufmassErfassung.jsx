@@ -113,23 +113,12 @@ export default function AufmassErfassung({ aufmass, project, vorherigeAufmasse, 
 
   const confirmFreigeben = async () => {
     setShowNrConfirm(false);
+    
+    // Speichere Aufmass
     await saveMut.mutateAsync(buildSaveData("freigegeben", rechnungsnummer));
     setStatus("freigegeben");
-  };
-
-  const handleStornieren = async () => {
-    setShowStornoConfirm(true);
-  };
-
-  const confirmStornieren = async () => {
-    setShowStornoConfirm(false);
-    await saveMut.mutateAsync(buildSaveData("storniert"));
-    setStatus("storniert");
-  };
-
-  // Aufmass → Rechnung konvertieren
-  const handleAufmassToRechnung = async () => {
-    setConvertLoading(true);
+    
+    // Erstelle Rechnung automatisch
     const rechnungsPositionen = positionen.map(p => ({
       oz: p.oz,
       short_text: p.short_text,
@@ -142,11 +131,11 @@ export default function AufmassErfassung({ aufmass, project, vorherigeAufmasse, 
       gp_aktuell: p.gp_aktuell || 0,
     }));
     
-    const newRechnung = await base44.entities.Rechnung.create({
+    await base44.entities.Rechnung.create({
       project_id: aufmass.project_id,
       kalkulation_id: aufmass.kalkulation_id,
       rechnungsnummer: rechnungsnummer,
-      rechnungsart: aufmass.ar_nummer === 1 ? "abschlagsrechnung" : "abschlagsrechnung",
+      rechnungsart: "abschlagsrechnung",
       rechnungsdatum: datum,
       faellig_am: new Date(new Date(datum).getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
       leistungszeitraum_von: datum,
@@ -157,12 +146,19 @@ export default function AufmassErfassung({ aufmass, project, vorherigeAufmasse, 
       betrag_brutto: betrag_netto * 1.19,
       status: "gestellt",
     });
-    
-    // Aufmass als "abgerechnet" markieren
-    await saveMut.mutateAsync(buildSaveData("abgerechnet"));
-    setStatus("abgerechnet");
-    setConvertLoading(false);
   };
+
+  const handleStornieren = async () => {
+    setShowStornoConfirm(true);
+  };
+
+  const confirmStornieren = async () => {
+    setShowStornoConfirm(false);
+    await saveMut.mutateAsync(buildSaveData("storniert"));
+    setStatus("storniert");
+  };
+
+
 
   return (
     <div className="space-y-6">
@@ -232,14 +228,9 @@ export default function AufmassErfassung({ aufmass, project, vorherigeAufmasse, 
             </Button>
           )}
           {status === "freigegeben" && (
-            <>
-              <Button size="sm" variant="outline" onClick={handleAufmassToRechnung} disabled={saveMut.isPending || convertLoading} className="gap-1.5">
-                {convertLoading ? "Wird konvertiert…" : "→ Zu Rechnung"}
-              </Button>
-              <Button size="sm" variant="destructive" onClick={handleStornieren} disabled={saveMut.isPending}>
-                Stornieren
-              </Button>
-            </>
+            <Button size="sm" variant="destructive" onClick={handleStornieren} disabled={saveMut.isPending}>
+              Stornieren
+            </Button>
           )}
         </div>
       </div>
