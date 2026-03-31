@@ -8,8 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Receipt, Trash2, Euro, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Plus, Receipt, Trash2, Euro, AlertTriangle, CheckCircle2, FileText } from "lucide-react";
 import { format } from "date-fns";
+import PositionsRechnungDialog from "@/components/abrechnung/PositionsRechnungDialog";
 
 const R_STATUS_COLORS = {
   entwurf: "bg-secondary text-secondary-foreground",
@@ -38,6 +39,7 @@ const N_STATUS_LABELS = {
 export default function Abrechnung() {
   const qc = useQueryClient();
   const [showRForm, setShowRForm] = useState(false);
+  const [showPosRDialog, setShowPosRDialog] = useState(false);
   const [showNForm, setShowNForm] = useState(false);
   const [rForm, setRForm] = useState({
     project_id: "", rechnungsnummer: "", rechnungsart: "abschlagsrechnung",
@@ -59,14 +61,20 @@ export default function Abrechnung() {
     queryKey: ["projects"],
     queryFn: () => base44.entities.Project.list("-created_date", 100),
   });
+  const { data: kalkulationen = [] } = useQuery({
+    queryKey: ["kalkulationen"],
+    queryFn: () => base44.entities.Kalkulation.list("-created_date", 100),
+  });
 
   const createR = useMutation({
     mutationFn: (d) => {
+      // Wenn betrag_brutto bereits gesetzt (aus Positionsdialog), direkt übernehmen
+      if (d.betrag_brutto) return base44.entities.Rechnung.create(d);
       const netto = parseFloat(d.betrag_netto) || 0;
       const brutto = netto * (1 + d.mwst_satz / 100);
       return base44.entities.Rechnung.create({ ...d, betrag_netto: netto, betrag_brutto: brutto });
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["rechnungen"] }); setShowRForm(false); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["rechnungen"] }); setShowRForm(false); setShowPosRDialog(false); },
   });
   const deleteR = useMutation({
     mutationFn: (id) => base44.entities.Rechnung.delete(id),
@@ -125,8 +133,13 @@ export default function Abrechnung() {
         </TabsList>
 
         <TabsContent value="rechnungen" className="mt-4 space-y-4">
-          <div className="flex justify-end">
-            <Button className="gap-2" onClick={() => setShowRForm(true)}><Plus className="w-4 h-4" />Rechnung anlegen</Button>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" className="gap-2" onClick={() => setShowPosRDialog(true)}>
+              <FileText className="w-4 h-4" /> Aus Kalkulation erstellen
+            </Button>
+            <Button className="gap-2" onClick={() => setShowRForm(true)}>
+              <Plus className="w-4 h-4" /> Manuell anlegen
+            </Button>
           </div>
 
           {showRForm && (
@@ -343,6 +356,15 @@ export default function Abrechnung() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <PositionsRechnungDialog
+        open={showPosRDialog}
+        onClose={() => setShowPosRDialog(false)}
+        onSave={(d) => createR.mutate(d)}
+        projects={projects}
+        kalkulationen={kalkulationen}
+        vorherige_rechnungen={rechnungen}
+      />
     </div>
   );
 }

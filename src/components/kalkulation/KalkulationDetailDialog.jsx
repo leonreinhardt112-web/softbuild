@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Trash2, Calculator } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
+import GaebX84Export from "@/components/kalkulation/GaebX84Export";
 
 const STATUS_LABELS = { entwurf: "Entwurf", eingereicht: "Eingereicht", beauftragt: "Beauftragt", abgelehnt: "Abgelehnt" };
 const STATUS_COLORS = { entwurf: "bg-secondary text-secondary-foreground", eingereicht: "bg-blue-100 text-blue-700", beauftragt: "bg-green-100 text-green-700", abgelehnt: "bg-red-100 text-red-700" };
@@ -159,9 +160,12 @@ export default function KalkulationDetailDialog({ kalkulation, projekt, open, on
           <Input value={notes} onChange={e => setNotes(e.target.value)} placeholder="Notizen zur Kalkulation..." className="text-sm" />
         </div>
 
-        <div className="flex justify-end gap-2 pt-2">
-          <Button variant="outline" onClick={onClose}>Schließen</Button>
-          <Button onClick={handleSave} disabled={saveMut.isPending}>Speichern</Button>
+        <div className="flex justify-between items-center pt-2">
+          <GaebX84Export kalkulation={{ ...kalkulation, positions }} projekt={projekt} />
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={onClose}>Schließen</Button>
+            <Button onClick={handleSave} disabled={saveMut.isPending}>Speichern</Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

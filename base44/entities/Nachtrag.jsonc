@@ -1,0 +1,95 @@
+{
+  "name": "Nachtrag",
+  "type": "object",
+  "properties": {
+    "project_id": {
+      "type": "string",
+      "description": "Projekt-ID"
+    },
+    "nachtrag_nr": {
+      "type": "string",
+      "description": "Nachtrags-Nr."
+    },
+    "bezeichnung": {
+      "type": "string",
+      "description": "Bezeichnung / Leistungsbeschreibung"
+    },
+    "grund": {
+      "type": "string",
+      "enum": [
+        "Mengenabweichung",
+        "Zusatzleistung",
+        "Behinderung",
+        "Planungsaenderung",
+        "Baugrundrisiko",
+        "Sonstiges"
+      ],
+      "description": "Nachtragsgrund"
+    },
+    "positionen": {
+      "type": "array",
+      "description": "Nachtragspositionen",
+      "items": {
+        "type": "object",
+        "properties": {
+          "oz": {
+            "type": "string"
+          },
+          "short_text": {
+            "type": "string"
+          },
+          "long_text": {
+            "type": "string"
+          },
+          "einheit": {
+            "type": "string"
+          },
+          "menge": {
+            "type": "number"
+          },
+          "ep": {
+            "type": "number"
+          },
+          "gp": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "betrag_angemeldet": {
+      "type": "number",
+      "description": "Angemeldeter Betrag netto (\u20ac)"
+    },
+    "betrag_beauftragt": {
+      "type": "number",
+      "description": "Beauftragter Betrag netto (\u20ac)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "angemeldet",
+        "geprueft",
+        "beauftragt",
+        "abgerechnet",
+        "abgelehnt"
+      ],
+      "default": "angemeldet",
+      "description": "Status"
+    },
+    "eingereicht_am": {
+      "type": "string",
+      "format": "date"
+    },
+    "beauftragt_am": {
+      "type": "string",
+      "format": "date"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "project_id",
+    "bezeichnung"
+  ]
+}

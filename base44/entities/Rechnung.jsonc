@@ -1,0 +1,158 @@
+{
+  "name": "Rechnung",
+  "type": "object",
+  "properties": {
+    "project_id": {
+      "type": "string",
+      "description": "Projekt-ID"
+    },
+    "kalkulation_id": {
+      "type": "string",
+      "description": "Zugeh\u00f6rige Kalkulation-ID"
+    },
+    "rechnungsnummer": {
+      "type": "string",
+      "description": "Rechnungsnummer"
+    },
+    "rechnungsart": {
+      "type": "string",
+      "enum": [
+        "abschlagsrechnung",
+        "schlussrechnung",
+        "teilrechnung"
+      ],
+      "default": "abschlagsrechnung",
+      "description": "Rechnungsart"
+    },
+    "rechnungsdatum": {
+      "type": "string",
+      "format": "date",
+      "description": "Rechnungsdatum"
+    },
+    "faellig_am": {
+      "type": "string",
+      "format": "date",
+      "description": "F\u00e4llig am"
+    },
+    "leistungszeitraum_von": {
+      "type": "string",
+      "format": "date"
+    },
+    "leistungszeitraum_bis": {
+      "type": "string",
+      "format": "date"
+    },
+    "positionen": {
+      "type": "array",
+      "description": "Rechnungspositionen (aus Kalkulation)",
+      "items": {
+        "type": "object",
+        "properties": {
+          "oz": {
+            "type": "string"
+          },
+          "short_text": {
+            "type": "string"
+          },
+          "einheit": {
+            "type": "string"
+          },
+          "ep": {
+            "type": "number"
+          },
+          "menge_kalk": {
+            "type": "number",
+            "description": "Kalkulierte Menge"
+          },
+          "menge_vorperiode": {
+            "type": "number",
+            "description": "Menge aus Vorperioden"
+          },
+          "menge_aktuell": {
+            "type": "number",
+            "description": "Menge diese Periode"
+          },
+          "menge_kumuliert": {
+            "type": "number",
+            "description": "Kumulierte Menge"
+          },
+          "gp_aktuell": {
+            "type": "number",
+            "description": "GP diese Periode"
+          }
+        }
+      }
+    },
+    "nachtrag_positionen": {
+      "type": "array",
+      "description": "Nachtragspositionen in dieser Rechnung",
+      "items": {
+        "type": "object",
+        "properties": {
+          "nachtrag_id": {
+            "type": "string"
+          },
+          "nachtrag_nr": {
+            "type": "string"
+          },
+          "bezeichnung": {
+            "type": "string"
+          },
+          "betrag_netto": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "betrag_netto": {
+      "type": "number",
+      "description": "Rechnungsbetrag netto (\u20ac)"
+    },
+    "mwst_satz": {
+      "type": "number",
+      "default": 19,
+      "description": "MwSt-Satz (%)"
+    },
+    "betrag_brutto": {
+      "type": "number",
+      "description": "Rechnungsbetrag brutto (\u20ac)"
+    },
+    "einbehalt": {
+      "type": "number",
+      "default": 0,
+      "description": "Sicherheitseinbehalt (\u20ac)"
+    },
+    "skonto_prozent": {
+      "type": "number",
+      "default": 0,
+      "description": "Skonto (%)"
+    },
+    "zahlungseingang": {
+      "type": "number",
+      "default": 0,
+      "description": "Zahlungseingang (\u20ac)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "entwurf",
+        "gestellt",
+        "teilbezahlt",
+        "bezahlt",
+        "gemahnt",
+        "storniert"
+      ],
+      "default": "entwurf",
+      "description": "Status"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Anmerkungen"
+    }
+  },
+  "required": [
+    "project_id",
+    "rechnungsnummer",
+    "rechnungsart"
+  ]
+}
