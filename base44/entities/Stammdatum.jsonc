@@ -153,6 +153,11 @@
       "default": 0,
       "description": "Laufende Nummer f\u00fcr Projekte"
     },
+    "kundennummer_counter": {
+      "type": "number",
+      "default": 0,
+      "description": "Globaler Counter f\u00fcr Kundennummern (nie zur\u00fccksetzen!)"
+    },
     "unser_zeichen_optionen": {
       "type": "array",
       "description": "Dropdown-Optionen f\u00fcr 'Unser Zeichen' im Angebot",

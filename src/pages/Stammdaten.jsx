@@ -22,6 +22,7 @@ const TYP_COLORS = {
 
 const TABS = [
   { key: "auftraggeber", label: "Auftraggeber" },
+  { key: "auftraggeber_archiv", label: "Archivierte AG", isArchiv: true },
   { key: "nachunternehmer", label: "Nachunternehmer" },
   { key: "lieferant", label: "Lieferanten" },
   { key: "mitarbeiter", label: "Mitarbeiter" },
@@ -129,13 +130,24 @@ export default function Stammdaten() {
     mutationFn: async (d) => {
       let extra = {};
       if (d.typ === "auftraggeber") {
-        // Kundennummer über globalen Counter im Unternehmen-Stammdatum
-        const unternehmen = await base44.entities.Stammdatum.filter({ typ: "unternehmen" }, undefined, 1);
+        // Counter aus Unternehmen holen; falls 0 oder fehlt: aus vorhandenen Kundennummern ableiten
+        const [unternehmen, alleAG] = await Promise.all([
+          base44.entities.Stammdatum.filter({ typ: "unternehmen" }, undefined, 1),
+          base44.entities.Stammdatum.filter({ typ: "auftraggeber" }, "name", 500),
+        ]);
         const firma = unternehmen[0];
-        const currentCounter = firma?.kundennummer_counter || 0;
+        let currentCounter = firma?.kundennummer_counter || 0;
+        // Fallback: höchste vorhandene Kundennummer ermitteln (inkl. archivierter)
+        if (currentCounter === 0 && alleAG.length > 0) {
+          alleAG.forEach(ag => {
+            if (ag.kundennummer) {
+              const num = parseInt(ag.kundennummer.replace("KD-", ""), 10);
+              if (!isNaN(num) && num > currentCounter) currentCounter = num;
+            }
+          });
+        }
         const newCounter = currentCounter + 1;
         extra.kundennummer = `KD-${String(newCounter).padStart(5, "0")}`;
-        // Counter erhöhen
         if (firma) {
           await base44.entities.Stammdatum.update(firma.id, { kundennummer_counter: newCounter });
         }
@@ -161,14 +173,32 @@ export default function Stammdaten() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["stammdaten"] }),
   });
 
-  const filtered = stammdaten.filter(s =>
-    s.typ === activeTab &&
-    (activeTab !== "auftraggeber" || s.aktiv !== false) && // archivierte Auftraggeber ausblenden
-    (s.name?.toLowerCase().includes(search.toLowerCase()) || s.kuerzel?.toLowerCase().includes(search.toLowerCase()))
-  );
+  const filtered = stammdaten.filter(s => {
+    // Archivierte Auftraggeber Tab
+    if (activeTab === "auftraggeber_archiv") {
+      return s.typ === "auftraggeber" && s.aktiv === false &&
+        (s.name?.toLowerCase().includes(search.toLowerCase()) || s.kuerzel?.toLowerCase().includes(search.toLowerCase()));
+    }
+    // Normale Auftraggeber (nur aktive)
+    if (activeTab === "auftraggeber") {
+      return s.typ === "auftraggeber" && s.aktiv !== false &&
+        (s.name?.toLowerCase().includes(search.toLowerCase()) || s.kuerzel?.toLowerCase().includes(search.toLowerCase()));
+    }
+    // Andere Typen
+    return s.typ === activeTab &&
+      (s.name?.toLowerCase().includes(search.toLowerCase()) || s.kuerzel?.toLowerCase().includes(search.toLowerCase()));
+  });
 
   const counts = {};
-  TABS.forEach(t => { counts[t.key] = stammdaten.filter(s => s.typ === t.key).length; });
+  TABS.forEach(t => {
+    if (t.key === "auftraggeber_archiv") {
+      counts[t.key] = stammdaten.filter(s => s.typ === "auftraggeber" && s.aktiv === false).length;
+    } else if (t.key === "auftraggeber") {
+      counts[t.key] = stammdaten.filter(s => s.typ === "auftraggeber" && s.aktiv !== false).length;
+    } else {
+      counts[t.key] = stammdaten.filter(s => s.typ === t.key).length;
+    }
+  });
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 animate-fade-in">
@@ -193,10 +223,12 @@ export default function Stammdaten() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
           <Input className="pl-9" placeholder="Suchen..." value={search} onChange={e => setSearch(e.target.value)} />
         </div>
-        <Button className="gap-2" onClick={() => { setEditingItem(null); setShowForm(true); }}><Plus className="w-4 h-4" />{TYP_LABELS[activeTab]} anlegen</Button>
+        {activeTab !== "auftraggeber_archiv" && (
+          <Button className="gap-2" onClick={() => { setEditingItem(null); setShowForm(true); }}><Plus className="w-4 h-4" />{TYP_LABELS[activeTab] || "Auftraggeber"} anlegen</Button>
+        )}
       </div>
 
-      {showForm && <StammdatenForm typ={activeTab} item={editingItem} onSave={(d) => editingItem ? updateMut.mutate(d) : createMut.mutate(d)} onCancel={() => { setShowForm(false); setEditingItem(null); }} />}
+      {showForm && activeTab !== "auftraggeber_archiv" && <StammdatenForm typ={activeTab} item={editingItem} onSave={(d) => editingItem ? updateMut.mutate(d) : createMut.mutate(d)} onCancel={() => { setShowForm(false); setEditingItem(null); }} />}
 
       <Card>
         <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); setShowForm(false); }}>
@@ -209,14 +241,17 @@ export default function Stammdaten() {
               ))}
             </TabsList>
           </div>
-          {TABS.map(t => (
+          {TABS.map(t => {
+            const isAGArchiv = t.key === "auftraggeber_archiv";
+            const isAG = t.key === "auftraggeber" || isAGArchiv;
+            return (
             <TabsContent key={t.key} value={t.key} className="mt-0">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border bg-muted/20">
                       <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Name</th>
-                      {t.key === "auftraggeber" && <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Kunden-Nr.</th>}
+                      {isAG && <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Kunden-Nr.</th>}
                       <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Kürzel</th>
                       <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Ansprechpartner</th>
                       <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">E-Mail / Tel.</th>
@@ -230,12 +265,12 @@ export default function Stammdaten() {
                       <tr key={i} className="border-b"><td colSpan={7} className="px-4 py-3"><Skeleton className="h-4" /></td></tr>
                     )) : filtered.length === 0 ? (
                       <tr><td colSpan={7} className="px-4 py-10 text-center text-sm text-muted-foreground">
-                        Keine Einträge für „{TYP_LABELS[t.key]}" {search ? `mit „${search}"` : ""}
+                        {isAGArchiv ? "Keine archivierten Auftraggeber" : `Keine Einträge für „${TYP_LABELS[t.key] || t.label}" ${search ? `mit „${search}"` : ""}`}
                       </td></tr>
                     ) : filtered.map(s => (
-                      <tr key={s.id} className="border-b border-border hover:bg-accent/30">
+                      <tr key={s.id} className={`border-b border-border hover:bg-accent/30 ${isAGArchiv ? "opacity-60" : ""}`}>
                         <td className="px-4 py-3 font-medium text-xs">{s.name}</td>
-                        {t.key === "auftraggeber" && <td className="px-4 py-3 text-xs font-mono text-muted-foreground">{s.kundennummer || "–"}</td>}
+                        {isAG && <td className="px-4 py-3 text-xs font-mono text-muted-foreground">{s.kundennummer || "–"}</td>}
                         <td className="px-4 py-3 text-xs text-muted-foreground">{s.kuerzel || "–"}</td>
                         <td className="px-4 py-3 text-xs text-muted-foreground">{s.kontakt_name || "–"}</td>
                         <td className="px-4 py-3 text-xs text-muted-foreground">
@@ -246,15 +281,22 @@ export default function Stammdaten() {
                           <td className="px-4 py-3 text-right text-xs">{s.kostensatz ? `${s.kostensatz} €/${s.einheit || "ME"}` : "–"}</td>
                         )}
                         <td className="px-4 py-3 flex gap-1">
-                         <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary"
-                           onClick={() => { setEditingItem(s); setShowForm(true); }}>
-                           <Edit2 className="w-3.5 h-3.5" />
-                         </Button>
+                         {!isAGArchiv && (
+                           <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary"
+                             onClick={() => { setEditingItem(s); setShowForm(true); }}>
+                             <Edit2 className="w-3.5 h-3.5" />
+                           </Button>
+                         )}
                          {t.key === "auftraggeber" ? (
                            <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-amber-600"
                              title="Auftraggeber archivieren (Kundennummer bleibt erhalten)"
                              onClick={() => archiviereMut.mutate(s.id)}>
                              <Archive className="w-3.5 h-3.5" />
+                           </Button>
+                         ) : isAGArchiv ? (
+                           <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground hover:text-green-600"
+                             onClick={() => updateMut.mutate({ id: s.id, aktiv: true })}>
+                             Wiederherstellen
                            </Button>
                          ) : (
                            <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive"
@@ -269,7 +311,7 @@ export default function Stammdaten() {
                 </table>
               </div>
             </TabsContent>
-          ))}
+          );})}
         </Tabs>
       </Card>
     </div>

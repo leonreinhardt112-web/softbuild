@@ -6,8 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  HardHat, Euro, AlertTriangle, Clock, ArrowRight, Plus,
-  FileText, TrendingUp, Receipt, Calculator, XCircle, CheckCircle2,
+  HardHat, Euro, AlertTriangle, ArrowRight,
+  FileText, TrendingUp, CheckCircle2, Plus,
   AlarmClock, Mail, Zap
 } from "lucide-react";
 import { format, addDays, isPast, parseISO, isWithinInterval, startOfDay, endOfDay } from "date-fns";
@@ -164,30 +164,52 @@ export default function UnternehmensDashboard({ projects, rechnungen, fristen, s
 
         {/* Rechte Spalte */}
         <div className="space-y-4">
-          {/* Projektstatus-Ampel */}
+          {/* Zuletzt verwendet */}
           <Card>
-            <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold">Projektstatus</CardTitle></CardHeader>
-            <CardContent className="space-y-2">
-              {[
-                { label: "In Ausführung", count: aktiveProjekte.length, color: "bg-purple-500" },
-                { label: "Beauftragt", count: projects.filter(p=>p.status==="beauftragt").length, color: "bg-teal-500" },
-                { label: "Kalkulation", count: kalkulationProjekte.length, color: "bg-blue-400" },
-                { label: "Eingereicht", count: projects.filter(p=>p.status==="eingereicht").length, color: "bg-cyan-400" },
-                { label: "Verloren", count: projects.filter(p=>p.status==="verloren").length, color: "bg-gray-400" },
-                { label: "Abgeschlossen", count: projects.filter(p=>p.status==="abgeschlossen").length, color: "bg-gray-300" },
-              ].map(item => (
-                <div key={item.label} className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-2">
-                    <div className={`w-2.5 h-2.5 rounded-full ${item.color}`} />
-                    <span className="text-muted-foreground text-xs">{item.label}</span>
+            <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold">Zuletzt geöffnet</CardTitle></CardHeader>
+            <CardContent className="p-0">
+              {projects.slice(0, 4).map(p => (
+                <Link key={p.id} to={createPageUrl(`ProjectDetail?id=${p.id}`)}
+                  className="flex items-center justify-between px-4 py-2.5 hover:bg-accent/40 transition-colors group border-b border-border last:border-0">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium truncate">{p.project_name}</p>
+                    <p className="text-[10px] text-muted-foreground">{p.project_number}</p>
                   </div>
-                  <span className="font-semibold text-xs">{item.count}</span>
-                </div>
+                  <ArrowRight className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                </Link>
               ))}
-              <div className="pt-2 border-t border-border flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">Gesamtvolumen (aktiv)</span>
-                <span className="font-bold">{fmt(gesamtvolumen)}</span>
-              </div>
+            </CardContent>
+          </Card>
+
+          {/* Offene Aufgaben */}
+          <Card className={kritischeAufgaben.length > 0 ? "border-red-200" : ""}>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-primary" />
+                Offene Aufgaben
+                {offeneAufgaben.length > 0 && <Badge className="text-[10px] bg-primary/10 text-primary">{offeneAufgaben.length}</Badge>}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {offeneAufgaben.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-2">Keine offenen Aufgaben</p>
+              ) : (
+                <div className="space-y-2">
+                  {offeneAufgaben.slice(0, 5).map(a => {
+                    const proj = projects.find(p => p.id === a.project_id);
+                    const isOverdue = a.faellig_am && isPast(parseISO(a.faellig_am));
+                    return (
+                      <div key={a.id} className={`text-xs p-2 rounded-lg ${isOverdue ? "bg-red-50" : "bg-muted/30"}`}>
+                        <p className={`font-medium truncate ${isOverdue ? "text-red-700" : ""}`}>{a.titel}</p>
+                        <p className="text-muted-foreground mt-0.5">
+                          {proj?.project_name || "Allgemein"}
+                          {a.faellig_am && <span className={isOverdue ? "text-red-600 ml-1" : "ml-1"}>· {format(parseISO(a.faellig_am), "dd.MM.")}</span>}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -238,24 +260,6 @@ export default function UnternehmensDashboard({ projects, rechnungen, fristen, s
             </CardContent>
           </Card>
 
-          {/* Schnellzugriff */}
-          <Card>
-            <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold">Schnellzugriff</CardTitle></CardHeader>
-            <CardContent className="space-y-1">
-              {[
-                { label: "Neues Projekt", page: "Projects", icon: Plus },
-                { label: "Kalkulation", page: "Kalkulation", icon: Calculator },
-                { label: "Abrechnung", page: "Abrechnung", icon: Receipt },
-                { label: "Controlling", page: "Controlling", icon: TrendingUp },
-              ].map(({ label, page, icon: Icon }) => (
-                <Link key={page} to={createPageUrl(page)}>
-                  <button className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-accent transition-colors text-sm text-muted-foreground hover:text-foreground">
-                    <Icon className="w-3.5 h-3.5" />{label}
-                  </button>
-                </Link>
-              ))}
-            </CardContent>
-          </Card>
         </div>
       </div>
     </div>

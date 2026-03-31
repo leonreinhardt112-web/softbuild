@@ -171,48 +171,39 @@ export default function Projects() {
       </div>
 
       {/* Status-Tabs */}
-      {!showArchiv && (
-        <div className="flex gap-0 border-b border-border overflow-x-auto">
-          {/* "Alle" ganz links */}
-          {[
-            { key: "alle", label: "Alle" },
-            ...Object.entries(STATUS_GROUPS).map(([key, g]) => ({ key, label: g.label }))
-          ].map(({ key, label }) => {
-            const count = getGroupProjects(key).length;
-            return (
-              <button key={key} onClick={() => { setActiveTab(key); setShowArchiv(false); }}
-                className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-all -mb-px shrink-0 ${
-                  !showArchiv && activeTab === key
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-                }`}>
-                {label}
-                <span className={`ml-2 text-xs px-1.5 py-0.5 rounded-full ${
-                  !showArchiv && activeTab === key ? "bg-primary/10 text-primary" : "bg-secondary text-muted-foreground"
-                }`}>{count}</span>
-              </button>
-            );
-          })}
-          {/* Archiv nach Abgeschlossen */}
-          <button onClick={() => { setShowArchiv(true); setActiveTab("alle"); }}
-            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-all -mb-px shrink-0 border-transparent text-muted-foreground hover:text-foreground`}>
-            Archiv
-            {archivCount > 0 && <span className="ml-2 text-xs px-1.5 py-0.5 rounded-full bg-secondary text-muted-foreground">{archivCount}</span>}
-          </button>
-        </div>
-      )}
-      {showArchiv && (
-        <div className="flex gap-0 border-b border-border">
-          <button onClick={() => { setShowArchiv(false); setActiveTab("kalkulation"); }}
-            className="px-4 py-2.5 text-sm font-medium border-b-2 border-transparent text-muted-foreground hover:text-foreground transition-all -mb-px">
-            ← Zurück
-          </button>
-          <span className="px-4 py-2.5 text-sm font-medium border-b-2 border-primary text-primary -mb-px">
-            Archiv
-            {archivCount > 0 && <span className="ml-2 text-xs px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">{archivCount}</span>}
-          </span>
-        </div>
-      )}
+      <div className="flex gap-0 border-b border-border">
+        {/* "Alle" ganz links */}
+        {[
+          { key: "alle", label: "Alle" },
+          ...Object.entries(STATUS_GROUPS).map(([key, g]) => ({ key, label: g.label })),
+          { key: "archiv", label: "Archiv" }
+        ].map(({ key, label }) => {
+          const isArchiv = key === "archiv";
+          const count = isArchiv ? archivCount : getGroupProjects(key).length;
+          const isActive = isArchiv ? showArchiv : (!showArchiv && activeTab === key);
+          return (
+            <button key={key} onClick={() => {
+              if (isArchiv) {
+                setShowArchiv(true);
+                setActiveTab("alle");
+              } else {
+                setShowArchiv(false);
+                setActiveTab(key);
+              }
+            }}
+              className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-all -mb-px shrink-0 ${
+                isActive
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}>
+              {label}
+              <span className={`ml-2 text-xs px-1.5 py-0.5 rounded-full ${
+                isActive ? "bg-primary/10 text-primary" : "bg-secondary text-muted-foreground"
+              }`}>{count}</span>
+            </button>
+          );
+        })}
+      </div>
 
       {isLoading ? (
         <div className="space-y-3">

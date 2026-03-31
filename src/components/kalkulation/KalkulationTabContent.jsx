@@ -22,7 +22,7 @@ export default function KalkulationTabContent({
   });
 
   const beauftrageMut = useMutation({
-    mutationFn: ({ id }) => base44.entities.Kalkulation.update(id, { status: "beauftragt" }),
+    mutationFn: ({ id, status }) => base44.entities.Kalkulation.update(id, { status }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["kalkulation", projectId] }),
   });
 
@@ -91,13 +91,21 @@ export default function KalkulationTabContent({
               : <><span className="text-amber-800">Angebot noch nicht beauftragt. Erst nach Beauftragung kann die Abrechnung gestartet werden.</span></>
             }
           </div>
-          {!isBeauftragt && (
-            <Button size="sm" className="gap-1.5 bg-green-600 hover:bg-green-700 text-white shrink-0"
-              onClick={() => beauftrageMut.mutate({ id: kalk.id })}
-              disabled={beauftrageMut.isPending}>
-              <CheckCircle2 className="w-3.5 h-3.5" />Als beauftragt markieren
-            </Button>
-          )}
+          <div className="flex gap-2 shrink-0">
+            {isBeauftragt ? (
+              <Button size="sm" variant="outline" className="gap-1.5 text-amber-700 border-amber-300 hover:bg-amber-50"
+                onClick={() => beauftrageMut.mutate({ id: kalk.id, status: "entwurf" })}
+                disabled={beauftrageMut.isPending}>
+                Beauftragung aufheben
+              </Button>
+            ) : (
+              <Button size="sm" className="gap-1.5 bg-green-600 hover:bg-green-700 text-white"
+                onClick={() => beauftrageMut.mutate({ id: kalk.id, status: "beauftragt" })}
+                disabled={beauftrageMut.isPending}>
+                <CheckCircle2 className="w-3.5 h-3.5" />Als beauftragt markieren
+              </Button>
+            )}
+          </div>
         </div>
       )}
 
