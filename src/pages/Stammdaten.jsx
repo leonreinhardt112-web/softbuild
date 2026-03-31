@@ -328,11 +328,20 @@ export default function Stammdaten() {
                            </Button>
                          )}
                          {t.key === "auftraggeber" ? (
-                           <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-amber-600"
-                             title="Auftraggeber archivieren (Kundennummer bleibt erhalten)"
-                             onClick={() => archiviereMut.mutate(s.id)}>
-                             <Archive className="w-3.5 h-3.5" />
-                           </Button>
+                           <>
+                             <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-amber-600"
+                               title="Auftraggeber archivieren (Kundennummer bleibt erhalten)"
+                               onClick={() => archiviereMut.mutate(s.id)}>
+                               <Archive className="w-3.5 h-3.5" />
+                             </Button>
+                             {isAdmin && (
+                               <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                                 title="Auftraggeber löschen (nur Admin)"
+                                 onClick={() => deleteMut.mutate(s.id)}>
+                                 <Trash2 className="w-3.5 h-3.5" />
+                               </Button>
+                             )}
+                           </>
                          ) : isAGArchiv ? (
                            <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground hover:text-green-600"
                              onClick={() => updateMut.mutate({ id: s.id, aktiv: true })}>

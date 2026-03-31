@@ -1,0 +1,92 @@
+{
+  "name": "Bedenken",
+  "type": "object",
+  "properties": {
+    "project_id": {
+      "type": "string",
+      "description": "Projekt-ID"
+    },
+    "typ": {
+      "type": "string",
+      "enum": [
+        "bedenken",
+        "behinderung"
+      ],
+      "default": "bedenken",
+      "description": "Bedenken oder Behinderungsanzeige"
+    },
+    "bedenken_nummer": {
+      "type": "string",
+      "description": "Automatisch vergebene Nummer (z.B. BD-001-2026)"
+    },
+    "titel": {
+      "type": "string",
+      "description": "Betreff / Titel"
+    },
+    "beschreibung": {
+      "type": "string",
+      "description": "Ausf\u00fchrliche Beschreibung / Begr\u00fcndung"
+    },
+    "eingereicht_am": {
+      "type": "string",
+      "format": "date",
+      "description": "Eingangsdatum"
+    },
+    "einreichender": {
+      "type": "string",
+      "description": "Eingereicht durch"
+    },
+    "adressat": {
+      "type": "string",
+      "description": "Adressat (Auftraggeber, Bauleitung, etc.)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "entwurf",
+        "eingereicht",
+        "best\u00e4tigt",
+        "widersprochen",
+        "erledigt"
+      ],
+      "default": "entwurf",
+      "description": "Bearbeitungsstatus"
+    },
+    "kosten_forderung": {
+      "type": "number",
+      "description": "Geforderte Kosten (\u20ac)"
+    },
+    "kosten_anerkannt": {
+      "type": "number",
+      "description": "Anerkannte Kosten (\u20ac)"
+    },
+    "termin_forderung": {
+      "type": "string",
+      "format": "date",
+      "description": "Geforderte Bauzeitverl\u00e4ngerung (Tage oder bis Datum)"
+    },
+    "termin_anerkannt": {
+      "type": "string",
+      "format": "date",
+      "description": "Anerkannte Bauzeitverl\u00e4ngerung"
+    },
+    "abrechnung_erfolgt": {
+      "type": "boolean",
+      "default": false,
+      "description": "In Abrechnung ber\u00fccksichtigt"
+    },
+    "nachtrag_id": {
+      "type": "string",
+      "description": "Verkn\u00fcpfter Nachtrag (falls vorhanden)"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Interne Notizen"
+    }
+  },
+  "required": [
+    "project_id",
+    "typ",
+    "titel"
+  ]
+}
