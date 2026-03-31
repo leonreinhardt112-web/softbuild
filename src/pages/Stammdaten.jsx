@@ -175,9 +175,22 @@ export default function Stammdaten() {
     mutationFn: (id) => base44.entities.Stammdatum.update(id, { aktiv: false }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["stammdaten"] }),
   });
+  const [deleteConfirmDialog, setDeleteConfirmDialog] = useState(null);
   const deleteMut = useMutation({
-    mutationFn: (id) => base44.entities.Stammdatum.delete(id),
+    mutationFn: async (id) => {
+      if (activeTab === "auftraggeber") {
+        // Check if AG has linked projects
+        const projekte = await base44.entities.Project.filter({ client_id: id });
+        if (projekte.length > 0) {
+          throw new Error(`Auftraggeber hat ${projekte.length} verlinkte Projekte. Bitte diese erst anpassen.`);
+        }
+      }
+      return base44.entities.Stammdatum.delete(id);
+    },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["stammdaten"] }),
+    onError: (err) => {
+      alert("Fehler: " + err.message);
+    },
   });
 
   const fixDuplicatesMut = useMutation({
@@ -217,6 +230,24 @@ export default function Stammdaten() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 animate-fade-in">
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deleteConfirmDialog} onOpenChange={(open) => !open && setDeleteConfirmDialog(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Auftraggeber wirklich löschen?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Der Auftraggeber "{deleteConfirmDialog?.name}" wird unwiederbringlich gelöscht. Projekte, die diesem Auftraggeber zugewiesen sind, müssen vorher angepasst werden.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { deleteMut.mutate(deleteConfirmDialog.id); setDeleteConfirmDialog(null); }} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Löschen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Admin: Fix Duplikate Dialog */}
       {isAdmin && (
         <AlertDialog open={showFixDialog} onOpenChange={setShowFixDialog}>
@@ -337,7 +368,7 @@ export default function Stammdaten() {
                              {isAdmin && (
                                <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive"
                                  title="Auftraggeber löschen (nur Admin)"
-                                 onClick={() => deleteMut.mutate(s.id)}>
+                                 onClick={() => setDeleteConfirmDialog(s)}>
                                  <Trash2 className="w-3.5 h-3.5" />
                                </Button>
                              )}

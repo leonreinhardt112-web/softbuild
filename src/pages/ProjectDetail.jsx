@@ -360,11 +360,7 @@ export default function ProjectDetail() {
               <ClipboardCheck className="w-3.5 h-3.5" />AFU-Prüfung
             </TabsTrigger>
           )}
-          {isPostAward && (
-            <TabsTrigger value="ausfuehrung" className="gap-1.5 text-xs">
-              <HardHat className="w-3.5 h-3.5" />Ausführung
-            </TabsTrigger>
-          )}
+
           {isPostAward && (
             <TabsTrigger value="abrechnung" className="gap-1.5 text-xs">
               <Receipt className="w-3.5 h-3.5" />Abrechnung
@@ -685,26 +681,6 @@ export default function ProjectDetail() {
               </div>
             </div>
           )}
-        </TabsContent>
-
-        {/* AUSFÜHRUNG */}
-        <TabsContent value="ausfuehrung" className="mt-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Link to={createPageUrl("Baustelle")}>
-              <Card className="hover:shadow-md transition-all cursor-pointer">
-                <CardContent className="p-6 flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center">
-                    <HardHat className="w-6 h-6 text-amber-600" />
-                  </div>
-                  <div>
-                    <p className="font-semibold">Baustelle</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">Bautagesberichte, Nachträge</p>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-muted-foreground ml-auto" />
-                </CardContent>
-              </Card>
-            </Link>
-          </div>
         </TabsContent>
 
         {/* ABRECHNUNG */}
