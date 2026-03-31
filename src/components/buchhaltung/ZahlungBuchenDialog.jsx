@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { format, parseISO, isAfter } from "date-fns";
-import { CheckCircle2, Percent } from "lucide-react";
+import { CheckCircle2, Percent, AlertTriangle } from "lucide-react";
 
 const fmt = (v) => v != null ? v.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €" : "–";
 const fmtDate = (d) => { try { return d ? format(parseISO(d), "dd.MM.yyyy") : "–"; } catch { return "–"; } };
@@ -99,7 +99,14 @@ export function EinzelZahlungDialog({ rechnung, open, onClose, onSave }) {
               type="number" step="0.01"
               value={betrag}
               onChange={e => setBetrag(e.target.value)}
+              className={parseFloat(betrag) > offen + 0.005 ? "border-red-400 focus-visible:ring-red-400" : ""}
             />
+            {parseFloat(betrag) > offen + 0.005 && (
+              <p className="flex items-center gap-1.5 text-xs text-red-600 font-medium">
+                <AlertTriangle className="w-3.5 h-3.5" />
+                Betrag überschreitet den offenen Posten um {fmt(parseFloat(betrag) - offen)} – bitte korrigieren.
+              </p>
+            )}
           </div>
           <div className="space-y-1.5">
             <Label>Zahlungsdatum</Label>
@@ -112,7 +119,7 @@ export function EinzelZahlungDialog({ rechnung, open, onClose, onSave }) {
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Abbrechen</Button>
-          <Button onClick={handleSave} className="gap-1.5">
+          <Button onClick={handleSave} disabled={parseFloat(betrag) > offen + 0.005 || (parseFloat(betrag) || 0) <= 0} className="gap-1.5">
             <CheckCircle2 className="w-4 h-4" /> Zahlung buchen
           </Button>
         </DialogFooter>
@@ -222,16 +229,17 @@ export function AKontoDialog({ kreditorName, offeneRechnungen, open, onClose, on
                 ))}
               </div>
               {verbleibend > 0.005 && (
-                <p className="text-xs text-amber-600 font-medium">
-                  ⚠ {fmt(verbleibend)} nicht zugeordnet (mehr als alle offenen Rechnungen)
-                </p>
+                <div className="flex items-center gap-1.5 text-xs text-red-600 font-medium bg-red-50 border border-red-200 rounded px-3 py-2">
+                  <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                  Betrag überschreitet den Gesamtbetrag aller offenen Rechnungen um {fmt(verbleibend)} – Zahlung nicht möglich.
+                </div>
               )}
             </div>
           )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Abbrechen</Button>
-          <Button onClick={handleSave} disabled={eingabe <= 0} className="gap-1.5">
+          <Button onClick={handleSave} disabled={eingabe <= 0 || verbleibend > 0.005} className="gap-1.5">
             <CheckCircle2 className="w-4 h-4" /> A-Konto buchen
           </Button>
         </DialogFooter>
