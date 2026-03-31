@@ -1,15 +1,33 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronRight, Sparkles } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { ChevronDown, ChevronRight, Sparkles, CheckCircle2, Lock } from "lucide-react";
 import LVUploader from "@/components/lv/LVUploader";
 import LVAnalyseErgebnisse from "@/components/lv/LVAnalyseErgebnisse";
 import LVKalkulationView from "./LVKalkulationView";
 
 export default function KalkulationTabContent({
-  project, projectId, kalkulationRef, handleLVUpdate, handleTradesDetected, queryClient
+  project, projectId, kalkulationRef, handleLVUpdate, handleTradesDetected, queryClient: externalQc
 }) {
   const [kiExpanded, setKiExpanded] = useState(false);
+  const internalQc = useQueryClient();
+  const queryClient = externalQc || internalQc;
+
+  const { data: kalkulationen = [] } = useQuery({
+    queryKey: ["kalkulation", projectId],
+    queryFn: () => base44.entities.Kalkulation.filter({ project_id: projectId }),
+    enabled: !!projectId,
+  });
+
+  const beauftrageMut = useMutation({
+    mutationFn: ({ id }) => base44.entities.Kalkulation.update(id, { status: "beauftragt" }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["kalkulation", projectId] }),
+  });
+
+  const kalk = kalkulationen[0];
+  const isBeauftragt = kalk?.status === "beauftragt";
 
   return (
     <div className="space-y-4">
@@ -63,6 +81,25 @@ export default function KalkulationTabContent({
           </div>
         )}
       </div>
+
+      {/* Beauftragt-Banner oder Button */}
+      {kalk && (
+        <div className={`flex items-center justify-between px-4 py-2.5 rounded-lg border ${isBeauftragt ? "bg-green-50 border-green-200" : "bg-amber-50 border-amber-200"}`}>
+          <div className="flex items-center gap-2 text-sm">
+            {isBeauftragt
+              ? <><Lock className="w-4 h-4 text-green-600" /><span className="font-medium text-green-800">Angebot beauftragt – Einheitspreise sind eingefroren</span></>
+              : <><span className="text-amber-800">Angebot noch nicht beauftragt. Erst nach Beauftragung kann die Abrechnung gestartet werden.</span></>
+            }
+          </div>
+          {!isBeauftragt && (
+            <Button size="sm" className="gap-1.5 bg-green-600 hover:bg-green-700 text-white shrink-0"
+              onClick={() => beauftrageMut.mutate({ id: kalk.id })}
+              disabled={beauftrageMut.isPending}>
+              <CheckCircle2 className="w-3.5 h-3.5" />Als beauftragt markieren
+            </Button>
+          )}
+        </div>
+      )}
 
       {/* Kalkulations-Tabelle */}
       <LVKalkulationView ref={kalkulationRef} project={project} />

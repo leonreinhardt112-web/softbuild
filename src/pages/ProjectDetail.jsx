@@ -385,7 +385,16 @@ export default function ProjectDetail() {
             const offeneAufgaben = aufgaben.filter(a => !["erledigt","verworfen"].includes(a.status)).length;
             const bauPct = project.fortschritt_prozent_manuell || 0;
             const latestStunden = stundenstaende[0];
-            const kalkulierteStunden = project.kalkulierte_stunden_manuell || 0;
+            // Kalkulierte Stunden: Summe aller Lohnzeilen (Menge * kosten_einheit) aus der beauftragten Kalkulation
+            const beauftragteKalk = kalkulationen.find(k => k.status === "beauftragt") || kalkulationen[0];
+            const kalkulierteStundenAusKalk = (() => {
+              if (!beauftragteKalk?.positions) return 0;
+              return beauftragteKalk.positions.reduce((total, pos) => {
+                const lohnRows = (pos.rows || []).filter(r => r.kostentyp === "Lohn");
+                return total + lohnRows.reduce((s, r) => s + (Number(r.menge || 0)), 0);
+              }, 0);
+            })();
+            const kalkulierteStunden = project.kalkulierte_stunden_manuell || kalkulierteStundenAusKalk;
             const gebuchteStunden = latestStunden?.gebuchte_stunden_gesamt || 0;
             const stundenPct = kalkulierteStunden > 0 ? Math.min(100, Math.round((gebuchteStunden / kalkulierteStunden) * 100)) : 0;
 

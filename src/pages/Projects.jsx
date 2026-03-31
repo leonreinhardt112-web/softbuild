@@ -20,6 +20,10 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const STATUS_GROUPS = {
+  beauftragt: {
+    label: "Beauftragt / Aktiv",
+    statuses: ["beauftragt", "in_ausfuehrung"],
+  },
   kalkulation: {
     label: "Kalkulation",
     statuses: ["entwurf", "kalkulation"],
@@ -27,10 +31,6 @@ const STATUS_GROUPS = {
   eingereicht: {
     label: "Eingereicht",
     statuses: ["eingereicht"],
-  },
-  beauftragt: {
-    label: "Beauftragt / Aktiv",
-    statuses: ["beauftragt", "in_ausfuehrung"],
   },
   abgeschlossen: {
     label: "Abgeschlossen",
@@ -100,7 +100,7 @@ export default function Projects() {
   const [editProject, setEditProject] = useState(null);
   const [search, setSearch] = useState("");
   const [deleteId, setDeleteId] = useState(null);
-  const [activeTab, setActiveTab] = useState("kalkulation");
+  const [activeTab, setActiveTab] = useState("beauftragt");
   const [showArchiv, setShowArchiv] = useState(false);
   const queryClient = useQueryClient();
 
@@ -193,9 +193,9 @@ export default function Projects() {
               </button>
             );
           })}
-          {/* Archiv ganz rechts */}
+          {/* Archiv nach Abgeschlossen */}
           <button onClick={() => { setShowArchiv(true); setActiveTab("alle"); }}
-            className={`ml-auto px-4 py-2.5 text-sm font-medium border-b-2 transition-all -mb-px shrink-0 border-transparent text-muted-foreground hover:text-foreground`}>
+            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-all -mb-px shrink-0 border-transparent text-muted-foreground hover:text-foreground`}>
             Archiv
             {archivCount > 0 && <span className="ml-2 text-xs px-1.5 py-0.5 rounded-full bg-secondary text-muted-foreground">{archivCount}</span>}
           </button>

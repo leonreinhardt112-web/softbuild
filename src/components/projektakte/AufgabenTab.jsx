@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Plus, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Plus, CheckCircle2, AlertTriangle, Trash2 } from "lucide-react";
 import { format, isPast, parseISO } from "date-fns";
 
 const PRIO_LABELS = { niedrig: "Niedrig", mittel: "Mittel", hoch: "Hoch", kritisch: "Kritisch" };
@@ -32,6 +32,10 @@ export default function AufgabenTab({ projectId, aufgaben }) {
   });
   const updateMut = useMutation({
     mutationFn: ({ id, data }) => base44.entities.Aufgabe.update(id, data),
+    onSuccess: () => qc.invalidateQueries(["aufgaben", projectId]),
+  });
+  const deleteMut = useMutation({
+    mutationFn: (id) => base44.entities.Aufgabe.delete(id),
     onSuccess: () => qc.invalidateQueries(["aufgaben", projectId]),
   });
 
@@ -112,6 +116,10 @@ export default function AufgabenTab({ projectId, aufgaben }) {
                         <CheckCircle2 className="w-3 h-3" />Erledigt
                       </Button>
                     )}
+                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                      onClick={()=>deleteMut.mutate(a.id)}>
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
                   </div>
                 </div>
               </CardContent>

@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Trash2, Search, Database, Users, Truck, Package, Edit2 } from "lucide-react";
+import { Plus, Archive, Trash2, Search, Database, Users, Truck, Package, Edit2 } from "lucide-react";
 
 const TYP_LABELS = {
   auftraggeber: "Auftraggeber", nachunternehmer: "Nachunternehmer", lieferant: "Lieferant",
@@ -128,12 +128,17 @@ export default function Stammdaten() {
   const createMut = useMutation({
     mutationFn: async (d) => {
       let extra = {};
-      if (d.typ === "auftraggeber" && !d.id) {
-        const all = await base44.entities.Stammdatum.filter({ typ: "auftraggeber" }, "-created_date", 1);
-        const lastNum = all.length > 0 && all[0].kundennummer
-          ? parseInt(all[0].kundennummer.replace(/\D/g, "")) || 0
-          : 0;
-        extra.kundennummer = `KD-${String(lastNum + 1).padStart(5, "0")}`;
+      if (d.typ === "auftraggeber") {
+        // Kundennummer über globalen Counter im Unternehmen-Stammdatum
+        const unternehmen = await base44.entities.Stammdatum.filter({ typ: "unternehmen" }, undefined, 1);
+        const firma = unternehmen[0];
+        const currentCounter = firma?.kundennummer_counter || 0;
+        const newCounter = currentCounter + 1;
+        extra.kundennummer = `KD-${String(newCounter).padStart(5, "0")}`;
+        // Counter erhöhen
+        if (firma) {
+          await base44.entities.Stammdatum.update(firma.id, { kundennummer_counter: newCounter });
+        }
       }
       return base44.entities.Stammdatum.create({ ...d, ...extra, kostensatz: d.kostensatz ? parseFloat(d.kostensatz) : undefined });
     },
@@ -146,6 +151,11 @@ export default function Stammdaten() {
    },
    onSuccess: () => { qc.invalidateQueries({ queryKey: ["stammdaten"] }); setShowForm(false); setEditingItem(null); },
   });
+  // Auftraggeber werden archiviert, nicht gelöscht
+  const archiviereMut = useMutation({
+    mutationFn: (id) => base44.entities.Stammdatum.update(id, { aktiv: false }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["stammdaten"] }),
+  });
   const deleteMut = useMutation({
     mutationFn: (id) => base44.entities.Stammdatum.delete(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["stammdaten"] }),
@@ -153,6 +163,7 @@ export default function Stammdaten() {
 
   const filtered = stammdaten.filter(s =>
     s.typ === activeTab &&
+    (activeTab !== "auftraggeber" || s.aktiv !== false) && // archivierte Auftraggeber ausblenden
     (s.name?.toLowerCase().includes(search.toLowerCase()) || s.kuerzel?.toLowerCase().includes(search.toLowerCase()))
   );
 
@@ -235,14 +246,22 @@ export default function Stammdaten() {
                           <td className="px-4 py-3 text-right text-xs">{s.kostensatz ? `${s.kostensatz} €/${s.einheit || "ME"}` : "–"}</td>
                         )}
                         <td className="px-4 py-3 flex gap-1">
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary"
-                            onClick={() => { setEditingItem(s); setShowForm(true); }}>
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                            onClick={() => deleteMut.mutate(s.id)}>
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </Button>
+                         <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-primary"
+                           onClick={() => { setEditingItem(s); setShowForm(true); }}>
+                           <Edit2 className="w-3.5 h-3.5" />
+                         </Button>
+                         {t.key === "auftraggeber" ? (
+                           <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-amber-600"
+                             title="Auftraggeber archivieren (Kundennummer bleibt erhalten)"
+                             onClick={() => archiviereMut.mutate(s.id)}>
+                             <Archive className="w-3.5 h-3.5" />
+                           </Button>
+                         ) : (
+                           <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                             onClick={() => deleteMut.mutate(s.id)}>
+                             <Trash2 className="w-3.5 h-3.5" />
+                           </Button>
+                         )}
                         </td>
                       </tr>
                     ))}
