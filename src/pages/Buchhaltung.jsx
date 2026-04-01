@@ -140,9 +140,9 @@ export default function Buchhaltung() {
           </TabsTrigger>
           <TabsTrigger value="mahnwesen" className="text-xs gap-1.5">
             <AlertTriangle className="w-3.5 h-3.5 text-amber-500" /> Mahnwesen
-            {rechnungen.filter(r => !["bezahlt","storniert","entwurf"].includes(r.status) && r.faellig_am && ((r.betrag_brutto||0)-(r.zahlungseingang||0)-(r.einbehalt||0))>0 && new Date() > new Date(r.faellig_am)).length > 0 && (
+            {rechnungen.filter(r => !["bezahlt","storniert","entwurf"].includes(r.status) && r.faellig_am && (r.zahlungseingang||0) === 0 && ((r.betrag_brutto||0)-(r.einbehalt||0))>0 && new Date() > new Date(r.faellig_am)).length > 0 && (
               <span className="ml-0.5 bg-red-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center font-bold">
-                {rechnungen.filter(r => !["bezahlt","storniert","entwurf"].includes(r.status) && r.faellig_am && ((r.betrag_brutto||0)-(r.zahlungseingang||0)-(r.einbehalt||0))>0 && new Date() > new Date(r.faellig_am)).length}
+                {rechnungen.filter(r => !["bezahlt","storniert","entwurf"].includes(r.status) && r.faellig_am && (r.zahlungseingang||0) === 0 && ((r.betrag_brutto||0)-(r.einbehalt||0))>0 && new Date() > new Date(r.faellig_am)).length}
               </span>
             )}
           </TabsTrigger>

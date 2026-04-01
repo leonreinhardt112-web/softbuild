@@ -14,10 +14,11 @@ const STUFE_LABELS = { 0: "Überfällig", 1: "1. Mahnung", 2: "2. Mahnung", 3: "
 export default function MahnwesenTabelle({ rechnungen, projects, stammdaten, onMahnungSave }) {
   const [selected, setSelected] = useState(null);
 
-  // Nur überfällige, nicht bezahlte Rechnungen
+  // Nur überfällige, nicht bezahlte Rechnungen (ohne Zahlungseingang = echte offene Posten)
   const ueberfaellig = rechnungen.filter(r => {
     if (["bezahlt", "storniert", "entwurf"].includes(r.status)) return false;
-    const offen = (r.betrag_brutto || 0) - (r.zahlungseingang || 0) - (r.einbehalt || 0);
+    if ((r.zahlungseingang || 0) > 0) return false; // Sobald Zahlungseingang existiert → nicht ins Mahnwesen
+    const offen = (r.betrag_brutto || 0) - (r.einbehalt || 0);
     if (offen <= 0) return false;
     if (!r.faellig_am) return false;
     return differenceInDays(new Date(), parseISO(r.faellig_am)) > 0;

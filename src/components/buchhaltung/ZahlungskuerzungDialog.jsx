@@ -134,11 +134,8 @@ export function ZahlungskuerzungDialog({ rechnung, open, onClose, onSave }) {
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 >
                   <option value="Prüfungskürzung AG">Prüfungskürzung AG / Bauherr</option>
-                  <option value="Mengenabweichung">Mengenabweichung (LV vs. Realausführung)</option>
-                  <option value="Qualitätsmängel">Qualitätsmängel</option>
-                  <option value="Baugrundrisiko">Baugrundrisiko / Mehrkosten not paid</option>
-                  <option value="Retentionsrecht">Retentionsrecht / Sicherheitseinbehalt</option>
-                  <option value="Sonstiges">Sonstiges</option>
+                  <option value="Prüfungskürzung Bauherrenvertretung">Prüfungskürzung Bauherrenvertretung</option>
+                  <option value="Sicherheitseinbehalt">Sicherheitseinbehalt / Retentionsrecht</option>
                 </select>
               </div>
 
