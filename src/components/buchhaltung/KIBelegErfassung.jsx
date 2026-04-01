@@ -140,7 +140,9 @@ Extrahiere:
       });
 
       if (existing.length > 0) {
-        const warnung = `⚠️ Duplikat erkannt:\nEine Rechnung von ${beleg.data.kreditor_name} mit Nummer ${beleg.data.rechnungsnummer} existiert bereits!\n\nTrotzdem buchen?`;
+        const existing_beleg = existing[0];
+        const datum = new Date(existing_beleg.created_date).toLocaleDateString("de-DE");
+        const warnung = `⚠️ Duplikat erkannt:\n\nEine Rechnung von ${beleg.data.kreditor_name} mit Nummer ${beleg.data.rechnungsnummer} wurde bereits am ${datum} durch ${existing_beleg.created_by} gebucht.\n\nTrotzdem nochmal buchen?`;
         if (!window.confirm(warnung)) {
           setSavingIds(prev => { const s = new Set(prev); s.delete(beleg.id); return s; });
           return;
