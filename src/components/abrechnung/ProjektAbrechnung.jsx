@@ -17,7 +17,7 @@ const STATUS_COLORS = {
 };
 const STATUS_LABELS = { entwurf: "Entwurf", freigegeben: "Freigegeben", abgerechnet: "Abgerechnet" };
 
-export default function ProjektAbrechnung({ project, kalkulationen }) {
+export default function ProjektAbrechnung({ project, kalkulationen, stammdaten }) {
   const qc = useQueryClient();
   const [showNeu, setShowNeu] = useState(false);
   const [editAufmass, setEditAufmass] = useState(null);
@@ -80,6 +80,7 @@ export default function ProjektAbrechnung({ project, kalkulationen }) {
         aufmass={editAufmass}
         project={project}
         vorherigeAufmasse={aufmasse.filter(a => a.ar_nummer < editAufmass.ar_nummer)}
+        stammdaten={stammdaten}
         onClose={() => { setEditAufmass(null); qc.invalidateQueries({ queryKey: ["aufmasse", project.id] }); }}
       />
     );

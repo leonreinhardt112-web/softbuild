@@ -175,6 +175,11 @@ export default function ProjectDetail() {
     enabled: !!projectId,
   });
 
+  const { data: stammdaten = [] } = useQuery({
+    queryKey: ["stammdaten-unternehmen"],
+    queryFn: () => base44.entities.Stammdatum.filter({ typ: "unternehmen", aktiv: true }),
+  });
+
   const updateProjectMutation = useMutation({
     mutationFn: (data) => base44.entities.Project.update(projectId, data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["project", projectId] }),
@@ -423,18 +428,40 @@ export default function ProjectDetail() {
             return (
               <div className="space-y-6">
 
-                {/* === POST-AWARD: Finanz-KPIs mit Progress-Rings === */}
+                {/* === POST-AWARD: Finanz-KPIs mit Progress-Ring + Stunden === */}
                 {isPostAward && (
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Ring pct={finanzPct} color="hsl(var(--primary))"
-                      label="Abgerechnet"
-                      sub={`${fmt(abgerechnet)} von ${auftragssumme ? fmt(auftragssumme) : "–"}`} />
-                    <Ring pct={bauPct} color="hsl(var(--chart-2))"
-                      label="Baufortschritt"
-                      sub={bauPct > 0 ? `${bauPct}% fertiggestellt` : "Manuell pflegbar"} />
-                    <Ring pct={stundenPct} color="hsl(var(--chart-3))"
+                      label={`Abgerechnet: ${fmt(abgerechnet)} von ${auftragssumme ? fmt(auftragssumme) : "–"}`}
+                      sub={`${fmt(offen)} noch offen`} />
+                    <Ring pct={stundenPct} color={stundenPct > 90 ? "#ef4444" : stundenPct > 70 ? "#f59e0b" : "#22c55e"}
                       label="Stunden"
-                      sub={kalkulierteStunden > 0 ? `${gebuchteStunden}h / ${kalkulierteStunden}h` : "Keine kalk. Stunden"} />
+                      sub={kalkulierteStunden > 0 ? `${gebuchteStunden}h gebucht / ${kalkulierteStunden}h kalk.` : "Keine kalk. Stunden hinterlegt"} />
+                  </div>
+                )}
+
+                {/* === POST-AWARD: 4 nützliche KPI-Karten === */}
+                {isPostAward && (
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    {[
+                      { title: "Noch nicht abgerechnet", value: fmt(offen), sub: auftragssumme ? `von ${fmt(auftragssumme)} AS` : undefined, icon: Euro, accent: "bg-amber-50", iconColor: "text-amber-600" },
+                      { title: "Schriftverkehr offen", value: offenerSchriftverkehr, icon: Mail, accent: "bg-blue-50", iconColor: "text-blue-600" },
+                      { title: "Offene Fristen", value: offeneFristen, sub: ueberfaelligFristen > 0 ? `${ueberfaelligFristen} überfällig` : "Alle im Plan", icon: AlarmClock, accent: ueberfaelligFristen > 0 ? "bg-red-50" : "bg-amber-50", iconColor: ueberfaelligFristen > 0 ? "text-red-500" : "text-amber-600" },
+                      { title: "Offene Aufgaben", value: offeneAufgaben, icon: ListTodo, accent: "bg-primary/10", iconColor: "text-primary" },
+                    ].map(({ title, value, sub, icon: Icon, accent, iconColor }) => (
+                      <Card key={title}>
+                        <CardContent className="p-4 flex items-start gap-3">
+                          <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${accent}`}>
+                            <Icon className={`w-4 h-4 ${iconColor}`} />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-xs text-muted-foreground">{title}</p>
+                            <p className="text-base font-bold mt-0.5 truncate">{value}</p>
+                            {sub && <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
                   </div>
                 )}
 
@@ -455,31 +482,6 @@ export default function ProjectDetail() {
                           <div>
                             <p className="text-xs text-muted-foreground">{title}</p>
                             <p className="text-base font-bold mt-0.5">{value}</p>
-                            {sub && <p className="text-xs text-red-500 mt-0.5">{sub}</p>}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-
-                {/* === POST-AWARD: Finanz-Detail-Karten === */}
-                {isPostAward && (
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    {[
-                      { title: "Auftragssumme netto", value: auftragssumme ? fmt(auftragssumme) : "–", icon: Euro, accent: "bg-primary/10", iconColor: "text-primary" },
-                      { title: "Abgerechnet", value: abgerechnet ? fmt(abgerechnet) : "–", icon: TrendingUp, accent: "bg-green-50", iconColor: "text-green-600" },
-                      { title: "Noch offen", value: fmt(offen), icon: Euro, accent: "bg-amber-50", iconColor: "text-amber-600" },
-                      { title: "Offene Fristen", value: offeneFristen, sub: ueberfaelligFristen > 0 ? `${ueberfaelligFristen} überfällig` : undefined, icon: AlarmClock, accent: ueberfaelligFristen > 0 ? "bg-red-50" : "bg-amber-50", iconColor: ueberfaelligFristen > 0 ? "text-red-500" : "text-amber-600" },
-                    ].map(({ title, value, sub, icon: Icon, accent, iconColor }) => (
-                      <Card key={title}>
-                        <CardContent className="p-4 flex items-start gap-3">
-                          <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${accent}`}>
-                            <Icon className={`w-4 h-4 ${iconColor}`} />
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-xs text-muted-foreground">{title}</p>
-                            <p className="text-base font-bold mt-0.5 truncate">{value}</p>
                             {sub && <p className="text-xs text-red-500 mt-0.5">{sub}</p>}
                           </div>
                         </CardContent>
@@ -685,7 +687,7 @@ export default function ProjectDetail() {
 
         {/* ABRECHNUNG */}
         <TabsContent value="abrechnung" className="mt-6">
-          <ProjektAbrechnung project={project} kalkulationen={kalkulationen} />
+          <ProjektAbrechnung project={project} kalkulationen={kalkulationen} stammdaten={stammdaten} />
         </TabsContent>
       </Tabs>
     </div>

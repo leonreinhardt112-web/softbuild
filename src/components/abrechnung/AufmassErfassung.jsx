@@ -6,12 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Plus, Trash2, Save, Lock, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Save, Lock, AlertTriangle, FileDown } from "lucide-react";
+import { exportRechnungPDF } from "./RechnungPdfExport";
 
 const fmt = (n) => (n || 0).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const fmtEur = (n) => (n || 0).toLocaleString("de-DE", { style: "currency", currency: "EUR" });
 
-export default function AufmassErfassung({ aufmass, project, vorherigeAufmasse, onClose }) {
+export default function AufmassErfassung({ aufmass, project, vorherigeAufmasse, onClose, stammdaten }) {
   const [positionen, setPositionen] = useState([]);
   const [datum, setDatum] = useState(aufmass.datum || "");
   const [abrechner, setAbrechner] = useState(aufmass.abrechner || "");
@@ -152,6 +153,14 @@ export default function AufmassErfassung({ aufmass, project, vorherigeAufmasse, 
     setShowStornoConfirm(true);
   };
 
+  const handlePdfExport = () => {
+    exportRechnungPDF({
+      aufmass: { ...aufmass, positionen, betrag_netto, betrag_vorperioden, betrag_aktuell, rechnungsnummer },
+      project,
+      stammdaten,
+    });
+  };
+
   const confirmStornieren = async () => {
     setShowStornoConfirm(false);
     
@@ -261,11 +270,16 @@ export default function AufmassErfassung({ aufmass, project, vorherigeAufmasse, 
               {nrLoading ? "Nummer wird gezogen…" : "Freigeben & Rechnungsnr. vergeben"}
             </Button>
           )}
-          {status === "freigegeben" && (
-            <Button size="sm" variant="destructive" onClick={handleStornieren} disabled={saveMut.isPending}>
-              Stornieren
+          {(status === "freigegeben" || status === "storniert") && (
+            <Button size="sm" variant="outline" className="gap-1.5" onClick={handlePdfExport}>
+              <FileDown className="w-4 h-4" /> PDF
             </Button>
           )}
+          {status === "freigegeben" && (
+             <Button size="sm" variant="destructive" onClick={handleStornieren} disabled={saveMut.isPending}>
+               Stornieren
+             </Button>
+           )}
         </div>
       </div>
 
@@ -295,7 +309,7 @@ export default function AufmassErfassung({ aufmass, project, vorherigeAufmasse, 
         </div>
         <div className="sm:col-span-2 flex items-end gap-3">
           <div className="flex-1 bg-muted/40 rounded-lg px-3 py-2">
-            <p className="text-xs text-muted-foreground">Diese Periode</p>
+            <p className="text-xs text-muted-foreground">Zuwachs</p>
             <p className="font-bold text-primary text-sm">{fmtEur(betrag_aktuell)}</p>
           </div>
           <div className="flex-1 bg-muted/40 rounded-lg px-3 py-2">
@@ -394,7 +408,7 @@ export default function AufmassErfassung({ aufmass, project, vorherigeAufmasse, 
               <p className="font-semibold">{fmtEur(betrag_vorperioden)}</p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Diese Periode</p>
+              <p className="text-xs text-muted-foreground">Zuwachs</p>
               <p className="font-semibold text-primary">{fmtEur(betrag_aktuell)}</p>
             </div>
             <div>

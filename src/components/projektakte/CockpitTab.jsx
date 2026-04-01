@@ -1,7 +1,7 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Euro, Clock, FileText, AlertTriangle, TrendingUp, Mail } from "lucide-react";
+import { Euro, Clock, FileText, AlertTriangle, TrendingUp, Mail, Hammer, Receipt, AlertCircle } from "lucide-react";
 import { format, isPast, parseISO } from "date-fns";
 
 function ProgressRing({ percent, color = "#3b82f6", size = 80 }) {
@@ -40,11 +40,13 @@ function StatCard({ title, value, sub, icon: Icon, accent }) {
 
 export default function CockpitTab({ project, rechnungen, fristen, schriftverkehr, dokumente, stundenstand }) {
   const auftragssumme = project.auftragssumme_netto || project.auftragssumme || 0;
-  const abgerechnet = rechnungen.filter(r => ["gestellt","teilbezahlt","bezahlt"].includes(r.status))
+  const abgerechnet = rechnungen.filter(r => ["gestellt","teilbezahlt","bezahlt"].includes(r.status) && !r.rechnungsnummer?.startsWith("STORNO"))
     .reduce((s, r) => s + (r.betrag_netto || 0), 0);
+  const eingegangen = rechnungen.filter(r => ["teilbezahlt","bezahlt"].includes(r.status))
+    .reduce((s, r) => s + (r.zahlungseingang || 0), 0);
+  const ausstehendeZahlungen = abgerechnet * 1.19 - eingegangen; // brutto ausstehend
   const offen = Math.max(0, auftragssumme - abgerechnet);
   const finanzFortschritt = auftragssumme > 0 ? Math.min(100, (abgerechnet / auftragssumme) * 100) : 0;
-  const bauFortschritt = project.fortschritt_prozent_manuell || 0;
 
   const naechsteFrist = fristen
     .filter(f => f.status !== "erledigt" && f.datum)
@@ -59,34 +61,57 @@ export default function CockpitTab({ project, rechnungen, fristen, schriftverkeh
   const kalkStunden = project.kalkulierte_stunden_manuell || 0;
   const stundenProzent = kalkStunden > 0 ? Math.min(100, (gebucht / kalkStunden) * 100) : 0;
   const stundenFarbe = stundenProzent > 90 ? "#ef4444" : stundenProzent > 70 ? "#f59e0b" : "#22c55e";
+  const stundenKostenSatz = 55; // Annahme €/h – kann später aus Stammdaten kommen
+  const stundenKosten = gebucht * stundenKostenSatz;
+
+  const anzahlRechnungen = rechnungen.filter(r => !r.rechnungsnummer?.startsWith("STORNO")).length;
+  const anzahlStorniert = rechnungen.filter(r => r.rechnungsnummer?.startsWith("STORNO")).length;
 
   const fmt = (n) => n.toLocaleString("de-DE", { style: "currency", currency: "EUR" });
 
   return (
     <div className="space-y-6">
-      {/* KPI Row */}
+      {/* KPI Row – 4 nützliche Werte */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Auftragssumme netto" value={auftragssumme ? fmt(auftragssumme) : "–"} icon={Euro} />
-        <StatCard title="Abgerechnet" value={abgerechnet ? fmt(abgerechnet) : "–"}
-          sub={auftragssumme ? `${Math.round(finanzFortschritt)}% der Auftragssumme` : undefined} icon={TrendingUp} />
-        <StatCard title="Offen (Abrechnung)" value={auftragssumme ? fmt(offen) : "–"} icon={Euro} accent="bg-amber-50" />
-        <StatCard title="Dokumente" value={dokumente.length} sub={`${dokumente.filter(d=>d.wichtig).length} als wichtig markiert`} icon={FileText} />
+        <StatCard
+          title="Abgerechnet (netto)"
+          value={abgerechnet ? fmt(abgerechnet) : "–"}
+          sub={auftragssumme ? `von ${fmt(auftragssumme)} · ${Math.round(finanzFortschritt)}%` : "Keine Auftragssumme"}
+          icon={Receipt}
+        />
+        <StatCard
+          title="Noch nicht abgerechnet"
+          value={auftragssumme ? fmt(offen) : "–"}
+          sub={auftragssumme ? `verbleibendes Potential` : undefined}
+          icon={Euro}
+          accent="bg-amber-50"
+        />
+        <StatCard
+          title="Ausstehende Zahlungen"
+          value={ausstehendeZahlungen > 0.01 ? fmt(ausstehendeZahlungen) : "–"}
+          sub={ausstehendeZahlungen > 0.01 ? "Gestellte Rechnungen, noch nicht bezahlt" : "Alles beglichen"}
+          icon={AlertCircle}
+          accent={ausstehendeZahlungen > 0.01 ? "bg-red-50" : "bg-green-50"}
+        />
+        <StatCard
+          title="Dokumente"
+          value={dokumente.length}
+          sub={`${dokumente.filter(d=>d.wichtig).length} wichtig · ${anzahlRechnungen} Rechnungen${anzahlStorniert > 0 ? ` · ${anzahlStorniert} storniert` : ""}`}
+          icon={FileText}
+        />
       </div>
 
       {/* Fortschritt + Stunden */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm">Finanzfortschritt</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-sm">Abrechnungsfortschritt</CardTitle></CardHeader>
           <CardContent className="flex items-center gap-4">
             <ProgressRing percent={finanzFortschritt} color="#3b82f6" />
-            <div className="text-sm text-muted-foreground">Abgerechnet vs. Auftragssumme</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm">Baulicher Fortschritt</CardTitle></CardHeader>
-          <CardContent className="flex items-center gap-4">
-            <ProgressRing percent={bauFortschritt} color="#22c55e" />
-            <div className="text-xs text-muted-foreground">Manuell gepflegt<br />(Feld: fortschritt_prozent_manuell)</div>
+            <div>
+              <p className="text-sm font-semibold">{fmt(abgerechnet)} abgerechnet</p>
+              <p className="text-xs text-muted-foreground mt-0.5">von {auftragssumme ? fmt(auftragssumme) : "–"} Auftragssumme</p>
+              <p className="text-xs text-muted-foreground">{fmt(offen)} noch offen</p>
+            </div>
           </CardContent>
         </Card>
         <Card>
@@ -95,10 +120,11 @@ export default function CockpitTab({ project, rechnungen, fristen, schriftverkeh
             <ProgressRing percent={stundenProzent} color={stundenFarbe} />
             <div>
               <p className="text-sm font-semibold">{gebucht} h gebucht</p>
-              <p className="text-xs text-muted-foreground">{kalkStunden > 0 ? `von ${kalkStunden} h kalk.` : "Keine kalk. Stunden hinterlegt"}</p>
+              <p className="text-xs text-muted-foreground">{kalkStunden > 0 ? `von ${kalkStunden} h kalkuliert` : "Keine kalk. Stunden hinterlegt"}</p>
               {stundenstand?.import_datum && (
                 <p className="text-xs text-muted-foreground mt-1">Stand: {format(parseISO(stundenstand.import_datum), "dd.MM.yyyy")}</p>
               )}
+              {stundenProzent > 90 && <p className="text-xs text-red-600 font-medium mt-1">⚠ Stunden fast ausgeschöpft</p>}
             </div>
           </CardContent>
         </Card>
