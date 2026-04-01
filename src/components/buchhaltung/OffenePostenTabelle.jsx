@@ -29,6 +29,12 @@ export default function OffenePostenTabelle({ rows, typ, projects, aufmasse = []
     qc.invalidateQueries({ queryKey: ["rechnungen"] });
   };
 
+  const handleDeleteEingangsRechnung = async (r) => {
+    if (!window.confirm(`Eingangsrechnung "${r.rechnungsnummer}" wirklich löschen?`)) return;
+    await base44.entities.EingangsRechnung.delete(r.id);
+    qc.invalidateQueries({ queryKey: ["eingangsRechnungen"] });
+  };
+
   if (isLoading) return <div className="space-y-2 p-4">{Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}</div>;
   if (!rows.length) return <p className="text-sm text-muted-foreground py-10 text-center">Keine offenen Posten vorhanden</p>;
 
@@ -117,6 +123,13 @@ export default function OffenePostenTabelle({ rows, typ, projects, aufmasse = []
                     <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
                       title="Rechnung löschen (Admin)"
                       onClick={() => handleDeleteRechnung(r)}>
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  )}
+                  {!isDebitor && isAdmin && (
+                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                      title="Eingangsrechnung löschen (Admin)"
+                      onClick={() => handleDeleteEingangsRechnung(r)}>
                       <Trash2 className="w-3.5 h-3.5" />
                     </Button>
                   )}
