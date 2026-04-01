@@ -54,8 +54,19 @@ export default function ProjektAbrechnung({ project, kalkulationen, stammdaten }
   });
 
   const deleteMut = useMutation({
-    mutationFn: (id) => base44.entities.Aufmass.delete(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["aufmasse", project.id] }); setDeleteConfirm(null); },
+    mutationFn: async (aufmass) => {
+      // Auch verknüpfte Rechnung löschen, falls vorhanden
+      if (aufmass.rechnung_id) {
+        try { await base44.entities.Rechnung.delete(aufmass.rechnung_id); } catch {}
+      }
+      return base44.entities.Aufmass.delete(aufmass.id);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["aufmasse", project.id] });
+      qc.invalidateQueries({ queryKey: ["rechnungen"] });
+      qc.invalidateQueries({ queryKey: ["rechnungen", project.id] });
+      setDeleteConfirm(null);
+    },
   });
 
   const createSchlussrechnungMut = useMutation({
@@ -175,7 +186,7 @@ export default function ProjektAbrechnung({ project, kalkulationen, stammdaten }
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => deleteConfirm?.id && deleteMut.mutate(deleteConfirm.id)}>Löschen</AlertDialogAction>
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => deleteConfirm?.id && deleteMut.mutate(deleteConfirm)}>Löschen</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
