@@ -50,7 +50,10 @@ function ProjectCard({ project, onEdit, onDelete }) {
               </div>
               <div className="min-w-0">
                 <h3 className="font-semibold text-sm text-foreground truncate">{project.project_name}</h3>
-                <p className="text-xs text-muted-foreground mt-0.5">{project.project_number}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {project.project_number}
+                  {project.auftragssumme_netto ? <span className="ml-2 font-medium text-foreground">{project.auftragssumme_netto.toLocaleString("de-DE", { style: "currency", currency: "EUR" })}</span> : project.auftragssumme ? <span className="ml-2 font-medium text-foreground">{project.auftragssumme.toLocaleString("de-DE", { style: "currency", currency: "EUR" })}</span> : null}
+                </p>
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5 text-xs text-muted-foreground">
                   {project.client && (
                     <span className="flex items-center gap-1">

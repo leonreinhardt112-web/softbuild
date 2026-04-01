@@ -40,21 +40,24 @@ export function exportRechnungPDF({ aufmass, project, stammdaten }) {
 
   // 3. Rechts: Dokumenttitel + Metadaten – exakt wie Angebot-Layout
   const infoBoxX = W / 2 + 10;
-  // Titel groß, rechtsbündig
+  // Titel groß, rechtsbündig (wie Angebot aber größer)
   doc.setFontSize(22);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(isStorno ? 120 : 30);
   const titelText = isStorno ? "Stornorechnung" : `${aufmass.ar_nummer || ""}. Abschlagsrechnung`;
-  doc.text(titelText, W - margin, y + 14, { align: "right" });
+  doc.text(titelText, W - margin, y + 10, { align: "right" });
 
-  // Kundennummer aus Stammdaten holen
-  const clientStamm = (stammdaten || []).find(s => s.id === project.client_id || s.name === project.client);
-  const kundennummer = clientStamm?.kundennummer || project.client_id || "–";
+  // Kundennummer aus Stammdaten holen (immer kundennummer-Feld, nie die DB-ID)
+  const clientStamm = (stammdaten || []).find(s =>
+    (project.client_id && s.id === project.client_id) ||
+    (project.client && s.name === project.client && s.typ === "auftraggeber")
+  );
+  const kundennummer = clientStamm?.kundennummer || "–";
 
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
-  doc.setTextColor(60);
-  let detailY = y + 20;
+  doc.setTextColor(40);
+  let detailY = y + 17;
   const metaData = [
     ["Projekt-Nr.:", project.project_number || "–"],
     ["ABR-Nr.:", aufmass.rechnungsnummer || "–"],
@@ -63,10 +66,10 @@ export function exportRechnungPDF({ aufmass, project, stammdaten }) {
   ];
   metaData.forEach(([label, val]) => {
     doc.setFont("helvetica", label === "ABR-Nr.:" ? "bold" : "normal");
-    doc.setTextColor(label === "ABR-Nr.:" ? 30 : 60);
+    doc.setTextColor(label === "ABR-Nr.:" ? 30 : 40);
     doc.text(label, infoBoxX, detailY);
     doc.text(val, infoBoxX + 28, detailY);
-    detailY += 4.5;
+    detailY += 4;
   });
 
   // 4. Projektname fett
@@ -94,26 +97,38 @@ export function exportRechnungPDF({ aufmass, project, stammdaten }) {
   doc.text(vortext, margin, y);
   y += 6;
 
-  // === POSITIONSTABELLE ===
+  // === POSITIONSTABELLE – identisch zum Angebot-Layout ===
+  // Spaltenbreiten identisch zum Angebot
+  const COL_WIDTHS = [15, 65, 16, 13, 21, 20]; // Pos, Bezeichnung, Menge, ME, EP, GP
+  const COL_HEADERS = ["Pos.", "Bezeichnung", "Menge", "ME", "Einzelpreis", "Gesamtpreis"];
+
   const drawTableHeader = (yy) => {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(8);
     doc.setFillColor(...headerColor);
     doc.setTextColor(255, 255, 255);
     doc.rect(margin, yy - 2, contentW, 6, "F");
-    const headers = ["Pos.", "Bezeichnung", "Menge", "ME", "Einzelpreis", "Gesamtpreis"];
-    const colWidths = [18, 72, 16, 14, 24, 26];
     let xPos = margin;
-    headers.forEach((h, i) => {
+    COL_HEADERS.forEach((h, i) => {
       const align = i >= 2 ? "right" : "left";
-      const textX = align === "right" ? xPos + colWidths[i] - 2 : xPos + 2;
+      const textX = align === "right" ? xPos + COL_WIDTHS[i] - 2 : xPos + 2;
       doc.text(h, textX, yy + 2, { align });
-      xPos += colWidths[i];
+      xPos += COL_WIDTHS[i];
     });
     doc.setTextColor(0, 0, 0);
     doc.setFont("helvetica", "normal");
     return yy + 8;
   };
+
+  // Col-X-Positionen berechnen
+  const colX = [];
+  let cx = margin;
+  COL_WIDTHS.forEach(w => { colX.push(cx); cx += w; });
+  // Rechtsbündige Spalten-Endpunkte
+  const xMenge = colX[2] + COL_WIDTHS[2] - 2;
+  const xME = colX[3] + 1;
+  const xEP = colX[4] + COL_WIDTHS[4] - 2;
+  const xGP = colX[5] + COL_WIDTHS[5] - 2;
 
   // Subheader
   doc.setFontSize(8.5);
@@ -125,16 +140,20 @@ export function exportRechnungPDF({ aufmass, project, stammdaten }) {
   y = drawTableHeader(y);
 
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
+  doc.setFontSize(9);
 
   const positionen = aufmass.positionen || [];
 
+  // Positionen nach Haupttiteln (2-stellige OZ) und Untertiteln gruppieren
+  // für das rendering – identisch zur Angebots-Logik
+  const isHauptTitel = (oz) => oz && /^\d{2}$/.test(oz.trim());
+  const isUnterTitel = (oz) => oz && /^\d{2}\.\d{2}$/.test(oz.trim());
+
+  let rowIndex = 0;
   for (const pos of positionen) {
-    // Neue Seite?
     if (y > PAGE_BOTTOM - 8) {
       doc.addPage();
       y = margin;
-      // Wiederholungs-Subheader
       doc.setFontSize(8.5);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(40);
@@ -142,51 +161,82 @@ export function exportRechnungPDF({ aufmass, project, stammdaten }) {
       y += 4;
       y = drawTableHeader(y);
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(8);
+      doc.setFontSize(9);
     }
 
-    const textLines = doc.splitTextToSize(pos.short_text || "", 72);
-    const rowH = Math.max(5, textLines.length * 4.2) + 1;
+    const oz = (pos.oz || "").trim();
 
-    // Gruppenüberschrift (keine Menge → fett)
-    const isSumLine = !pos.einheit && !pos.ep;
-    if (isSumLine) {
+    // Haupttitel (z.B. "01") – farbig wie im Angebot
+    if (isHauptTitel(oz)) {
+      if (y + 6 > PAGE_BOTTOM) { doc.addPage(); y = margin; y = drawTableHeader(y); y += 2; }
       doc.setFont("helvetica", "bold");
-      doc.text(pos.oz || "", margin, y + 3);
-      const titleLines = doc.splitTextToSize(pos.short_text || "", 130);
-      doc.text(titleLines, margin + 18, y + 3);
+      doc.setFontSize(10);
+      doc.setFillColor(...headerColor);
+      doc.setTextColor(255, 255, 255);
+      doc.rect(margin, y - 2, contentW, 6, "F");
+      doc.text(oz, margin + 1, y + 2);
+      doc.text(pos.short_text || "", margin + 20, y + 2);
       doc.setFont("helvetica", "normal");
-      // Summe rechts
-      if (pos.gp_kumuliert) {
-        doc.setFont("helvetica", "bold");
-        doc.text(`Summe ${pos.oz}`, W - margin - 28, y + 3, { align: "right" });
-        doc.text(fmtEur(pos.gp_kumuliert), W - margin, y + 3, { align: "right" });
-        doc.setFont("helvetica", "normal");
-      }
-      y += rowH + 1;
+      doc.setFontSize(9);
+      doc.setTextColor(40);
+      y += 8;
       continue;
     }
 
-    doc.text(pos.oz || "", margin, y + 3);
-    doc.text(textLines, margin + 18, y + 3);
+    // Untertitel (z.B. "01.01") – heller Hintergrund wie im Angebot
+    if (isUnterTitel(oz)) {
+      if (y + 6 > PAGE_BOTTOM) { doc.addPage(); y = margin; y = drawTableHeader(y); y += 2; }
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      doc.setFillColor(230, 240, 250);
+      doc.setTextColor(40);
+      doc.rect(margin, y - 2, contentW, 6, "F");
+      doc.text(oz, margin + 1, y + 2);
+      doc.text(pos.short_text || "", margin + 20, y + 2);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(40);
+      y += 8;
+      continue;
+    }
 
-    // Menge kumuliert (=abgerechnete Menge)
+    // Normale Position
+    const textLines = doc.splitTextToSize(pos.short_text || "", COL_WIDTHS[1] - 2);
+    const rowH = Math.max(7, textLines.length * 3.5) + 2;
+
+    // Zebra-Streifen wie im Angebot
+    if (rowIndex % 2 === 1) {
+      doc.setFillColor(248, 248, 248);
+      doc.rect(margin, y - 2.5, contentW, rowH, "F");
+    }
+    rowIndex++;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(40);
+
+    doc.text(oz, margin + 1, y + 1);
+    textLines.forEach((line, idx) => doc.text(line, margin + 20, y + 1 + idx * 3.5));
+
     const mengeKum = pos.menge_kumuliert || 0;
     if (mengeKum !== 0) {
-      doc.text(fmt(mengeKum), W - margin - 72, y + 3, { align: "right" });
+      doc.text(mengeKum.toLocaleString("de-DE", { minimumFractionDigits: 2 }), xMenge, y + 1, { align: "right" });
     }
-    if (pos.einheit) doc.text(pos.einheit, W - margin - 52, y + 3);
+    if (pos.einheit) doc.text(pos.einheit, xME, y + 1);
     if (pos.ep) {
-      doc.text(fmtEur(pos.ep), W - margin - 28, y + 3, { align: "right" });
-      doc.text(fmtEur(pos.gp_kumuliert || 0), W - margin, y + 3, { align: "right" });
+      doc.text(fmtEur(pos.ep), xEP, y + 1, { align: "right" });
+      doc.setFont("helvetica", "bold");
+      doc.text(fmtEur(pos.gp_kumuliert || 0), xGP, y + 1, { align: "right" });
+      doc.setFont("helvetica", "normal");
     } else if (pos.gp_kumuliert) {
-      doc.text(fmtEur(pos.gp_kumuliert), W - margin, y + 3, { align: "right" });
+      doc.setFont("helvetica", "bold");
+      doc.text(fmtEur(pos.gp_kumuliert), xGP, y + 1, { align: "right" });
+      doc.setFont("helvetica", "normal");
     }
 
     y += rowH;
     doc.setDrawColor(220);
     doc.line(margin, y, W - margin, y);
-    doc.setDrawColor(40);
+    doc.setDrawColor(0);
     y += 1;
   }
 
