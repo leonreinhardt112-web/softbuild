@@ -133,6 +133,20 @@ Extrahiere:
   const handleSave = async (beleg) => {
     setSavingIds(prev => new Set([...prev, beleg.id]));
     try {
+      // Prüfe auf Duplikate
+      const existing = await base44.entities.EingangsRechnung.filter({
+        kreditor_name: beleg.data.kreditor_name,
+        rechnungsnummer: beleg.data.rechnungsnummer
+      });
+
+      if (existing.length > 0) {
+        const warnung = `⚠️ Duplikat erkannt:\nEine Rechnung von ${beleg.data.kreditor_name} mit Nummer ${beleg.data.rechnungsnummer} existiert bereits!\n\nTrotzdem buchen?`;
+        if (!window.confirm(warnung)) {
+          setSavingIds(prev => { const s = new Set(prev); s.delete(beleg.id); return s; });
+          return;
+        }
+      }
+
       await base44.entities.EingangsRechnung.create({
         ...beleg.data,
         betrag_netto: beleg.data.betrag_netto || 0,
