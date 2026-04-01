@@ -2,9 +2,11 @@ import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, Percent, FileDown } from "lucide-react";
+import { AlertTriangle, Percent, FileDown, Trash2 } from "lucide-react";
 import { format, isPast, isAfter, parseISO } from "date-fns";
 import { exportRechnungPDF } from "@/components/abrechnung/RechnungPdfExport";
+import { base44 } from "@/api/base44Client";
+import { useQueryClient } from "@tanstack/react-query";
 
 const fmt = (v) => v ? v.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €" : "–";
 const fmtDate = (d) => { try { return d ? format(parseISO(d), "dd.MM.yy") : "–"; } catch { return "–"; } };
@@ -14,10 +16,18 @@ const DEBITOR_STATUS_LABELS = { entwurf: "Entwurf", gestellt: "Gestellt", teilbe
 const KREDITOR_STATUS_COLORS = { eingegangen: "bg-secondary text-secondary-foreground", geprueft: "bg-blue-100 text-blue-700", freigegeben: "bg-indigo-100 text-indigo-700", teilbezahlt: "bg-amber-100 text-amber-700", bezahlt: "bg-green-100 text-green-700", gesperrt: "bg-red-100 text-red-700", storniert: "bg-gray-100 text-gray-500" };
 const KREDITOR_STATUS_LABELS = { eingegangen: "Eingegangen", geprueft: "Geprüft", freigegeben: "Freigegeben", teilbezahlt: "Teilbezahlt", bezahlt: "Bezahlt", gesperrt: "Gesperrt", storniert: "Storniert" };
 
-export default function OffenePostenTabelle({ rows, typ, projects, aufmasse = [], stammdaten = [], onZahlung, isLoading }) {
+export default function OffenePostenTabelle({ rows, typ, projects, aufmasse = [], stammdaten = [], onZahlung, isLoading, currentUser }) {
   const isDebitor = typ === "debitor";
   const STATUS_COLORS = isDebitor ? DEBITOR_STATUS_COLORS : KREDITOR_STATUS_COLORS;
   const STATUS_LABELS = isDebitor ? DEBITOR_STATUS_LABELS : KREDITOR_STATUS_LABELS;
+  const qc = useQueryClient();
+  const isAdmin = currentUser?.role === "admin";
+
+  const handleDeleteRechnung = async (r) => {
+    if (!window.confirm(`Rechnung "${r.rechnungsnummer}" wirklich löschen?`)) return;
+    await base44.entities.Rechnung.delete(r.id);
+    qc.invalidateQueries({ queryKey: ["rechnungen"] });
+  };
 
   if (isLoading) return <div className="space-y-2 p-4">{Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}</div>;
   if (!rows.length) return <p className="text-sm text-muted-foreground py-10 text-center">Keine offenen Posten vorhanden</p>;
@@ -90,6 +100,13 @@ export default function OffenePostenTabelle({ rows, typ, projects, aufmasse = []
                         }
                       }}>
                       <FileDown className="w-3.5 h-3.5" />
+                    </Button>
+                  )}
+                  {isDebitor && isAdmin && (
+                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                      title="Rechnung löschen (Admin)"
+                      onClick={() => handleDeleteRechnung(r)}>
+                      <Trash2 className="w-3.5 h-3.5" />
                     </Button>
                   )}
                   {offen > 0 && onZahlung && (

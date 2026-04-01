@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -18,6 +18,9 @@ export default function Buchhaltung() {
   const [showKreditorForm, setShowKreditorForm] = useState(false);
   const [zahlungRechnung, setZahlungRechnung] = useState(null); // für Einzelzahlung
   const [aKontoKreditor, setAKontoKreditor] = useState(null);   // für A-Konto
+  const [currentUser, setCurrentUser] = useState(null);
+
+  useEffect(() => { base44.auth.me().then(u => setCurrentUser(u)).catch(() => {}); }, []);
 
   const { data: rechnungen = [], isLoading: rLoading } = useQuery({
     queryKey: ["rechnungen"],
@@ -148,6 +151,7 @@ export default function Buchhaltung() {
                 stammdaten={stammdaten}
                 onZahlung={handleDebitorZahlung}
                 isLoading={rLoading}
+                currentUser={currentUser}
               />
             </CardContent>
           </Card>
