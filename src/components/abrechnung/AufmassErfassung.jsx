@@ -49,10 +49,11 @@ export default function AufmassErfassung({ aufmass, project, vorherigeAufmasse, 
           posMap[pp.oz] += (pp.menge_aktuell || 0);
         }
       }
+      const isPositionTitel = (oz) => (oz || "").split(".").length <= 2;
       setPositionen(aufmass.positionen.map(p => ({
         ...p,
         menge_vorperioden: posMap[p.oz] || 0,
-        aufmass_zeilen: p.aufmass_zeilen?.length ? p.aufmass_zeilen : [{ beschreibung: "", menge: 0 }],
+        aufmass_zeilen: isPositionTitel(p.oz) ? [] : (p.aufmass_zeilen?.length ? p.aufmass_zeilen : [{ beschreibung: "", menge: 0 }]),
       })));
     }
   }, [aufmass, vorherigeAufmasse]);

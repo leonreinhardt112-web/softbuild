@@ -68,23 +68,29 @@ export default function ProjektAbrechnung({ project, kalkulationen, stammdaten }
 
   const handleNeuSchlussrechnung = () => {
     if (!beauftragt) return;
+    const allePositionen = (beauftragt.positions || []).map(p => {
+      const ozParts = (p.oz || "").split(".");
+      const isTitel = ozParts.length <= 2;
+      return {
+        oz: p.oz,
+        short_text: p.short_text,
+        einheit: p.einheit || "",
+        ep: isTitel ? 0 : (p.ep || 0),
+        menge_lv: isTitel ? 0 : (p.menge || 0),
+        aufmass_zeilen: isTitel ? [] : [{ beschreibung: "", menge: 0 }],
+        menge_gesamt: 0,
+        gp_gesamt: 0,
+        _isTitel: isTitel,
+      };
+    });
     createSchlussrechnungMut.mutate({
       project_id: project.id,
       kalkulation_id: beauftragt.id,
-      ar_nummer: 9999, // Kennzeichen für Schlussrechnung
+      ar_nummer: 9999,
       bezeichnung: "Schlussrechnung",
       datum: new Date().toISOString().split("T")[0],
       status: "entwurf",
-      positionen: (beauftragt.positions || []).map(p => ({
-        oz: p.oz,
-        short_text: p.short_text,
-        einheit: p.einheit,
-        ep: p.ep || 0,
-        menge_lv: p.menge || 0,
-        aufmass_zeilen: [],
-        menge_gesamt: 0,
-        gp_gesamt: 0,
-      })),
+      positionen: allePositionen,
       notes: "schlussrechnung",
     });
   };
@@ -95,6 +101,25 @@ export default function ProjektAbrechnung({ project, kalkulationen, stammdaten }
 
   const handleNeu = () => {
     if (!beauftragt) return;
+    // Alle Positionen inkl. Titel (oz=01, oz=01.01) und echte Positionen
+    const allePositionen = (beauftragt.positions || []).map(p => {
+      const ozParts = (p.oz || "").split(".");
+      const isTitel = ozParts.length <= 2; // Haupt- oder Untertitel
+      return {
+        oz: p.oz,
+        short_text: p.short_text,
+        einheit: p.einheit || "",
+        ep: isTitel ? 0 : (p.ep || 0),
+        menge_lv: isTitel ? 0 : (p.menge || 0),
+        aufmass_zeilen: isTitel ? [] : [{ beschreibung: "", menge: 0 }],
+        menge_aktuell: 0,
+        menge_vorperioden: 0,
+        menge_kumuliert: 0,
+        gp_aktuell: 0,
+        gp_kumuliert: 0,
+        _isTitel: isTitel,
+      };
+    });
     createMut.mutate({
       project_id: project.id,
       kalkulation_id: beauftragt.id,
@@ -102,19 +127,7 @@ export default function ProjektAbrechnung({ project, kalkulationen, stammdaten }
       bezeichnung: `${naechsteNr}. Abschlagsrechnung`,
       datum: new Date().toISOString().split("T")[0],
       status: "entwurf",
-      positionen: (beauftragt.positions || []).map(p => ({
-        oz: p.oz,
-        short_text: p.short_text,
-        einheit: p.einheit,
-        ep: p.ep || 0,
-        menge_lv: p.menge || 0,
-        aufmass_zeilen: [],
-        menge_aktuell: 0,
-        menge_vorperioden: 0,
-        menge_kumuliert: 0,
-        gp_aktuell: 0,
-        gp_kumuliert: 0,
-      })),
+      positionen: allePositionen,
     });
   };
 

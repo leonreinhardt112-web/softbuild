@@ -103,6 +103,19 @@ export function exportRechnungPDF({ aufmass, project, stammdaten }) {
   doc.splitTextToSize(vortext, CW).forEach(l => { doc.text(l, ML, y); y += 4; });
   y += 2;
 
+  // Spaltenstruktur – identisch zu Angebot (KalkulationPdfExport)
+  // Pos=15, Bezeichnung=65, Menge=16, ME=13, EP=21, GP=20 → gesamt=150=CW
+  const colW = [15, 65, 16, 13, 21, 20];
+  let cx = ML;
+  const colX = colW.map(w => { const x = cx; cx += w; return x; });
+  // Rechtsbündig an Spaltenende-2mm, ME linksbündig
+  const xMenge = colX[2] + colW[2] - 2;   // rechts in Mengenspalte
+  const xME    = colX[3] + 1;              // links in ME-Spalte
+  const xEP    = colX[4] + colW[4] - 2;   // rechts in EP-Spalte
+  const xGP    = colX[5] + colW[5] - 2;   // rechts in GP-Spalte (= PW-MR-2)
+  // Bezeichnungstext darf max bis Mengenspaltenanfang reichen
+  const bezMaxW = colW[1] - 3;             // 62mm für Bezeichnung
+
   // ── TABELLEN-HEADER (identisch zu Angebot) ─────────────────────────────────
   const drawTableHeader = (yy) => {
     doc.setFont("helvetica", "bold");
@@ -111,7 +124,6 @@ export function exportRechnungPDF({ aufmass, project, stammdaten }) {
     doc.setTextColor(255, 255, 255);
     doc.rect(ML, yy - 2, CW, 6, "F");
     const headers = ["Pos.", "Bezeichnung", "Menge", "ME", "Einzelpreis", "Gesamtpreis"];
-    const colW = [15, 65, 16, 13, 21, 20];
     let xp = ML;
     headers.forEach((h, i) => {
       const align = i >= 2 ? "right" : "left";
@@ -121,15 +133,6 @@ export function exportRechnungPDF({ aufmass, project, stammdaten }) {
     doc.setTextColor(0); doc.setFont("helvetica", "normal");
     return yy + 10;
   };
-
-  // Spalten-X-Positionen
-  const colW = [15, 65, 16, 13, 21, 20];
-  let cx = ML;
-  const colX = colW.map(w => { const x = cx; cx += w; return x; });
-  const xMenge = colX[2] + colW[2] - 2;
-  const xME = colX[3] + 1;
-  const xEP = colX[4] + colW[4] - 2;
-  const xGP = colX[5] + colW[5] - 2;
 
   // Subheader-Zeile
   doc.setFontSize(8.5);
@@ -204,7 +207,7 @@ export function exportRechnungPDF({ aufmass, project, stammdaten }) {
     if (!positionenMitMenge.has(oz)) continue;
     if (y > PAGE_BOTTOM - 8) newPage();
 
-    const textLines = doc.splitTextToSize(pos.short_text || "", colW[1] - 2);
+    const textLines = doc.splitTextToSize(pos.short_text || "", bezMaxW);
     const rowH = Math.max(7, textLines.length * 3.5) + 2;
 
     if (rowIndex % 2 === 1) {
@@ -214,8 +217,10 @@ export function exportRechnungPDF({ aufmass, project, stammdaten }) {
     rowIndex++;
 
     doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(40);
+    // OZ: ab ML+1, Bezeichnung: ab ML+27 (wie Angebot: MARGIN_LEFT+27)
     doc.text(oz, ML + 1, y + 1);
     textLines.forEach((l, i) => doc.text(l, ML + 27, y + 1 + i * 3.5));
+    // Zahlen rechtsbündig in ihrer Spalte
     doc.text((pos.menge_kumuliert || 0).toLocaleString("de-DE", { minimumFractionDigits: 2 }), xMenge, y + 1, { align: "right" });
     if (pos.einheit) doc.text(pos.einheit, xME, y + 1);
     doc.text((pos.ep || 0).toLocaleString("de-DE", { minimumFractionDigits: 2 }) + " €", xEP, y + 1, { align: "right" });
