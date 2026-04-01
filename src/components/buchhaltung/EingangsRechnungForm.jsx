@@ -1,11 +1,12 @@
 import React, { useState } from "react";
+import { base44 } from "@/api/base44Client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Trash2, X } from "lucide-react";
+import { Plus, Trash2, X, FileUp, FileCheck } from "lucide-react";
 
 const KOSTENKATEGORIEN = [
   { value: "nachunternehmer", label: "Nachunternehmer" },
@@ -38,8 +39,11 @@ export default function EingangsRechnungForm({ projects = [], stammdaten = [], o
     project_id: "",
     beschreibung: "",
     notes: "",
+    datei_url: "",
+    datei_name: "",
   });
   const [kostenverteilung, setKostenverteilung] = useState([]);
+  const [uploading, setUploading] = useState(false);
 
   const set = (k, v) => setForm(f => {
     const next = { ...f, [k]: v };
@@ -76,6 +80,19 @@ export default function EingangsRechnungForm({ projects = [], stammdaten = [], o
     const data = { ...form };
     if (kostenverteilung.length > 0) data.kostenverteilung = kostenverteilung;
     onSave(data);
+  };
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      setForm(f => ({ ...f, datei_url: file_url, datei_name: file.name }));
+    } catch (err) {
+      console.error("Upload-Fehler:", err);
+    }
+    setUploading(false);
   };
 
   const kreditoren = stammdaten.filter(s => ["nachunternehmer", "lieferant"].includes(s.typ));
@@ -199,11 +216,37 @@ export default function EingangsRechnungForm({ projects = [], stammdaten = [], o
             </div>
           </div>
 
-          {/* Beschreibung */}
-          <div className="space-y-1.5">
-            <Label>Beschreibung / Leistung</Label>
-            <Input value={form.beschreibung} onChange={e => set("beschreibung", e.target.value)} placeholder="z. B. Baggerarbeiten März 2026" />
-          </div>
+          {/* Datei-Upload */}
+           <div className="space-y-1.5">
+             <Label>Rechnungs-Datei (PDF/Bild) *</Label>
+             <div className="flex gap-2">
+               <Input
+                 type="file"
+                 accept=".pdf,.jpg,.jpeg,.png"
+                 onChange={handleFileUpload}
+                 disabled={uploading}
+                 className="flex-1"
+               />
+               {form.datei_url && !uploading && (
+                 <div className="flex items-center gap-1 px-3 py-2 bg-green-50 border border-green-200 rounded-md text-xs text-green-700">
+                   <FileCheck className="w-3.5 h-3.5" />
+                   <span>Datei hochgeladen</span>
+                 </div>
+               )}
+               {uploading && (
+                 <div className="flex items-center gap-1 px-3 py-2 bg-blue-50 border border-blue-200 rounded-md text-xs text-blue-700">
+                   <FileUp className="w-3.5 h-3.5 animate-spin" />
+                   <span>Lädt...</span>
+                 </div>
+               )}
+             </div>
+           </div>
+
+           {/* Beschreibung */}
+           <div className="space-y-1.5">
+             <Label>Beschreibung / Leistung</Label>
+             <Input value={form.beschreibung} onChange={e => set("beschreibung", e.target.value)} placeholder="z. B. Baggerarbeiten März 2026" />
+           </div>
 
           {/* Notizen */}
           <div className="space-y-1.5">

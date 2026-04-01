@@ -4,9 +4,10 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, CheckCircle2, FileText } from "lucide-react";
+import { AlertTriangle, CheckCircle2, FileText, Eye, Download } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { ZahlungskuerzungDialog } from "@/components/buchhaltung/ZahlungskuerzungDialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const fmt = (v) => v ? v.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €" : "–";
 const fmtDate = (d) => { try { return d ? format(parseISO(d), "dd.MM.yy") : "–"; } catch { return "–"; } };
@@ -34,6 +35,7 @@ const STATUS_LABELS = {
 export default function EingangsrechnungenTab({ projectId, currentUser }) {
   const qc = useQueryClient();
   const [kuerzungRechnung, setKuerzungRechnung] = useState(null);
+  const [showDatei, setShowDatei] = useState(null);
 
   const { data: eingangsRechnungen = [] } = useQuery({
     queryKey: ["eingangsRechnungen-project", projectId],
@@ -97,6 +99,7 @@ export default function EingangsrechnungenTab({ projectId, currentUser }) {
               <th className="px-4 py-3 text-xs font-medium text-muted-foreground">Datum</th>
               <th className="px-4 py-3 text-xs font-medium text-muted-foreground text-right">Betrag netto</th>
               <th className="px-4 py-3 text-xs font-medium text-muted-foreground">Status</th>
+              <th className="px-4 py-3 text-xs font-medium text-muted-foreground">Datei</th>
               <th className="px-4 py-3" />
             </tr>
           </thead>
@@ -111,6 +114,20 @@ export default function EingangsrechnungenTab({ projectId, currentUser }) {
                   <Badge className={`text-[10px] ${STATUS_COLORS[r.status] || "bg-secondary"}`}>
                     {STATUS_LABELS[r.status] || r.status}
                   </Badge>
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap">
+                  {r.datei_url ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-xs gap-1"
+                      onClick={() => setShowDatei(r)}
+                    >
+                      <Eye className="w-3 h-3" />Anschauen
+                    </Button>
+                  ) : (
+                    <span className="text-[10px] text-muted-foreground">–</span>
+                  )}
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap flex items-center gap-1">
                   {r.status === "eingegangen" && (
@@ -153,14 +170,53 @@ export default function EingangsrechnungenTab({ projectId, currentUser }) {
       </div>
 
       {/* Zahlungskürzung-Dialog */}
-      <ZahlungskuerzungDialog
-        rechnung={kuerzungRechnung}
-        open={!!kuerzungRechnung}
-        onClose={() => setKuerzungRechnung(null)}
-        onSave={(id, data) => {
-          updateEingang.mutate({ id, data });
-        }}
-      />
-    </div>
-  );
-}
+       <ZahlungskuerzungDialog
+         rechnung={kuerzungRechnung}
+         open={!!kuerzungRechnung}
+         onClose={() => setKuerzungRechnung(null)}
+         onSave={(id, data) => {
+           updateEingang.mutate({ id, data });
+         }}
+       />
+
+       {/* Datei-Anschauen Dialog */}
+       <Dialog open={!!showDatei} onOpenChange={(open) => !open && setShowDatei(null)}>
+         <DialogContent className="max-w-3xl max-h-[90vh]">
+           <DialogHeader>
+             <DialogTitle>{showDatei?.rechnungsnummer} – {showDatei?.kreditor_name}</DialogTitle>
+           </DialogHeader>
+           {showDatei?.datei_url && (
+             <div className="space-y-3">
+               <div className="flex justify-end gap-2">
+                 <a
+                   href={showDatei.datei_url}
+                   download={showDatei.datei_name || `${showDatei.rechnungsnummer}.pdf`}
+                   target="_blank"
+                   rel="noreferrer"
+                   className="inline-flex items-center gap-1"
+                 >
+                   <Button size="sm" variant="outline" className="gap-1">
+                     <Download className="w-3.5 h-3.5" />Herunterladen
+                   </Button>
+                 </a>
+               </div>
+               {showDatei.datei_url.endsWith(".pdf") ? (
+                 <iframe
+                   src={showDatei.datei_url}
+                   className="w-full h-[600px] border rounded-lg"
+                   title="Rechnung anschauen"
+                 />
+               ) : (
+                 <img
+                   src={showDatei.datei_url}
+                   alt="Rechnung"
+                   className="w-full border rounded-lg max-h-[600px] object-contain"
+                 />
+               )}
+             </div>
+           )}
+         </DialogContent>
+       </Dialog>
+      </div>
+      );
+      }

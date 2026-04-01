@@ -164,6 +164,14 @@
       "type": "string",
       "description": "Beschreibung / Leistung"
     },
+    "datei_url": {
+      "type": "string",
+      "description": "URL der hochgeladenen Rechnungs-PDF oder -Datei"
+    },
+    "datei_name": {
+      "type": "string",
+      "description": "Dateiname (z.B. Rechnungsnummer oder Original-Dateiname)"
+    },
     "notes": {
       "type": "string",
       "description": "Anmerkungen"
