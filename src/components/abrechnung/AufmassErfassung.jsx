@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -23,8 +23,22 @@ export default function AufmassErfassung({ aufmass, project, vorherigeAufmasse, 
   const [showStornoConfirm, setShowStornoConfirm] = useState(false);
   const [convertLoading, setConvertLoading] = useState(false);
   const [collapsedTitles, setCollapsedTitles] = useState({});
+  const [isDirty, setIsDirty] = useState(false);
+  const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
+  const initialLoad = useRef(true);
 
   const isFreigegeben = status === "freigegeben" || status === "abgerechnet" || status === "storniert";
+
+  // Dirty-Tracking
+  useEffect(() => {
+    if (initialLoad.current) { initialLoad.current = false; return; }
+    if (!isFreigegeben) setIsDirty(true);
+  }, [positionen, datum, abrechner]);
+
+  const handleClose = () => {
+    if (isDirty && !isFreigegeben) { setShowUnsavedDialog(true); return; }
+    onClose();
+  };
 
   useEffect(() => {
     if (aufmass?.positionen) {
@@ -98,6 +112,7 @@ export default function AufmassErfassung({ aufmass, project, vorherigeAufmasse, 
 
   const handleSave = async () => {
     await saveMut.mutateAsync(buildSaveData());
+    setIsDirty(false);
   };
 
   // Rechnungsnummer automatisch ziehen (GoBD: einmalig, dann unveränderlich)
@@ -206,6 +221,23 @@ export default function AufmassErfassung({ aufmass, project, vorherigeAufmasse, 
 
   return (
     <div className="space-y-6">
+      {/* Ungespeicherte Änderungen Dialog */}
+      <AlertDialog open={showUnsavedDialog} onOpenChange={setShowUnsavedDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Ungespeicherte Änderungen</AlertDialogTitle>
+            <AlertDialogDescription>
+              Es gibt ungespeicherte Änderungen. Möchten Sie diese speichern, bevor Sie fortfahren?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <Button variant="outline" onClick={() => { setShowUnsavedDialog(false); onClose(); }}>Verwerfen</Button>
+            <AlertDialogAction onClick={async () => { await saveMut.mutateAsync(buildSaveData()); setShowUnsavedDialog(false); onClose(); }}>Speichern & Verlassen</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Bestätigungsdialog Rechnungsnummer */}
       <AlertDialog open={showNrConfirm} onOpenChange={setShowNrConfirm}>
         <AlertDialogContent>
@@ -240,7 +272,7 @@ export default function AufmassErfassung({ aufmass, project, vorherigeAufmasse, 
 
       {/* Header */}
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={onClose}><ArrowLeft className="w-4 h-4" /></Button>
+        <Button variant="ghost" size="icon" onClick={handleClose}><ArrowLeft className="w-4 h-4" /></Button>
         <div className="flex-1">
           <div className="flex items-center gap-2 flex-wrap">
             <h2 className="text-lg font-bold">{aufmass.bezeichnung}</h2>
