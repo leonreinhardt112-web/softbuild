@@ -308,6 +308,29 @@ export default function ProjectForm({ open, onOpenChange, onSave, initialData })
             )}
           </div>
 
+          {/* Zahlungsziele */}
+          <div className="space-y-1.5">
+            <Label>Zahlungsziele (VOB/B)</Label>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Abschlagsrechnungen (Tage)</p>
+                <Input type="number" min={1} max={90}
+                  value={form.zahlungsziel_ar ?? 21}
+                  onChange={e => handleChange("zahlungsziel_ar", parseInt(e.target.value) || 21)}
+                  placeholder="21" />
+                <p className="text-[10px] text-muted-foreground mt-0.5">VOB/B § 16 Abs. 1 = 21 Tage</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Schlussrechnung (Tage)</p>
+                <Input type="number" min={1} max={90}
+                  value={form.zahlungsziel_sr ?? 30}
+                  onChange={e => handleChange("zahlungsziel_sr", parseInt(e.target.value) || 30)}
+                  placeholder="30" />
+                <p className="text-[10px] text-muted-foreground mt-0.5">VOB/B § 16 Abs. 3 = 30 Tage</p>
+              </div>
+            </div>
+          </div>
+
           {/* Prüfdatum AFU */}
           <div className="space-y-1.5">
             <Label htmlFor="review_date">Prüfdatum AFU</Label>

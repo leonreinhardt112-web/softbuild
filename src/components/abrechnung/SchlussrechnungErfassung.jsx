@@ -135,7 +135,7 @@ export default function SchlussrechnungErfassung({ schlussrechnung, project, kal
       rechnungsnummer,
       rechnungsart: "schlussrechnung",
       rechnungsdatum: datum,
-      faellig_am: new Date(new Date(datum).getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+      faellig_am: new Date(new Date(datum).getTime() + (project?.zahlungsziel_sr ?? 30) * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
       positionen: positionen.map(p => ({
         oz: p.oz, short_text: p.short_text, einheit: p.einheit, ep: p.ep || 0,
         menge_kalk: p.menge_lv || 0, menge_aktuell: p.menge_gesamt || 0, gp_aktuell: p.gp_gesamt || 0,

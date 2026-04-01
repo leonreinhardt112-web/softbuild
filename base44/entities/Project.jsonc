@@ -46,6 +46,16 @@
       "default": false,
       "description": "\u00d6ffentliches Projekt"
     },
+    "zahlungsziel_ar": {
+      "type": "number",
+      "default": 21,
+      "description": "Zahlungsziel Abschlagsrechnungen in Tagen (VOB/B \u00a7 16 Abs. 1: 21 Tage)"
+    },
+    "zahlungsziel_sr": {
+      "type": "number",
+      "default": 30,
+      "description": "Zahlungsziel Schlussrechnung in Tagen (VOB/B \u00a7 16 Abs. 3: 30 Tage)"
+    },
     "auftragssumme": {
       "type": "number",
       "description": "Auftragssumme netto (\u20ac)"
