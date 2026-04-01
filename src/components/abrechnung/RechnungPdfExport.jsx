@@ -142,33 +142,42 @@ export function exportRechnungPDF({ aufmass, project, stammdaten }) {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
 
-  const positionen = aufmass.positionen || [];
+  // Nur Positionen mit tatsächlicher Menge (menge_kumuliert > 0) anzeigen
+  const allePositionen = aufmass.positionen || [];
+  const positionenMitMenge = new Set(
+    allePositionen.filter(p => (p.menge_kumuliert || 0) !== 0).map(p => p.oz)
+  );
 
-  // Positionen nach Haupttiteln (2-stellige OZ) und Untertiteln gruppieren
-  // für das rendering – identisch zur Angebots-Logik
+  // Hilfsfunktion: Prüft ob ein Unter-/Haupttitel mindestens eine sichtbare Position hat
+  const hauptTitelHatPositionen = (hauptOz) =>
+    allePositionen.some(p => p.oz && p.oz.startsWith(hauptOz + ".") && positionenMitMenge.has(p.oz));
+  const unterTitelHatPositionen = (unterOz) =>
+    allePositionen.some(p => p.oz && p.oz.startsWith(unterOz + ".") && positionenMitMenge.has(p.oz));
+
   const isHauptTitel = (oz) => oz && /^\d{2}$/.test(oz.trim());
   const isUnterTitel = (oz) => oz && /^\d{2}\.\d{2}$/.test(oz.trim());
 
-  let rowIndex = 0;
-  for (const pos of positionen) {
-    if (y > PAGE_BOTTOM - 8) {
-      doc.addPage();
-      y = margin;
-      doc.setFontSize(8.5);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(40);
-      doc.text(`Projekt-Nr.: ${project.project_number || "–"} / ABR-Nr.: ${aufmass.rechnungsnummer || "–"}`, margin, y);
-      y += 4;
-      y = drawTableHeader(y);
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(9);
-    }
+  const renderNewPage = () => {
+    doc.addPage();
+    y = margin;
+    doc.setFontSize(8.5);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(40);
+    doc.text(`Projekt-Nr.: ${project.project_number || "–"} / ABR-Nr.: ${aufmass.rechnungsnummer || "–"}`, margin, y);
+    y += 4;
+    y = drawTableHeader(y);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+  };
 
+  let rowIndex = 0;
+  for (const pos of allePositionen) {
     const oz = (pos.oz || "").trim();
 
-    // Haupttitel (z.B. "01") – farbig wie im Angebot
+    // Haupttitel: nur anzeigen wenn darunter sichtbare Positionen
     if (isHauptTitel(oz)) {
-      if (y + 6 > PAGE_BOTTOM) { doc.addPage(); y = margin; y = drawTableHeader(y); y += 2; }
+      if (!hauptTitelHatPositionen(oz)) continue;
+      if (y > PAGE_BOTTOM - 8) renderNewPage();
       doc.setFont("helvetica", "bold");
       doc.setFontSize(10);
       doc.setFillColor(...headerColor);
@@ -183,9 +192,10 @@ export function exportRechnungPDF({ aufmass, project, stammdaten }) {
       continue;
     }
 
-    // Untertitel (z.B. "01.01") – heller Hintergrund wie im Angebot
+    // Untertitel: nur anzeigen wenn darunter sichtbare Positionen
     if (isUnterTitel(oz)) {
-      if (y + 6 > PAGE_BOTTOM) { doc.addPage(); y = margin; y = drawTableHeader(y); y += 2; }
+      if (!unterTitelHatPositionen(oz)) continue;
+      if (y > PAGE_BOTTOM - 8) renderNewPage();
       doc.setFont("helvetica", "bold");
       doc.setFontSize(9);
       doc.setFillColor(230, 240, 250);
@@ -199,11 +209,14 @@ export function exportRechnungPDF({ aufmass, project, stammdaten }) {
       continue;
     }
 
-    // Normale Position
+    // Normale Position: nur anzeigen wenn Menge vorhanden
+    if (!positionenMitMenge.has(oz)) continue;
+
+    if (y > PAGE_BOTTOM - 8) renderNewPage();
+
     const textLines = doc.splitTextToSize(pos.short_text || "", COL_WIDTHS[1] - 2);
     const rowH = Math.max(7, textLines.length * 3.5) + 2;
 
-    // Zebra-Streifen wie im Angebot
     if (rowIndex % 2 === 1) {
       doc.setFillColor(248, 248, 248);
       doc.rect(margin, y - 2.5, contentW, rowH, "F");
@@ -218,20 +231,12 @@ export function exportRechnungPDF({ aufmass, project, stammdaten }) {
     textLines.forEach((line, idx) => doc.text(line, margin + 20, y + 1 + idx * 3.5));
 
     const mengeKum = pos.menge_kumuliert || 0;
-    if (mengeKum !== 0) {
-      doc.text(mengeKum.toLocaleString("de-DE", { minimumFractionDigits: 2 }), xMenge, y + 1, { align: "right" });
-    }
+    doc.text(mengeKum.toLocaleString("de-DE", { minimumFractionDigits: 2 }), xMenge, y + 1, { align: "right" });
     if (pos.einheit) doc.text(pos.einheit, xME, y + 1);
-    if (pos.ep) {
-      doc.text(fmtEur(pos.ep), xEP, y + 1, { align: "right" });
-      doc.setFont("helvetica", "bold");
-      doc.text(fmtEur(pos.gp_kumuliert || 0), xGP, y + 1, { align: "right" });
-      doc.setFont("helvetica", "normal");
-    } else if (pos.gp_kumuliert) {
-      doc.setFont("helvetica", "bold");
-      doc.text(fmtEur(pos.gp_kumuliert), xGP, y + 1, { align: "right" });
-      doc.setFont("helvetica", "normal");
-    }
+    doc.text(fmtEur(pos.ep || 0), xEP, y + 1, { align: "right" });
+    doc.setFont("helvetica", "bold");
+    doc.text(fmtEur(pos.gp_kumuliert || 0), xGP, y + 1, { align: "right" });
+    doc.setFont("helvetica", "normal");
 
     y += rowH;
     doc.setDrawColor(220);

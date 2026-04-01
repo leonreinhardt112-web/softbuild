@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,8 @@ export default function SchlussrechnungErfassung({ schlussrechnung, project, kal
   const [nrLoading, setNrLoading] = useState(false);
   const [showNrConfirm, setShowNrConfirm] = useState(false);
   const [collapsedTitles, setCollapsedTitles] = useState({});
+  const [isDirty, setIsDirty] = useState(false);
+  const initialLoad = useRef(true);
 
   const isFreigegeben = status === "freigegeben" || status === "abgerechnet" || status === "storniert";
 
@@ -53,6 +55,19 @@ export default function SchlussrechnungErfassung({ schlussrechnung, project, kal
   const saveMut = useMutation({
     mutationFn: (d) => base44.entities.Aufmass.update(schlussrechnung.id, d),
   });
+
+  // Dirty-Tracking
+  useEffect(() => {
+    if (initialLoad.current) { initialLoad.current = false; return; }
+    setIsDirty(true);
+  }, [positionen, datum, abrechner]);
+
+  const handleClose = () => {
+    if (isDirty && !isFreigegeben) {
+      if (!window.confirm("Es gibt ungespeicherte Änderungen. Trotzdem verlassen?")) return;
+    }
+    onClose();
+  };
 
   const updateZeile = (posIdx, zeileIdx, field, val) => {
     if (isFreigegeben) return;
@@ -182,7 +197,7 @@ export default function SchlussrechnungErfassung({ schlussrechnung, project, kal
 
       {/* Header */}
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={onClose}><ArrowLeft className="w-4 h-4" /></Button>
+        <Button variant="ghost" size="icon" onClick={handleClose}><ArrowLeft className="w-4 h-4" /></Button>
         <div className="flex-1">
           <div className="flex items-center gap-2 flex-wrap">
             <h2 className="text-lg font-bold">Schlussrechnung</h2>
@@ -203,8 +218,8 @@ export default function SchlussrechnungErfassung({ schlussrechnung, project, kal
         </div>
         <div className="flex gap-2">
           {!isFreigegeben && (
-            <Button variant="outline" size="sm" onClick={() => saveMut.mutate(buildSaveData())} disabled={saveMut.isPending}>
-              <Save className="w-4 h-4 mr-1" /> Speichern
+            <Button variant="outline" size="sm" onClick={() => { saveMut.mutate(buildSaveData()); setIsDirty(false); }} disabled={saveMut.isPending}>
+              <Save className="w-4 h-4 mr-1" /> Speichern{isDirty ? " *" : ""}
             </Button>
           )}
           {status === "entwurf" && (

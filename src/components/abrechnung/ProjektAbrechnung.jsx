@@ -89,7 +89,9 @@ export default function ProjektAbrechnung({ project, kalkulationen, stammdaten }
     });
   };
 
-  const naechsteNr = (aufmasse.length > 0 ? Math.max(...aufmasse.map(a => a.ar_nummer || 0)) : 0) + 1;
+  // Schlussrechnung vs AR trennen (früh definieren, damit naechsteNr es nutzen kann)
+  const arListeRaw = aufmasse.filter(a => a.notes !== "schlussrechnung" && a.ar_nummer !== 9999);
+  const naechsteNr = (arListeRaw.length > 0 ? Math.max(...arListeRaw.map(a => a.ar_nummer || 0)) : 0) + 1;
 
   const handleNeu = () => {
     if (!beauftragt) return;
@@ -116,8 +118,7 @@ export default function ProjektAbrechnung({ project, kalkulationen, stammdaten }
     });
   };
 
-  // Schlussrechnung vs AR trennen
-  const arListe = aufmasse.filter(a => a.notes !== "schlussrechnung" && a.ar_nummer !== 9999);
+  const arListe = arListeRaw;
   const schlussrechnungen = aufmasse.filter(a => a.notes === "schlussrechnung" || a.ar_nummer === 9999);
   const hatSchlussrechnung = schlussrechnungen.length > 0;
 
