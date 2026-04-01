@@ -7,7 +7,6 @@ import { base44 } from "@/api/base44Client";
 import {
   LayoutDashboard,
   FolderOpen,
-  Receipt,
   BarChart3,
   Database,
   Menu,
@@ -27,7 +26,6 @@ const NAV_ITEMS = [
   { name: "Dashboard", page: "Dashboard", icon: LayoutDashboard },
   { name: "Projekte", page: "Projects", icon: FolderOpen },
   { name: "Postfächer", page: "Postfaecher", icon: Mail },
-  { name: "Abrechnung", page: "Abrechnung", icon: Receipt },
   { name: "Buchhaltung", page: "Buchhaltung", icon: BookOpen },
   { name: "Controlling", page: "Controlling", icon: BarChart3 },
   {
@@ -52,12 +50,20 @@ function LayoutContent({ children, currentPageName }) {
   const navigate = useNavigate();
   const { unsavedState, setUnsavedState } = useUnsavedChanges();
 
-  // Track recently visited pages
+  // Track recently visited pages (with full path including query params)
   useEffect(() => {
     if (currentPageName) {
+      const fullPath = currentPageName === "ProjectDetail"
+        ? `ProjectDetail${window.location.search}`
+        : currentPageName;
       const saved = JSON.parse(localStorage.getItem("recent_pages") || "[]");
-      const filtered = saved.filter(p => p !== currentPageName);
-      const updated = [currentPageName, ...filtered].slice(0, 10);
+      // Remove duplicates based on page name (not full path) for non-ProjectDetail, for ProjectDetail keep the specific one
+      const filtered = saved.filter(p => {
+        const baseName = p.split("?")[0];
+        if (currentPageName === "ProjectDetail") return p !== fullPath;
+        return baseName !== currentPageName;
+      });
+      const updated = [fullPath, ...filtered].slice(0, 10);
       localStorage.setItem("recent_pages", JSON.stringify(updated));
     }
   }, [currentPageName]);

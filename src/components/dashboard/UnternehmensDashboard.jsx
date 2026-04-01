@@ -53,7 +53,6 @@ const PAGE_LABELS = {
   Buchhaltung: "Buchhaltung",
   Stammdaten: "Stammdaten",
   Postfaecher: "Postfächer",
-  Abrechnung: "Abrechnung",
   Baustelle: "Baustelle",
 };
 
@@ -190,15 +189,32 @@ export default function UnternehmensDashboard({ projects, rechnungen, fristen, s
               {recentPages.length === 0 ? (
                 <p className="px-4 py-3 text-xs text-muted-foreground text-center">Noch keine besuchten Seiten</p>
               ) : (
-                recentPages.slice(0, 3).map((page, i) => (
-                  <Link key={i} to={createPageUrl(page)}
-                    className="flex items-center justify-between px-4 py-2.5 hover:bg-accent/40 transition-colors group border-b border-border last:border-0">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium truncate">{PAGE_LABELS[page] || page}</p>
-                    </div>
-                    <ArrowRight className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </Link>
-                ))
+                recentPages.slice(0, 5).map((page, i) => {
+                  const baseName = page.split("?")[0];
+                  const query = page.includes("?") ? page.substring(page.indexOf("?")) : "";
+                  const params = new URLSearchParams(query);
+                  const projectId = params.get("id");
+                  const isProjectDetail = baseName === "ProjectDetail";
+                  const proj = isProjectDetail ? projects.find(p => p.id === projectId) : null;
+                  const label = isProjectDetail
+                    ? (proj ? `Projekt: ${proj.project_name}` : "Projekt (Detail)")
+                    : (PAGE_LABELS[baseName] || baseName);
+                  const href = isProjectDetail && projectId
+                    ? `/ProjectDetail?id=${projectId}`
+                    : createPageUrl(baseName);
+                  return (
+                    <Link key={i} to={href}
+                      className="flex items-center justify-between px-4 py-2.5 hover:bg-accent/40 transition-colors group border-b border-border last:border-0">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium truncate">{label}</p>
+                        {isProjectDetail && proj && (
+                          <p className="text-[10px] text-muted-foreground truncate">{proj.project_number}</p>
+                        )}
+                      </div>
+                      <ArrowRight className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </Link>
+                  );
+                })
               )}
             </CardContent>
           </Card>
