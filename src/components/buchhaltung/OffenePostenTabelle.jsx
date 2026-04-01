@@ -44,6 +44,7 @@ export default function OffenePostenTabelle({ rows, typ, projects, aufmasse = []
             <th className="px-4 py-3 text-xs font-medium text-muted-foreground">Fällig</th>
             <th className="px-4 py-3 text-xs font-medium text-muted-foreground text-right">Brutto</th>
             <th className="px-4 py-3 text-xs font-medium text-muted-foreground text-right">Offen</th>
+            {!isDebitor && <th className="px-4 py-3 text-xs font-medium text-muted-foreground">Bezahlt am</th>}
             <th className="px-4 py-3 text-xs font-medium text-muted-foreground">Status</th>
             <th className="px-4 py-3" />
           </tr>
@@ -77,6 +78,16 @@ export default function OffenePostenTabelle({ rows, typ, projects, aufmasse = []
                 <td className={`px-4 py-3 text-xs text-right font-semibold ${offen > 0 ? "text-amber-600" : "text-green-600"}`}>
                   {offen > 0 ? fmt(offen) : "–"}
                 </td>
+                {!isDebitor && (
+                  <td className="px-4 py-3 text-xs text-muted-foreground">
+                    {r.zahlungen?.length > 0
+                      ? r.zahlungen.map((z, i) => (
+                          <div key={i}>{fmtDate(z.datum)}{z.betrag ? ` (${fmt(z.betrag)})` : ""}</div>
+                        ))
+                      : (r.status === "bezahlt" && r.zahlungsausgang > 0 ? fmt(r.zahlungsausgang) : "–")
+                    }
+                  </td>
+                )}
                 <td className="px-4 py-3">
                   <Badge className={`text-[10px] ${STATUS_COLORS[r.status] || "bg-secondary"}`}>
                     {STATUS_LABELS[r.status] || r.status}
