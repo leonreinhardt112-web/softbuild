@@ -4,7 +4,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, BookOpen, TrendingUp, TrendingDown, Scale, CreditCard, AlertTriangle } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Plus, BookOpen, TrendingUp, TrendingDown, Scale, CreditCard, AlertTriangle, Eye, Download } from "lucide-react";
 import MahnwesenTabelle from "@/components/buchhaltung/MahnwesenTabelle";
 import OffenePostenTabelle from "@/components/buchhaltung/OffenePostenTabelle";
 import PartnerSaldoTabelle from "@/components/buchhaltung/PartnerSaldoTabelle";
@@ -22,6 +23,7 @@ export default function Buchhaltung() {
   const [kuerzungRechnung, setKuerzungRechnung] = useState(null); // für Zahlungskürzung (Debitoren)
   const [aKontoKreditor, setAKontoKreditor] = useState(null);   // für A-Konto
   const [currentUser, setCurrentUser] = useState(null);
+  const [showDatei, setShowDatei] = useState(null); // für Rechnungs-Datei-Anschauen
 
   useEffect(() => { base44.auth.me().then(u => setCurrentUser(u)).catch(() => {}); }, []);
 
@@ -246,6 +248,7 @@ export default function Buchhaltung() {
                 typ="kreditor"
                 projects={projects}
                 onZahlung={(r) => setZahlungRechnung(r)}
+                onShowDatei={(r) => setShowDatei(r)}
                 isLoading={eLoading}
                 currentUser={currentUser}
               />
@@ -299,13 +302,51 @@ export default function Buchhaltung() {
       />
 
       {/* A-Konto-Dialog */}
-      <AKontoDialog
-        kreditorName={aKontoKreditor}
-        offeneRechnungen={offeneKreditoren.filter(r => r.kreditor_name === aKontoKreditor)}
-        open={!!aKontoKreditor}
-        onClose={() => setAKontoKreditor(null)}
-        onSave={handleAKontoSave}
-      />
-    </div>
-  );
-}
+       <AKontoDialog
+         kreditorName={aKontoKreditor}
+         offeneRechnungen={offeneKreditoren.filter(r => r.kreditor_name === aKontoKreditor)}
+         open={!!aKontoKreditor}
+         onClose={() => setAKontoKreditor(null)}
+         onSave={handleAKontoSave}
+       />
+
+       {/* Rechnungs-Datei-Dialog */}
+       <Dialog open={!!showDatei} onOpenChange={(open) => !open && setShowDatei(null)}>
+         <DialogContent className="max-w-3xl max-h-[90vh]">
+           <DialogHeader>
+             <DialogTitle>{showDatei?.rechnungsnummer} – {showDatei?.kreditor_name}</DialogTitle>
+           </DialogHeader>
+           {showDatei?.datei_url && (
+             <div className="space-y-3">
+               <div className="flex justify-end gap-2">
+                 <a
+                   href={showDatei.datei_url}
+                   download={showDatei.datei_name || `${showDatei.rechnungsnummer}.pdf`}
+                   target="_blank"
+                   rel="noreferrer"
+                 >
+                   <Button size="sm" variant="outline" className="gap-1">
+                     <Download className="w-3.5 h-3.5" />Herunterladen
+                   </Button>
+                 </a>
+               </div>
+               {showDatei.datei_url.endsWith(".pdf") ? (
+                 <iframe
+                   src={showDatei.datei_url}
+                   className="w-full h-[600px] border rounded-lg"
+                   title="Rechnung anschauen"
+                 />
+               ) : (
+                 <img
+                   src={showDatei.datei_url}
+                   alt="Rechnung"
+                   className="w-full border rounded-lg max-h-[600px] object-contain"
+                 />
+               )}
+             </div>
+           )}
+         </DialogContent>
+       </Dialog>
+      </div>
+      );
+      }

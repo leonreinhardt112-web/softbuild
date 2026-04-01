@@ -2,7 +2,7 @@ import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, Percent, FileDown, Trash2 } from "lucide-react";
+import { AlertTriangle, Percent, FileDown, Trash2, Eye } from "lucide-react";
 import { format, isPast, isAfter, parseISO } from "date-fns";
 import { exportRechnungPDF } from "@/components/abrechnung/RechnungPdfExport";
 import { base44 } from "@/api/base44Client";
@@ -16,7 +16,7 @@ const DEBITOR_STATUS_LABELS = { entwurf: "Entwurf", gestellt: "Gestellt", teilbe
 const KREDITOR_STATUS_COLORS = { eingegangen: "bg-secondary text-secondary-foreground", geprueft: "bg-blue-100 text-blue-700", freigegeben: "bg-indigo-100 text-indigo-700", teilbezahlt: "bg-amber-100 text-amber-700", bezahlt: "bg-green-100 text-green-700", gesperrt: "bg-red-100 text-red-700", storniert: "bg-gray-100 text-gray-500" };
 const KREDITOR_STATUS_LABELS = { eingegangen: "Eingegangen", geprueft: "Geprüft", freigegeben: "Freigegeben", teilbezahlt: "Teilbezahlt", bezahlt: "Bezahlt", gesperrt: "Gesperrt", storniert: "Storniert" };
 
-export default function OffenePostenTabelle({ rows, typ, projects, aufmasse = [], stammdaten = [], onZahlung, isLoading, currentUser }) {
+export default function OffenePostenTabelle({ rows, typ, projects, aufmasse = [], stammdaten = [], onZahlung, onShowDatei, isLoading, currentUser }) {
   const isDebitor = typ === "debitor";
   const STATUS_COLORS = isDebitor ? DEBITOR_STATUS_COLORS : KREDITOR_STATUS_COLORS;
   const STATUS_LABELS = isDebitor ? DEBITOR_STATUS_LABELS : KREDITOR_STATUS_LABELS;
@@ -52,6 +52,7 @@ export default function OffenePostenTabelle({ rows, typ, projects, aufmasse = []
             <th className="px-4 py-3 text-xs font-medium text-muted-foreground text-right">Offen</th>
             {!isDebitor && <th className="px-4 py-3 text-xs font-medium text-muted-foreground">Bezahlt am</th>}
             <th className="px-4 py-3 text-xs font-medium text-muted-foreground">Status</th>
+            {!isDebitor && <th className="px-4 py-3 text-xs font-medium text-muted-foreground">Datei</th>}
             <th className="px-4 py-3" />
           </tr>
         </thead>
@@ -99,6 +100,22 @@ export default function OffenePostenTabelle({ rows, typ, projects, aufmasse = []
                     {STATUS_LABELS[r.status] || r.status}
                   </Badge>
                 </td>
+                {!isDebitor && (
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    {r.datei_url && onShowDatei ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs gap-1"
+                        onClick={() => onShowDatei(r)}
+                      >
+                        <Eye className="w-3 h-3" />Anschauen
+                      </Button>
+                    ) : (
+                      <span className="text-[10px] text-muted-foreground">–</span>
+                    )}
+                  </td>
+                )}
                 <td className="px-4 py-3 whitespace-nowrap flex items-center gap-1">
                   {isDebitor && (
                     <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground"
