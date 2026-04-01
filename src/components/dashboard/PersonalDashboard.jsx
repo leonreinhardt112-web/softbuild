@@ -49,7 +49,12 @@ function SectionCard({ title, icon: Icon, iconColor, children, count }) {
 
 // --- Bauleitung Dashboard ---
 function BauleitungDashboard({ user, meineProjekte, meineFristen, schriftverkehr, aufgaben }) {
-  const mineAufgaben = aufgaben.filter(a => !a.project_id || meineProjekte.some(p => p.id === a.project_id) || a.zugewiesen_an === user?.email);
+  const mineAufgaben = aufgaben.filter(a => {
+    const isProjectTask = a.project_id && meineProjekte.some(p => p.id === a.project_id);
+    const isNoProjectTask = !a.project_id;
+    const isAssignedToMe = a.zugewiesen_an && user?.email && a.zugewiesen_an === user.email;
+    return isProjectTask || isNoProjectTask || isAssignedToMe;
+  });
   const offeneAufgaben = mineAufgaben.filter(a => !["erledigt","verworfen"].includes(a.status));
   const heuteAufgaben = offeneAufgaben.filter(a => a.faellig_am && isToday(parseISO(a.faellig_am)));
   const ueberfaelligAufgaben = offeneAufgaben.filter(a => a.faellig_am && isPast(parseISO(a.faellig_am)) && !isToday(parseISO(a.faellig_am)));
@@ -366,7 +371,7 @@ export default function PersonalDashboard({ user, meineProjekte, alleProjekte, r
           meineProjekte={meineProjekte}
           meineFristen={fristen.filter(f => meineProjekte.some(p => p.id === f.project_id))}
           schriftverkehr={schriftverkehr.filter(s => meineProjekte.some(p => p.id === s.project_id))}
-          aufgaben={aufgaben.filter(a => !a.project_id || meineProjekte.some(p => p.id === a.project_id) || a.zugewiesen_an === user?.email)}
+          aufgaben={aufgaben}
         />
       )}
       {role === "kalkulation" && (
