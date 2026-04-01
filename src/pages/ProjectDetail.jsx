@@ -37,6 +37,7 @@ import {
 import ProjektAbrechnung from "@/components/abrechnung/ProjektAbrechnung";
 import ProjektStatusChanger from "@/components/projects/ProjektStatusChanger";
 import KalkulationTabContent from "@/components/kalkulation/KalkulationTabContent";
+import EingangsrechnungenTab from "@/components/projektakte/EingangsrechnungenTab";
 import { format } from "date-fns";
 
 const POST_AWARD_STATUSES = ["beauftragt", "in_ausfuehrung", "abgeschlossen"];
@@ -179,6 +180,9 @@ export default function ProjectDetail() {
     queryKey: ["stammdaten-unternehmen"],
     queryFn: () => base44.entities.Stammdatum.filter({ typ: "unternehmen", aktiv: true }),
   });
+
+  const [currentUser, setCurrentUser] = useState(null);
+  useEffect(() => { base44.auth.me().then(u => setCurrentUser(u)).catch(() => {}); }, []);
 
   const updateProjectMutation = useMutation({
     mutationFn: (data) => base44.entities.Project.update(projectId, data),
@@ -360,6 +364,11 @@ export default function ProjectDetail() {
             <ListTodo className="w-3.5 h-3.5" />Aufgaben
             {aufgaben.filter(a=>!["erledigt","verworfen"].includes(a.status)).length > 0 && <span className="ml-1 text-[10px] bg-primary/10 text-primary px-1 rounded">{aufgaben.filter(a=>!["erledigt","verworfen"].includes(a.status)).length}</span>}
           </TabsTrigger>
+          {isPostAward && (
+            <TabsTrigger value="eingangsrechnungen" className="gap-1.5 text-xs">
+              <Receipt className="w-3.5 h-3.5" />Eingangsrechnungen
+            </TabsTrigger>
+          )}
           {isPostAward && (
             <TabsTrigger value="afu" className="gap-1.5 text-xs">
               <ClipboardCheck className="w-3.5 h-3.5" />AFU-Prüfung
@@ -683,6 +692,11 @@ export default function ProjectDetail() {
               </div>
             </div>
           )}
+        </TabsContent>
+
+        {/* EINGANGSRECHNUNGEN (Bauleiter-Prüfung) */}
+        <TabsContent value="eingangsrechnungen" className="mt-6">
+          <EingangsrechnungenTab projectId={projectId} currentUser={currentUser} />
         </TabsContent>
 
         {/* ABRECHNUNG */}

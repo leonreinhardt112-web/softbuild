@@ -175,8 +175,20 @@ export default function Buchhaltung() {
         </TabsContent>
 
         {/* --- KREDITOREN --- */}
-        <TabsContent value="kreditoren" className="mt-4 space-y-4">
-          <KIBelegErfassung
+         <TabsContent value="kreditoren" className="mt-4 space-y-4">
+           {/* Prüfung ausstehend Badge */}
+           {eingangsRechnungen.filter(r => r.status === "eingegangen" && !["bezahlt", "storniert"].includes(r.status)).length > 0 && (
+             <Card className="border-amber-200 bg-amber-50/40">
+               <CardContent className="p-4 flex items-center gap-2">
+                 <AlertTriangle className="w-4 h-4 text-amber-600" />
+                 <p className="text-xs text-amber-700 font-semibold">
+                   {eingangsRechnungen.filter(r => r.status === "eingegangen").length} Eingangsrechnung(en) warten auf Bauleiter-Prüfung
+                 </p>
+               </CardContent>
+             </Card>
+           )}
+
+           <KIBelegErfassung
             projects={projects}
             stammdaten={stammdaten}
             onSaved={() => qc.invalidateQueries({ queryKey: ["eingangsRechnungen"] })}
@@ -219,10 +231,15 @@ export default function Buchhaltung() {
 
           <Card>
             <CardContent className="p-0">
-              <div className="px-4 py-3 border-b border-border bg-red-50/40">
+              <div className="px-4 py-3 border-b border-border bg-red-50/40 flex items-center justify-between">
                 <p className="text-xs text-red-800 font-semibold">
                   Eingangsrechnungen · alle Verbindlichkeiten
                 </p>
+                {eingangsRechnungen.filter(r => r.status === "eingegangen").length > 0 && (
+                  <span className="text-[10px] text-amber-600 font-semibold bg-amber-100 px-2 py-1 rounded">
+                    {eingangsRechnungen.filter(r => r.status === "eingegangen").length} Prüfung ausstehend
+                  </span>
+                )}
               </div>
               <OffenePostenTabelle
                 rows={eingangsRechnungen.filter(r => r.status !== "storniert")}
@@ -231,11 +248,11 @@ export default function Buchhaltung() {
                 onZahlung={(r) => setZahlungRechnung(r)}
                 isLoading={eLoading}
               />
-            </CardContent>
-          </Card>
-        </TabsContent>
+              </CardContent>
+              </Card>
+              </TabsContent>
 
-        {/* --- SALDO JE PARTNER --- */}
+              {/* --- SALDO JE PARTNER --- */}
         <TabsContent value="saldo" className="mt-4">
           <PartnerSaldoTabelle
             rechnungen={rechnungen}
