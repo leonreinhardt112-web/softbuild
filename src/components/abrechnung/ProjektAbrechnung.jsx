@@ -4,7 +4,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, FileText, Receipt, Lock, ChevronRight, AlertTriangle } from "lucide-react";
+import { Plus, FileText, Receipt, Lock, ChevronRight, AlertTriangle, Trash2 } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { format } from "date-fns";
 import AufmassErfassung from "./AufmassErfassung";
 
@@ -21,6 +22,7 @@ export default function ProjektAbrechnung({ project, kalkulationen, stammdaten }
   const qc = useQueryClient();
   const [showNeu, setShowNeu] = useState(false);
   const [editAufmass, setEditAufmass] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   // Beauftragte Kalkulation (eingefroren)
   const beauftragt = kalkulationen.find(k => k.status === "beauftragt");
@@ -44,6 +46,11 @@ export default function ProjektAbrechnung({ project, kalkulationen, stammdaten }
       setShowNeu(false);
       setEditAufmass(neu);
     },
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: (id) => base44.entities.Aufmass.delete(id),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["aufmasse", project.id] }); setDeleteConfirm(null); },
   });
 
   const naechsteNr = (aufmasse.length > 0 ? Math.max(...aufmasse.map(a => a.ar_nummer || 0)) : 0) + 1;
@@ -88,6 +95,20 @@ export default function ProjektAbrechnung({ project, kalkulationen, stammdaten }
 
   return (
     <div className="space-y-6">
+      <AlertDialog open={!!deleteConfirm} onOpenChange={(o) => !o && setDeleteConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Abschlagsrechnung löschen?</AlertDialogTitle>
+            <AlertDialogDescription>
+              „{deleteConfirm?.bezeichnung}" wird unwiderruflich gelöscht. Nur Entwürfe können gelöscht werden.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => deleteMut.mutate(deleteConfirm.id)}>Löschen</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Hinweis wenn kein beauftragtes Angebot */}
       {!beauftragt && (
@@ -152,10 +173,17 @@ export default function ProjektAbrechnung({ project, kalkulationen, stammdaten }
                    {a.betrag_netto ? <span> · {fmt(a.betrag_netto)} kumuliert</span> : null}
                  </p>
                 </div>
-                <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
-              </CardContent>
-            </Card>
-          ))}
+                <div className="flex items-center gap-1">
+                  {a.status === "entwurf" && (
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={(e) => { e.stopPropagation(); setDeleteConfirm(a); }}>
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  )}
+                  <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                </div>
+                </CardContent>
+                </Card>
+                ))}
         </div>
       )}
     </div>
