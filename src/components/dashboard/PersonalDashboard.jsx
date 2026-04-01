@@ -48,8 +48,9 @@ function SectionCard({ title, icon: Icon, iconColor, children, count }) {
 }
 
 // --- Bauleitung Dashboard ---
-function BauleitungDashboard({ meineProjekte, meineFristen, schriftverkehr, aufgaben }) {
-  const offeneAufgaben = aufgaben.filter(a => !["erledigt","verworfen"].includes(a.status));
+function BauleitungDashboard({ user, meineProjekte, meineFristen, schriftverkehr, aufgaben }) {
+  const mineAufgaben = aufgaben.filter(a => !a.project_id || meineProjekte.some(p => p.id === a.project_id) || a.zugewiesen_an === user?.email);
+  const offeneAufgaben = mineAufgaben.filter(a => !["erledigt","verworfen"].includes(a.status));
   const heuteAufgaben = offeneAufgaben.filter(a => a.faellig_am && isToday(parseISO(a.faellig_am)));
   const ueberfaelligAufgaben = offeneAufgaben.filter(a => a.faellig_am && isPast(parseISO(a.faellig_am)) && !isToday(parseISO(a.faellig_am)));
   const dieseWocheFristen = meineFristen.filter(f => f.status !== "erledigt" && f.datum && isThisWeek(parseISO(f.datum)));
@@ -361,10 +362,11 @@ export default function PersonalDashboard({ user, meineProjekte, alleProjekte, r
     <div className="space-y-6">
       {role === "bauleitung" && (
         <BauleitungDashboard
+          user={user}
           meineProjekte={meineProjekte}
           meineFristen={fristen.filter(f => meineProjekte.some(p => p.id === f.project_id))}
           schriftverkehr={schriftverkehr.filter(s => meineProjekte.some(p => p.id === s.project_id))}
-          aufgaben={aufgaben.filter(a => !a.project_id || meineProjekte.some(p => p.id === a.project_id))}
+          aufgaben={aufgaben.filter(a => !a.project_id || meineProjekte.some(p => p.id === a.project_id) || a.zugewiesen_an === user?.email)}
         />
       )}
       {role === "kalkulation" && (

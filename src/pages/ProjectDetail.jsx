@@ -566,7 +566,7 @@ export default function ProjectDetail() {
 
         {/* AUFGABEN */}
         <TabsContent value="aufgaben" className="mt-6">
-          <AufgabenTab projectId={projectId} aufgaben={aufgaben} />
+          <AufgabenTab projectId={projectId} aufgaben={aufgaben} currentUser={currentUser} />
         </TabsContent>
 
         {/* KALKULATION */}

@@ -18,7 +18,7 @@ const STATUS_LABELS = { offen: "Offen", in_bearbeitung: "In Bearbeitung", erledi
 
 const EMPTY = { titel: "", beschreibung: "", faellig_am: "", prioritaet: "mittel", status: "offen", zugewiesen_an: "", quelle_typ: "manuell", vorschlag_nur: false, manuelle_bestaetigung_erforderlich: true };
 
-export default function AufgabenTab({ projectId, aufgaben }) {
+export default function AufgabenTab({ projectId, aufgaben, currentUser }) {
   const qc = useQueryClient();
   const [filterStatus, setFilterStatus] = useState("alle");
   const [filterPrio, setFilterPrio] = useState("alle");
@@ -51,7 +51,8 @@ export default function AufgabenTab({ projectId, aufgaben }) {
 
   const isUeberfaellig = (a) => a.faellig_am && isPast(parseISO(a.faellig_am)) && !["erledigt","verworfen"].includes(a.status);
 
-  const filtered = aufgaben.filter(a => {
+  const mineAufgaben = aufgaben.filter(a => !a.project_id || a.project_id === projectId || a.zugewiesen_an === currentUser?.email);
+  const filtered = mineAufgaben.filter(a => {
     const statusOk = filterStatus === "alle" || a.status === filterStatus;
     const prioOk = filterPrio === "alle" || a.prioritaet === filterPrio;
     return statusOk && prioOk;
