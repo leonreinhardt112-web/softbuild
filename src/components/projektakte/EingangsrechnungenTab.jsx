@@ -181,7 +181,7 @@ export default function EingangsrechnungenTab({ projectId, currentUser }) {
 
        {/* Datei-Anschauen Dialog */}
        <Dialog open={!!showDatei} onOpenChange={(open) => !open && setShowDatei(null)}>
-         <DialogContent className="max-w-3xl max-h-[90vh]">
+         <DialogContent className="max-w-5xl max-h-[95vh]">
            <DialogHeader>
              <DialogTitle>{showDatei?.rechnungsnummer} – {showDatei?.kreditor_name}</DialogTitle>
            </DialogHeader>
@@ -203,14 +203,14 @@ export default function EingangsrechnungenTab({ projectId, currentUser }) {
                {showDatei.datei_url.endsWith(".pdf") ? (
                  <iframe
                    src={showDatei.datei_url}
-                   className="w-full h-[600px] border rounded-lg"
+                   className="w-full h-[750px] border rounded-lg"
                    title="Rechnung anschauen"
                  />
                ) : (
                  <img
                    src={showDatei.datei_url}
                    alt="Rechnung"
-                   className="w-full border rounded-lg max-h-[600px] object-contain"
+                   className="w-full border rounded-lg max-h-[750px] object-contain"
                  />
                )}
              </div>
