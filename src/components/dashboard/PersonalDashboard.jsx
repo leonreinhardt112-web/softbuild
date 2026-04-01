@@ -122,23 +122,28 @@ function BauleitungDashboard({ user, meineProjekte, meineFristen, schriftverkehr
         </SectionCard>
 
         {/* Offene Aufgaben */}
-        <SectionCard title="Offene Aufgaben" icon={ListTodo} iconColor="text-primary" count={offeneAufgaben.length}>
-          {offeneAufgaben.length === 0 ? <EmptyState icon={ListTodo} text="Keine offenen Aufgaben" /> : (
-            <div className="space-y-2">
-              {offeneAufgaben.slice(0, 5).map(a => (
-                <div key={a.id} className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="text-xs font-medium truncate">{a.titel}</p>
-                    {a.faellig_am && <p className={`text-[10px] ${isPast(parseISO(a.faellig_am)) ? "text-destructive" : "text-muted-foreground"}`}>
-                      Fällig: {format(parseISO(a.faellig_am), "dd.MM.yyyy")}
-                    </p>}
-                  </div>
-                  <Badge className={`text-[9px] shrink-0 ${PRIO_COLORS[a.prioritaet]}`}>{a.prioritaet}</Badge>
-                </div>
-              ))}
-            </div>
-          )}
-        </SectionCard>
+         <SectionCard title="Offene Aufgaben" icon={ListTodo} iconColor="text-primary" count={offeneAufgaben.length}>
+           {offeneAufgaben.length === 0 ? <EmptyState icon={ListTodo} text="Keine offenen Aufgaben" /> : (
+             <div className="divide-y divide-border -mx-6">
+               {offeneAufgaben.slice(0, 5).map(a => {
+                 const dest = a.project_id 
+                   ? createPageUrl(`ProjectDetail?id=${a.project_id}&tab=aufgaben`)
+                   : "#";
+                 return (
+                   <Link key={a.id} to={dest} className={`flex items-start justify-between gap-2 px-6 py-2.5 hover:bg-accent/40 transition-colors ${!a.project_id ? "cursor-default" : ""}`}>
+                     <div className="min-w-0">
+                       <p className="text-xs font-medium truncate">{a.titel}</p>
+                       {a.faellig_am && <p className={`text-[10px] ${isPast(parseISO(a.faellig_am)) ? "text-destructive" : "text-muted-foreground"}`}>
+                         Fällig: {format(parseISO(a.faellig_am), "dd.MM.yyyy")}
+                       </p>}
+                     </div>
+                     <Badge className={`text-[9px] shrink-0 ${PRIO_COLORS[a.prioritaet]}`}>{a.prioritaet}</Badge>
+                   </Link>
+                 );
+               })}
+             </div>
+           )}
+         </SectionCard>
 
         {/* Reaktionsbedarf Schriftverkehr */}
         <SectionCard title="Reaktionsbedarf" icon={Mail} iconColor="text-blue-500" count={reaktionsbedarf.length}>
@@ -221,22 +226,27 @@ function KalkulationDashboard({ meineProjekte, alleProjekte, meineFristen, aufga
         </SectionCard>
 
         <SectionCard title="Offene Aufgaben" icon={ListTodo} iconColor="text-primary" count={offeneAufgaben.length}>
-          {offeneAufgaben.length === 0 ? <EmptyState icon={ListTodo} text="Keine offenen Aufgaben" /> : (
-            <div className="space-y-2">
-              {offeneAufgaben.slice(0, 6).map(a => (
-                <div key={a.id} className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="text-xs font-medium truncate">{a.titel}</p>
-                    {a.faellig_am && <p className={`text-[10px] ${isPast(parseISO(a.faellig_am)) ? "text-destructive" : "text-muted-foreground"}`}>
-                      {format(parseISO(a.faellig_am), "dd.MM.yyyy")}
-                    </p>}
-                  </div>
-                  <Badge className={`text-[9px] shrink-0 ${PRIO_COLORS[a.prioritaet]}`}>{a.prioritaet}</Badge>
-                </div>
-              ))}
-            </div>
-          )}
-        </SectionCard>
+           {offeneAufgaben.length === 0 ? <EmptyState icon={ListTodo} text="Keine offenen Aufgaben" /> : (
+             <div className="divide-y divide-border -mx-6">
+               {offeneAufgaben.slice(0, 6).map(a => {
+                 const dest = a.project_id 
+                   ? createPageUrl(`ProjectDetail?id=${a.project_id}&tab=aufgaben`)
+                   : "#";
+                 return (
+                   <Link key={a.id} to={dest} className={`flex items-start justify-between gap-2 px-6 py-2.5 hover:bg-accent/40 transition-colors ${!a.project_id ? "cursor-default" : ""}`}>
+                     <div className="min-w-0">
+                       <p className="text-xs font-medium truncate">{a.titel}</p>
+                       {a.faellig_am && <p className={`text-[10px] ${isPast(parseISO(a.faellig_am)) ? "text-destructive" : "text-muted-foreground"}`}>
+                         {format(parseISO(a.faellig_am), "dd.MM.yyyy")}
+                       </p>}
+                     </div>
+                     <Badge className={`text-[9px] shrink-0 ${PRIO_COLORS[a.prioritaet]}`}>{a.prioritaet}</Badge>
+                   </Link>
+                 );
+               })}
+             </div>
+           )}
+         </SectionCard>
 
         <SectionCard title="Meine Projekte" icon={FileText} iconColor="text-primary" count={meineProjekte.length}>
           {meineProjekte.length === 0 ? <EmptyState icon={FileText} text="Noch keine Projekte zugeordnet" /> : (
@@ -328,17 +338,22 @@ function BuchhaltungDashboard({ rechnungen, meineFristen, aufgaben }) {
         </SectionCard>
 
         <SectionCard title="Offene Aufgaben" icon={ListTodo} iconColor="text-primary" count={offeneAufgaben.length}>
-          {offeneAufgaben.length === 0 ? <EmptyState icon={ListTodo} text="Keine offenen Aufgaben" /> : (
-            <div className="space-y-2">
-              {offeneAufgaben.slice(0, 5).map(a => (
-                <div key={a.id} className="flex items-start justify-between gap-2">
-                  <p className="text-xs font-medium truncate">{a.titel}</p>
-                  <Badge className={`text-[9px] shrink-0 ${PRIO_COLORS[a.prioritaet]}`}>{a.prioritaet}</Badge>
-                </div>
-              ))}
-            </div>
-          )}
-        </SectionCard>
+           {offeneAufgaben.length === 0 ? <EmptyState icon={ListTodo} text="Keine offenen Aufgaben" /> : (
+             <div className="divide-y divide-border -mx-6">
+               {offeneAufgaben.slice(0, 5).map(a => {
+                 const dest = a.project_id 
+                   ? createPageUrl(`ProjectDetail?id=${a.project_id}&tab=aufgaben`)
+                   : "#";
+                 return (
+                   <Link key={a.id} to={dest} className={`flex items-start justify-between gap-2 px-6 py-2.5 hover:bg-accent/40 transition-colors ${!a.project_id ? "cursor-default" : ""}`}>
+                     <p className="text-xs font-medium truncate">{a.titel}</p>
+                     <Badge className={`text-[9px] shrink-0 ${PRIO_COLORS[a.prioritaet]}`}>{a.prioritaet}</Badge>
+                   </Link>
+                 );
+               })}
+             </div>
+           )}
+         </SectionCard>
 
         <SectionCard title="Wiedervorlagen & Fristen" icon={AlarmClock} iconColor="text-amber-500" count={fristen.length}>
           {fristen.length === 0 ? <EmptyState icon={AlarmClock} text="Keine offenen Fristen" /> : (
