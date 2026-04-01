@@ -145,6 +145,21 @@
       "default": "entwurf",
       "description": "Status"
     },
+    "mahnstufe": {
+      "type": "number",
+      "default": 0,
+      "description": "Aktuelle Mahnstufe (0 = keine, 1 = 1. Mahnung, 2 = 2. Mahnung, 3 = Letzte Mahnung)"
+    },
+    "letzte_mahnung_am": {
+      "type": "string",
+      "format": "date",
+      "description": "Datum der letzten Mahnung"
+    },
+    "mahngebuehr": {
+      "type": "number",
+      "default": 0,
+      "description": "Aufgelaufene Mahngeb\u00fchren (\u20ac)"
+    },
     "notes": {
       "type": "string",
       "description": "Anmerkungen"

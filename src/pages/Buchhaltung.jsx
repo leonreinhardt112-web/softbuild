@@ -4,7 +4,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, BookOpen, TrendingUp, TrendingDown, Scale, CreditCard } from "lucide-react";
+import { Plus, BookOpen, TrendingUp, TrendingDown, Scale, CreditCard, AlertTriangle } from "lucide-react";
+import MahnwesenTabelle from "@/components/buchhaltung/MahnwesenTabelle";
 import OffenePostenTabelle from "@/components/buchhaltung/OffenePostenTabelle";
 import PartnerSaldoTabelle from "@/components/buchhaltung/PartnerSaldoTabelle";
 import EingangsRechnungForm from "@/components/buchhaltung/EingangsRechnungForm.jsx";
@@ -129,6 +130,14 @@ export default function Buchhaltung() {
           <TabsTrigger value="saldo" className="text-xs gap-1.5">
             <Scale className="w-3.5 h-3.5" /> Saldo je Partner
           </TabsTrigger>
+          <TabsTrigger value="mahnwesen" className="text-xs gap-1.5">
+            <AlertTriangle className="w-3.5 h-3.5 text-amber-500" /> Mahnwesen
+            {rechnungen.filter(r => !["bezahlt","storniert","entwurf"].includes(r.status) && r.faellig_am && ((r.betrag_brutto||0)-(r.zahlungseingang||0)-(r.einbehalt||0))>0 && new Date() > new Date(r.faellig_am)).length > 0 && (
+              <span className="ml-0.5 bg-red-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center font-bold">
+                {rechnungen.filter(r => !["bezahlt","storniert","entwurf"].includes(r.status) && r.faellig_am && ((r.betrag_brutto||0)-(r.zahlungseingang||0)-(r.einbehalt||0))>0 && new Date() > new Date(r.faellig_am)).length}
+              </span>
+            )}
+          </TabsTrigger>
         </TabsList>
 
         {/* --- DEBITOREN --- */}
@@ -225,6 +234,25 @@ export default function Buchhaltung() {
             eingangsRechnungen={eingangsRechnungen}
             projects={projects}
           />
+        </TabsContent>
+
+        {/* --- MAHNWESEN --- */}
+        <TabsContent value="mahnwesen" className="mt-4">
+          <Card>
+            <CardContent className="p-0">
+              <div className="px-4 py-3 border-b border-border bg-amber-50/40 flex items-center justify-between">
+                <p className="text-xs text-amber-800 font-semibold flex items-center gap-1.5">
+                  <AlertTriangle className="w-3.5 h-3.5" /> Überfällige Ausgangsrechnungen · Mahnwesen
+                </p>
+              </div>
+              <MahnwesenTabelle
+                rechnungen={rechnungen}
+                projects={projects}
+                stammdaten={stammdaten}
+                onMahnungSave={(id, data) => updateRechnung.mutate({ id, data })}
+              />
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
 
