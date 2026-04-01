@@ -247,6 +247,7 @@ export default function Buchhaltung() {
                 projects={projects}
                 onZahlung={(r) => setZahlungRechnung(r)}
                 isLoading={eLoading}
+                currentUser={currentUser}
               />
               </CardContent>
               </Card>
