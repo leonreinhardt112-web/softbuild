@@ -138,6 +138,8 @@ Extrahiere:
         betrag_netto: beleg.data.betrag_netto || 0,
         betrag_brutto: beleg.data.betrag_brutto || 0,
         status: "eingegangen",
+        datei_url: beleg.file_url,
+        datei_name: beleg.name,
       });
       setBelege(prev => prev.map(b => b.id === beleg.id ? { ...b, status: "gespeichert" } : b));
       if (onSaved) onSaved();
