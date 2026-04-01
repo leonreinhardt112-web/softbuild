@@ -51,9 +51,8 @@ function SectionCard({ title, icon: Icon, iconColor, children, count }) {
 function BauleitungDashboard({ user, meineProjekte, meineFristen, schriftverkehr, aufgaben }) {
   const mineAufgaben = aufgaben.filter(a => {
     const isProjectTask = a.project_id && meineProjekte.some(p => p.id === a.project_id);
-    const isNoProjectTask = !a.project_id;
     const isAssignedToMe = a.zugewiesen_an && user?.email && a.zugewiesen_an === user.email;
-    return isProjectTask || isNoProjectTask || isAssignedToMe;
+    return isProjectTask || isAssignedToMe;
   });
   const offeneAufgaben = mineAufgaben.filter(a => !["erledigt","verworfen"].includes(a.status));
   const heuteAufgaben = offeneAufgaben.filter(a => a.faellig_am && isToday(parseISO(a.faellig_am)));
