@@ -35,6 +35,10 @@ export default function Buchhaltung() {
     queryKey: ["stammdaten-kreditoren"],
     queryFn: () => base44.entities.Stammdatum.list("-created_date", 200),
   });
+  const { data: aufmasse = [] } = useQuery({
+    queryKey: ["aufmasse-all"],
+    queryFn: () => base44.entities.Aufmass.list("-datum", 500),
+  });
 
   const createEingang = useMutation({
     mutationFn: (d) => base44.entities.EingangsRechnung.create(d),
@@ -137,9 +141,11 @@ export default function Buchhaltung() {
                 </span>
               </div>
               <OffenePostenTabelle
-                rows={rechnungen.filter(r => r.status !== "storniert")}
+                rows={rechnungen}
                 typ="debitor"
                 projects={projects}
+                aufmasse={aufmasse}
+                stammdaten={stammdaten}
                 onZahlung={handleDebitorZahlung}
                 isLoading={rLoading}
               />
