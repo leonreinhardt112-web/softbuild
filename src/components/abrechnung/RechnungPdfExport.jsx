@@ -1,9 +1,9 @@
 import { jsPDF } from "jspdf";
-import { addFooterAllPages, getPageBottom } from "@/utils/pdfBriefkopf";
+import { addFooterAllPages, getPageBottom, hexToRgb } from "@/utils/pdfBriefkopf";
 
 /**
  * Erstellt ein professionelles PDF einer Abschlagsrechnung
- * im Stil des OWL-Bau-Brieflayouts.
+ * im gleichen Layout wie das Angebot.
  */
 export function exportRechnungPDF({ aufmass, project, stammdaten }) {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
@@ -16,149 +16,104 @@ export function exportRechnungPDF({ aufmass, project, stammdaten }) {
   const fmt = (n) => (n || 0).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const fmtEur = (n) => fmt(n) + " €";
 
-  // Unternehmensdaten aus Stammdaten
   const firma = (stammdaten || []).find(s => s.typ === "unternehmen" && s.aktiv) || {};
-
+  const headerColor = firma.angebot_header_farbe ? hexToRgb(firma.angebot_header_farbe) : [70, 130, 180];
   const PAGE_BOTTOM = getPageBottom(H);
 
-
-
-  const drawPageHeader = (y) => {
-    // Absenderzeile oben (klein, grau)
-    doc.setFontSize(7);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(120);
-    const absenderZeile = [firma.name, firma.briefkopf_strasse, `D-${firma.briefkopf_plz} ${firma.briefkopf_stadt}`].filter(Boolean).join(" | ");
-    doc.text(absenderZeile, margin, y);
-    return y + 8;
-  };
-
-  // ===================== SEITE 1 =====================
+  // ===================== SEITE 1 – HEADER (identisch zum Angebot) =====================
   let y = margin;
 
-  // === Rechte Seite: Firmeninfo Box ===
-  const infoBoxX = W / 2 + 10;
-  const infoBoxW = W - margin - infoBoxX;
-
-  // Firmenname bold
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(40);
-  doc.text(firma.name || "Unser Unternehmen", infoBoxX, y);
-  y += 5;
-
-  // Kategorien (kursiv, blau)
-  if (firma.qualifikation) {
-    doc.setFontSize(7.5);
-    doc.setFont("helvetica", "italic");
-    doc.setTextColor(30, 80, 160);
-    const qualLines = doc.splitTextToSize(firma.qualifikation, infoBoxW);
-    doc.text(qualLines, infoBoxX, y);
-    y += qualLines.length * 3.5 + 2;
-  }
-
-  // Absenderzeile
+  // 1. Absenderzeile oben links (klein, grau)
   doc.setFontSize(7);
   doc.setFont("helvetica", "normal");
-  doc.setTextColor(80);
-  const absenderZeile2 = [firma.name, firma.briefkopf_strasse, `D-${firma.briefkopf_plz || ""} ${firma.briefkopf_stadt || ""}`].filter(Boolean).join(" | ");
-  doc.text(absenderZeile2, margin, y + 2);
+  doc.setTextColor(120);
+  const absLine = [firma.name, firma.briefkopf_strasse, `${firma.briefkopf_plz || ""} ${firma.briefkopf_stadt || ""}`.trim()].filter(Boolean).join(" | ");
+  doc.text(absLine, margin, y);
 
-  // AR-Nummer Box (rechts oben)
-  const arBoxY = margin;
-  doc.setFontSize(20);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(isStorno ? 180 : 40);
-  doc.text(`${aufmass.ar_nummer || ""}.`, infoBoxX, arBoxY + 8);
-  doc.setFontSize(14);
-  doc.text(isStorno ? "Stornorechnung" : "Abschlagsrechnung", infoBoxX, arBoxY + 16);
-
-  // Metadaten (Projekt-Nr., ABR-Nr., Datum, Kunden-Nr.)
+  // 2. Empfängeradresse links
+  let addrY = y + 10;
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(40);
-  const metaY = arBoxY + 20;
+  const empfLines = [project.client || "–", project.location || ""].filter(Boolean);
+  empfLines.forEach(line => { doc.text(line, margin, addrY); addrY += 5; });
+
+  // 3. Rechts: Dokumenttitel + Metadaten
+  const infoBoxX = W / 2 + 10;
+  doc.setFontSize(14);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(isStorno ? 150 : 40);
+  doc.text(isStorno ? "Stornorechnung" : "Abschlagsrechnung", infoBoxX, y + 12);
+
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(40);
+  let detailY = y + 19;
   const metaData = [
     ["Projekt-Nr.:", project.project_number || "–"],
     ["ABR-Nr.:", aufmass.rechnungsnummer || "–"],
     ["Datum:", aufmass.datum ? new Date(aufmass.datum).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" }) : "–"],
     ["Kunden-Nr.:", project.client_id || "–"],
   ];
-  metaData.forEach(([label, val], i) => {
+  metaData.forEach(([label, val]) => {
     doc.setFont("helvetica", label === "ABR-Nr.:" ? "bold" : "normal");
-    doc.text(label, infoBoxX, metaY + i * 5);
-    doc.setFont("helvetica", label === "ABR-Nr.:" ? "bold" : "normal");
-    doc.text(val, infoBoxX + 25, metaY + i * 5);
+    doc.text(label, infoBoxX, detailY);
+    doc.text(val, infoBoxX + 28, detailY);
+    detailY += 4;
   });
 
-  y = margin + 18;
-
-  // === Empfängeradresse (links) ===
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(40);
-  const empfLines = [
-    project.client || "–",
-    project.location || "",
-  ].filter(Boolean);
-  empfLines.forEach(line => { doc.text(line, margin, y); y += 5; });
-
-  y = Math.max(y, metaY + metaData.length * 5 + 8);
-  y += 6;
-
-  // === Betreff / Projektname ===
+  // 4. Projektname fett
+  let projectY = Math.max(addrY, detailY) + 4;
   doc.setFontSize(9.5);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(40);
-  const projektText = [
-    project.project_name,
-    project.location ? `Vergabenummer ${project.project_number}` : "",
-  ].filter(Boolean);
-  projektText.forEach(line => { doc.text(line, margin, y); y += 4.5; });
-  y += 3;
+  const projektLines = doc.splitTextToSize(project.project_name || "", contentW * 0.6);
+  projektLines.forEach((line, idx) => { doc.text(line, margin, projectY + idx * 4.5); });
+  projectY += projektLines.length * 4.5;
+
+  // Trennlinie
+  projectY += 3;
+  doc.setDrawColor(180);
+  doc.line(margin, projectY, W - margin, projectY);
+  doc.setDrawColor(0);
+
+  y = projectY + 5;
 
   // Vortext
-  if (firma.rechnung_vortext) {
-    doc.setFontSize(9);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(60);
-    doc.text(firma.rechnung_vortext, margin, y);
-    y += 5;
-  } else {
-    doc.setFontSize(9);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(60);
-    doc.text("Vielen Dank für Ihren Auftrag, den wir gerne für Sie ausgeführt haben.", margin, y);
-    y += 5;
-  }
-  y += 2;
+  const vortext = firma.rechnung_vortext || "Vielen Dank für Ihren Auftrag, den wir gerne für Sie ausgeführt haben.";
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(60);
+  doc.text(vortext, margin, y);
+  y += 6;
 
   // === POSITIONSTABELLE ===
-  // Header-Zeile
   const drawTableHeader = (yy) => {
-    doc.setFontSize(8);
     doc.setFont("helvetica", "bold");
-    doc.setTextColor(40);
-    doc.setDrawColor(40);
-    doc.line(margin, yy, W - margin, yy);
-    yy += 4;
-    doc.text("Pos.", margin, yy);
-    doc.text("Bezeichnung", margin + 18, yy);
-    doc.text("Menge", W - margin - 72, yy, { align: "right" });
-    doc.text("ME", W - margin - 55, yy);
-    doc.text("Einzelpreis", W - margin - 28, yy, { align: "right" });
-    doc.text("Gesamtpreis", W - margin, yy, { align: "right" });
-    yy += 2;
-    doc.line(margin, yy, W - margin, yy);
-    return yy + 4;
+    doc.setFontSize(8);
+    doc.setFillColor(...headerColor);
+    doc.setTextColor(255, 255, 255);
+    doc.rect(margin, yy - 2, contentW, 6, "F");
+    const headers = ["Pos.", "Bezeichnung", "Menge", "ME", "Einzelpreis", "Gesamtpreis"];
+    const colWidths = [18, 72, 16, 14, 24, 26];
+    let xPos = margin;
+    headers.forEach((h, i) => {
+      const align = i >= 2 ? "right" : "left";
+      const textX = align === "right" ? xPos + colWidths[i] - 2 : xPos + 2;
+      doc.text(h, textX, yy + 2, { align });
+      xPos += colWidths[i];
+    });
+    doc.setTextColor(0, 0, 0);
+    doc.setFont("helvetica", "normal");
+    return yy + 8;
   };
 
-  // Projekt-Nr. / ABR-Nr. Subheader
+  // Subheader
   doc.setFontSize(8.5);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(40);
   doc.text(`Projekt-Nr.: ${project.project_number || "–"} / ABR-Nr.: ${aufmass.rechnungsnummer || "–"}`, margin, y);
-  y += 2;
+  y += 4;
 
   y = drawTableHeader(y);
 
@@ -175,8 +130,9 @@ export function exportRechnungPDF({ aufmass, project, stammdaten }) {
       // Wiederholungs-Subheader
       doc.setFontSize(8.5);
       doc.setFont("helvetica", "bold");
+      doc.setTextColor(40);
       doc.text(`Projekt-Nr.: ${project.project_number || "–"} / ABR-Nr.: ${aufmass.rechnungsnummer || "–"}`, margin, y);
-      y += 2;
+      y += 4;
       y = drawTableHeader(y);
       doc.setFont("helvetica", "normal");
       doc.setFontSize(8);

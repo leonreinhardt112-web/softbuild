@@ -105,17 +105,39 @@ export default function CompanyHeaderForm() {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="briefkopf" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="briefkopf">Briefkopf</TabsTrigger>
             <TabsTrigger value="angebot">Angebot</TabsTrigger>
             <TabsTrigger value="rechnung">Rechnung</TabsTrigger>
-            <TabsTrigger value="footer">PDF-Footer</TabsTrigger>
             <TabsTrigger value="email">E-Mail</TabsTrigger>
           </TabsList>
 
           <div className="mt-6">
-            <TabsContent value="briefkopf" className="space-y-4">
+            <TabsContent value="briefkopf" className="space-y-6">
               <CompanyBriefkopfForm form={form} setForm={setForm} />
+              <div className="border-t border-border pt-4">
+                <p className="text-xs font-semibold text-foreground mb-3">Design & Farben (für alle Dokumente)</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Tabellen-Header-Farbe</label>
+                    <div className="flex gap-2 items-center">
+                      <input type="color" value={form.angebot_header_farbe} onChange={e => setForm(f => ({ ...f, angebot_header_farbe: e.target.value }))} className="h-9 w-14 cursor-pointer rounded border border-input" />
+                      <input type="text" value={form.angebot_header_farbe} onChange={e => setForm(f => ({ ...f, angebot_header_farbe: e.target.value }))} className="flex h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm font-mono flex-1" placeholder="#4682B4" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Footer-Hintergrundfarbe</label>
+                    <div className="flex gap-2 items-center">
+                      <input type="color" value={form.pdf_footer_farbe} onChange={e => setForm(f => ({ ...f, pdf_footer_farbe: e.target.value }))} className="h-9 w-14 cursor-pointer rounded border border-input" />
+                      <input type="text" value={form.pdf_footer_farbe} onChange={e => setForm(f => ({ ...f, pdf_footer_farbe: e.target.value }))} className="flex h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm font-mono flex-1" placeholder="#666666" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="border-t border-border pt-4">
+                <p className="text-xs font-semibold text-foreground mb-3">PDF-Footer (3 Spalten – erscheint auf allen Dokumenten)</p>
+                <PdfFooterSettings form={form} setForm={setForm} hideFarbe />
+              </div>
             </TabsContent>
 
             <TabsContent value="angebot" className="space-y-4">
@@ -124,10 +146,6 @@ export default function CompanyHeaderForm() {
 
             <TabsContent value="rechnung" className="space-y-4">
               <RechnungSettings form={form} setForm={setForm} />
-            </TabsContent>
-
-            <TabsContent value="footer" className="space-y-4">
-              <PdfFooterSettings form={form} setForm={setForm} />
             </TabsContent>
 
             <TabsContent value="email" className="space-y-4">

@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Palette } from "lucide-react";
 
-export default function PdfFooterSettings({ form, setForm }) {
+export default function PdfFooterSettings({ form, setForm, hideFarbe = false }) {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -40,27 +40,18 @@ export default function PdfFooterSettings({ form, setForm }) {
           />
         </div>
 
-        <div className="sm:col-span-2">
-          <label className="text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-2 block">
-            <Palette className="w-3.5 h-3.5" />
-            PDF-Footer Hintergrundfarbe
-          </label>
-          <div className="flex gap-3 items-center">
-            <Input
-              type="color"
-              value={form.pdf_footer_farbe}
-              onChange={e => setForm(f => ({ ...f, pdf_footer_farbe: e.target.value }))}
-              className="h-10 w-16 cursor-pointer"
-            />
-            <Input
-              type="text"
-              value={form.pdf_footer_farbe}
-              onChange={e => setForm(f => ({ ...f, pdf_footer_farbe: e.target.value }))}
-              placeholder="#666666"
-              className="flex-1 font-mono text-xs"
-            />
+        {!hideFarbe && (
+          <div className="sm:col-span-2">
+            <label className="text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-2 block">
+              <Palette className="w-3.5 h-3.5" />
+              PDF-Footer Hintergrundfarbe
+            </label>
+            <div className="flex gap-3 items-center">
+              <Input type="color" value={form.pdf_footer_farbe} onChange={e => setForm(f => ({ ...f, pdf_footer_farbe: e.target.value }))} className="h-10 w-16 cursor-pointer" />
+              <Input type="text" value={form.pdf_footer_farbe} onChange={e => setForm(f => ({ ...f, pdf_footer_farbe: e.target.value }))} placeholder="#666666" className="flex-1 font-mono text-xs" />
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

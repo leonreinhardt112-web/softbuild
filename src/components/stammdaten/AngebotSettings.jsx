@@ -2,34 +2,12 @@ import React from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { X, Plus, Palette } from "lucide-react";
+import { X, Plus } from "lucide-react";
 
 export default function AngebotSettings({ form, setForm, newZeichen, setNewZeichen }) {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="sm:col-span-2">
-          <label className="text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-2 block">
-            <Palette className="w-3.5 h-3.5" />
-            Tabellen-Header-Farbe (gilt für Angebote und alle Dokumente)
-          </label>
-          <div className="flex gap-3 items-center">
-            <Input
-              type="color"
-              value={form.angebot_header_farbe}
-              onChange={e => setForm(f => ({ ...f, angebot_header_farbe: e.target.value }))}
-              className="h-10 w-16 cursor-pointer"
-            />
-            <Input
-              type="text"
-              value={form.angebot_header_farbe}
-              onChange={e => setForm(f => ({ ...f, angebot_header_farbe: e.target.value }))}
-              placeholder="#4682B4"
-              className="flex-1 font-mono text-xs"
-            />
-          </div>
-        </div>
-
         <div className="sm:col-span-2">
           <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Vortext (oben im Angebot)</label>
           <Textarea
