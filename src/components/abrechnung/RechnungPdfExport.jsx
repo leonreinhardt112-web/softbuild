@@ -23,6 +23,8 @@ export function exportRechnungPDF({ aufmass, project, stammdaten }) {
   );
   const headerColor = firma.angebot_header_farbe ? hexToRgb(firma.angebot_header_farbe) : [70, 130, 180];
   const isStorno = aufmass.rechnungsnummer?.startsWith("STORNO-");
+  // Originalnummer extrahieren: "STORNO-RE 26005" → "RE 26005"
+  const originalNr = isStorno ? aufmass.rechnungsnummer.replace(/^STORNO-/, "") : null;
 
   // ── HEADER (identisch zu Angebot) ──────────────────────────────────────────
   // Absenderzeile
@@ -95,8 +97,13 @@ export function exportRechnungPDF({ aufmass, project, stammdaten }) {
   doc.setDrawColor(0);
   let y = projectY + 5;
 
-  // Vortext
-  const vortext = firma.rechnung_vortext || "Vielen Dank für Ihren Auftrag, den wir gerne für Sie ausgeführt haben.";
+  // Vortext – bei Storno: Pflichthinweis auf Originalrechnung
+  let vortext;
+  if (isStorno) {
+    vortext = `Hiermit stornieren wir unsere Rechnung Nr. ${originalNr} vom ${aufmass.datum ? new Date(aufmass.datum).toLocaleDateString("de-DE") : "–"} in voller Höhe. Diese Stornorechnung hebt die genannte Rechnung vollständig auf.`;
+  } else {
+    vortext = firma.rechnung_vortext || "Vielen Dank für Ihren Auftrag, den wir gerne für Sie ausgeführt haben.";
+  }
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.setTextColor(40);
@@ -252,9 +259,12 @@ export function exportRechnungPDF({ aufmass, project, stammdaten }) {
   doc.setDrawColor(40); doc.line(ML, y, PW - MR, y); doc.setDrawColor(0);
   y += 7;
 
-  const netto = aufmass.betrag_netto || 0;
+  // Bei Storno alle Beträge negativ (Storno hebt Originalrechnung auf)
+  const nettoAbs = Math.abs(aufmass.betrag_netto || 0);
+  const sign = isStorno ? -1 : 1;
+  const netto = sign * nettoAbs;
   const mwst = netto * 0.19;
-  const brutto = netto + mwst;
+  const brutto = netto * 1.19;
   const valX = PW - MR - 30;
 
   doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(40);
@@ -266,13 +276,16 @@ export function exportRechnungPDF({ aufmass, project, stammdaten }) {
   y += 7;
   doc.setFont("helvetica", "bold");
   doc.text("Summe-Brutto:", ML, y);
-  doc.text((isStorno ? -brutto : brutto).toLocaleString("de-DE", { minimumFractionDigits: 2 }) + " €", valX, y, { align: "right" });
+  doc.text(brutto.toLocaleString("de-DE", { minimumFractionDigits: 2 }) + " €", valX, y, { align: "right" });
 
-  // Fälligkeit + Schlusstext
+  // Fälligkeit / Storno-Hinweis + Schlusstext
   y += 10;
-  if (aufmass.datum) {
+  doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(40);
+  if (isStorno) {
+    doc.text(`Der Betrag von ${Math.abs(brutto).toLocaleString("de-DE", { minimumFractionDigits: 2 })} € wird Ihnen gutgeschrieben.`, ML, y);
+    y += 6;
+  } else if (aufmass.datum) {
     const faellig = new Date(new Date(aufmass.datum).getTime() + 30 * 24 * 60 * 60 * 1000);
-    doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(40);
     doc.text(`Bitte überweisen Sie den Rechnungsbetrag ohne Abzug bis zum: ${faellig.toLocaleDateString("de-DE")}`, ML, y);
     y += 6;
   }
