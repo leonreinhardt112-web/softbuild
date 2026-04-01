@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Upload, Sparkles, Check, X, Loader2, FileText, ChevronDown, ChevronUp, AlertTriangle } from "lucide-react";
 
 const fmt = (v) =>
@@ -17,13 +18,14 @@ const STATUS_COLORS = {
 };
 
 export default function KIBelegErfassung({ projects, stammdaten, onSaved }) {
-  const [belege, setBelege] = useState([]);
-  const [uploading, setUploading] = useState(false);
-  const [savingIds, setSavingIds] = useState(new Set());
-  const [expandedId, setExpandedId] = useState(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const dragCounter = useRef(0);
-  const fileRef = useRef();
+   const [belege, setBelege] = useState([]);
+   const [uploading, setUploading] = useState(false);
+   const [savingIds, setSavingIds] = useState(new Set());
+   const [expandedId, setExpandedId] = useState(null);
+   const [isDragging, setIsDragging] = useState(false);
+   const [duplikatDialog, setDuplikatDialog] = useState({ open: false, beleg: null, existing: null });
+   const dragCounter = useRef(0);
+   const fileRef = useRef();
 
   const handleFiles = async (files) => {
     setUploading(true);
@@ -140,13 +142,9 @@ Extrahiere:
       });
 
       if (existing.length > 0) {
-        const existing_beleg = existing[0];
-        const datum = new Date(existing_beleg.created_date).toLocaleDateString("de-DE");
-        const warnung = `⚠️ Duplikat erkannt:\n\nEine Rechnung von ${beleg.data.kreditor_name} mit Nummer ${beleg.data.rechnungsnummer} wurde bereits am ${datum} durch ${existing_beleg.created_by} gebucht.\n\nTrotzdem nochmal buchen?`;
-        if (!window.confirm(warnung)) {
-          setSavingIds(prev => { const s = new Set(prev); s.delete(beleg.id); return s; });
-          return;
-        }
+        setDuplikatDialog({ open: true, beleg, existing: existing[0] });
+        setSavingIds(prev => { const s = new Set(prev); s.delete(beleg.id); return s; });
+        return;
       }
 
       await base44.entities.EingangsRechnung.create({
@@ -164,6 +162,26 @@ Extrahiere:
     }
   };
 
+  const handleConfirmDuplicate = async () => {
+    const beleg = duplikatDialog.beleg;
+    setSavingIds(prev => new Set([...prev, beleg.id]));
+    try {
+      await base44.entities.EingangsRechnung.create({
+        ...beleg.data,
+        betrag_netto: beleg.data.betrag_netto || 0,
+        betrag_brutto: beleg.data.betrag_brutto || 0,
+        status: "eingegangen",
+        datei_url: beleg.file_url,
+        datei_name: beleg.name,
+      });
+      setBelege(prev => prev.map(b => b.id === beleg.id ? { ...b, status: "gespeichert" } : b));
+      if (onSaved) onSaved();
+    } finally {
+      setSavingIds(prev => { const s = new Set(prev); s.delete(beleg.id); return s; });
+      setDuplikatDialog({ open: false, beleg: null, existing: null });
+    }
+  };
+
   const handleReject = (id) => {
     setBelege(prev => prev.map(b => b.id === id ? { ...b, status: "abgelehnt" } : b));
   };
@@ -178,14 +196,54 @@ Extrahiere:
   const done = belege.filter(b => ["gespeichert", "abgelehnt"].includes(b.status));
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-sm font-semibold flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-primary" />
-          KI-Belegserfassung – Upload Eingangsrechnungen
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <>
+      {/* Duplikat-Dialog */}
+      {duplikatDialog.open && duplikatDialog.existing && (
+        <AlertDialog open={duplikatDialog.open} onOpenChange={(open) => {
+          if (!open) setDuplikatDialog({ open: false, beleg: null, existing: null });
+        }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>⚠️ Duplikat erkannt</AlertDialogTitle>
+              <AlertDialogDescription asChild>
+                <div className="space-y-3">
+                  <p>Eine Rechnung mit diesen Daten existiert bereits:</p>
+                  <div className="bg-muted p-3 rounded-lg space-y-2 text-sm">
+                    <div>
+                      <span className="font-semibold">Kreditor:</span> {duplikatDialog.existing.kreditor_name}
+                    </div>
+                    <div>
+                      <span className="font-semibold">Rechnungsnummer:</span> {duplikatDialog.existing.rechnungsnummer}
+                    </div>
+                    <div>
+                      <span className="font-semibold">Gebucht am:</span> {new Date(duplikatDialog.existing.created_date).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" })} um {new Date(duplikatDialog.existing.created_date).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}
+                    </div>
+                    <div>
+                      <span className="font-semibold">Gebucht durch:</span> {duplikatDialog.existing.created_by}
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Möchten Sie trotzdem eine zweite Rechnung buchen?</p>
+                </div>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+              <AlertDialogAction onClick={handleConfirmDuplicate} className="bg-destructive hover:bg-destructive/90">
+                Trotzdem buchen
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
+
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-semibold flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-primary" />
+            KI-Belegserfassung – Upload Eingangsrechnungen
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
         {/* Dropzone */}
         <div
           onDrop={handleDrop}
@@ -262,6 +320,7 @@ Extrahiere:
         )}
       </CardContent>
     </Card>
+    </>
   );
 }
 
