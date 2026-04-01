@@ -51,7 +51,7 @@ export default function AufgabenTab({ projectId, aufgaben, currentUser }) {
 
   const isUeberfaellig = (a) => a.faellig_am && isPast(parseISO(a.faellig_am)) && !["erledigt","verworfen"].includes(a.status);
 
-  const mineAufgaben = aufgaben.filter(a => !a.project_id || a.project_id === projectId || a.zugewiesen_an === currentUser?.email);
+  const mineAufgaben = aufgaben.filter(a => a.project_id === projectId || (a.zugewiesen_an && currentUser?.email && a.zugewiesen_an === currentUser.email));
   const filtered = mineAufgaben.filter(a => {
     const statusOk = filterStatus === "alle" || a.status === filterStatus;
     const prioOk = filterPrio === "alle" || a.prioritaet === filterPrio;
