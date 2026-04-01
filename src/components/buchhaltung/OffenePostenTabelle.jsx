@@ -136,7 +136,7 @@ export default function OffenePostenTabelle({ rows, typ, projects, aufmasse = []
                   {offen > 0 && onZahlung && (
                     <Button variant="ghost" size="sm" className="h-7 text-xs text-green-600"
                       onClick={() => onZahlung(r)}>
-                      {isDebitor ? "Zahlung erhalten" : "Zahlung buchen"}
+                      {isDebitor ? "Zahlung / Kürzung" : "Zahlung buchen"}
                     </Button>
                   )}
                 </td>

@@ -11,6 +11,7 @@ import PartnerSaldoTabelle from "@/components/buchhaltung/PartnerSaldoTabelle";
 import EingangsRechnungForm from "@/components/buchhaltung/EingangsRechnungForm.jsx";
 import KIBelegErfassung from "@/components/buchhaltung/KIBelegErfassung";
 import { EinzelZahlungDialog, AKontoDialog } from "@/components/buchhaltung/ZahlungBuchenDialog";
+import { ZahlungskuerzungDialog } from "@/components/buchhaltung/ZahlungskuerzungDialog";
 
 const fmt = (v) => v.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
 
@@ -18,6 +19,7 @@ export default function Buchhaltung() {
   const qc = useQueryClient();
   const [showKreditorForm, setShowKreditorForm] = useState(false);
   const [zahlungRechnung, setZahlungRechnung] = useState(null); // für Einzelzahlung
+  const [kuerzungRechnung, setKuerzungRechnung] = useState(null); // für Zahlungskürzung (Debitoren)
   const [aKontoKreditor, setAKontoKreditor] = useState(null);   // für A-Konto
   const [currentUser, setCurrentUser] = useState(null);
 
@@ -51,11 +53,17 @@ export default function Buchhaltung() {
 
   const updateRechnung = useMutation({
     mutationFn: ({ id, data }) => base44.entities.Rechnung.update(id, data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["rechnungen"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["rechnungen"] });
+      qc.invalidateQueries({ queryKey: ["saldo"] });
+    },
   });
   const updateEingang = useMutation({
     mutationFn: ({ id, data }) => base44.entities.EingangsRechnung.update(id, data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["eingangsRechnungen"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["eingangsRechnungen"] });
+      qc.invalidateQueries({ queryKey: ["saldo"] });
+    },
   });
 
   const offeneDebitoren = rechnungen.filter(r => !["bezahlt", "storniert"].includes(r.status));
@@ -66,8 +74,8 @@ export default function Buchhaltung() {
   const nettosaldo = sumOffenDebitor - sumOffenKreditor;
 
   const handleDebitorZahlung = (r) => {
-    // Dialog statt direktes Abbuchen – wird über EinzelZahlungDialog gehandhabt
-    setZahlungRechnung(r);
+    // Für Debitoren: Zahlungskürzung-Dialog (wegen Bauwesen-Realität mit Prüfungskürzungen)
+    setKuerzungRechnung(r);
   };
 
   // Einzelzahlung (mit Skonto)
@@ -256,20 +264,20 @@ export default function Buchhaltung() {
         </TabsContent>
       </Tabs>
 
-      {/* Einzelzahlung-Dialog (für Debitoren und Kreditoren) */}
+      {/* Zahlungskürzung-Dialog (für Debitoren / Ausgangsrechnungen) */}
+      <ZahlungskuerzungDialog
+        rechnung={kuerzungRechnung}
+        open={!!kuerzungRechnung}
+        onClose={() => setKuerzungRechnung(null)}
+        onSave={(id, data) => updateRechnung.mutate({ id, data })}
+      />
+
+      {/* Einzelzahlung-Dialog (für Kreditoren / Eingangsrechnungen) */}
       <EinzelZahlungDialog
         rechnung={zahlungRechnung}
         open={!!zahlungRechnung}
         onClose={() => setZahlungRechnung(null)}
-        onSave={(id, data) => {
-          if (zahlungRechnung?.kreditor_name) {
-            // Kreditor
-            handleEinzelZahlungSave(id, data);
-          } else {
-            // Debitor
-            updateRechnung.mutate({ id, data });
-          }
-        }}
+        onSave={(id, data) => handleEinzelZahlungSave(id, data)}
       />
 
       {/* A-Konto-Dialog */}
