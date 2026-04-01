@@ -6,17 +6,15 @@ import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, FileDown, Info } from "lucide-react";
 import { format, parseISO, addDays, differenceInDays } from "date-fns";
 import jsPDF from "jspdf";
-import { drawAbsenderzeile, addFooterAllPages, hexToRgb } from "@/utils/pdfBriefkopf";
+import { hexToRgb, addFooterAllPages } from "@/utils/pdfBriefkopf";
+import { base44 } from "@/api/base44Client";
 
 const fmt = (v) => (v || 0).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
 const fmtDate = (d) => { try { return d ? format(parseISO(d), "dd.MM.yyyy") : "–"; } catch { return "–"; } };
 
 const STUFE_LABELS = { 1: "1. Mahnung", 2: "2. Mahnung", 3: "Letzte Mahnung / Zahlungsaufforderung" };
-const STUFE_LABELS_SHORT = { 1: "1. Mahnung", 2: "2. Mahnung", 3: "Letzte Mahnung" };
 const STUFE_COLORS = { 1: "bg-amber-100 text-amber-700", 2: "bg-orange-100 text-orange-700", 3: "bg-red-100 text-red-700" };
 const DEFAULT_GEBUEHREN = { 1: 0, 2: 10, 3: 25 };
-
-// Aktueller Basiszins (wird 2x jährlich angepasst, Stand Jan 2025: 2,90 %)
 const BASISZINS_AKTUELL = 2.90;
 const VERZUGSZINS_AUFSCHLAG = 9;
 
@@ -29,157 +27,186 @@ const STANDARD_TEXTE = {
     `trotz unserer vorherigen Mahnungen ist die Zahlung unserer Rechnung vom ${fmtDate(rechnung.rechnungsdatum)} (Rechnungsnummer: ${rechnung.rechnungsnummer}, Fälligkeit: ${fmtDate(rechnung.faellig_am)}) weiterhin ausstehend.\n\nWir sehen uns nunmehr gezwungen, Sie mit dieser letzten Aufforderung zur sofortigen Zahlung aufzufordern. Sollte der Gesamtbetrag nicht bis zur gesetzten Frist eingehen, werden wir ohne weitere Ankündigung rechtliche Schritte einleiten und die Forderung an unseren Rechtsanwalt bzw. ein Inkassobüro übergeben. Die dabei entstehenden Kosten gehen zu Ihren Lasten.`,
 };
 
-function exportMahnungPDF({ rechnung, projekt, stammdaten, mahnstufe, mahngebuehr, verzugspauschale, basiszins, zahlungsfrist, mahntext }) {
-  const firma = stammdaten?.find(s => s.typ === "unternehmen");
+const ML = 20;
+const MR = 20;
+const MT = 20;
+
+async function exportMahnungPDF({ rechnung, projekt, mahnstufe, mahngebuehr, verzugspauschale, basiszins, zahlungsfrist, mahntext }) {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-  const W = 210;
-  const M = 25;
-  const MR = 20;
+  const PW = doc.internal.pageSize.getWidth();
+  const PH = doc.internal.pageSize.getHeight();
+  const CW = PW - ML - MR;
 
-  const headerColor = firma?.angebot_header_farbe || "#4682B4";
-  const rgb = hexToRgb(headerColor);
-
-  // --- LOGO ---
-  let logoBottom = 15;
-  if (firma?.briefkopf_logo_url) {
-    try {
-      doc.addImage(firma.briefkopf_logo_url, "JPEG", M, 10, 50, 18, undefined, "FAST");
-      logoBottom = 30;
-    } catch (e) { logoBottom = 15; }
+  let firma = null;
+  let clientStamm = null;
+  try {
+    const stammdaten = await base44.entities.Stammdatum.list();
+    firma = stammdaten.find(s => s.typ === "unternehmen" && s.aktiv) || {};
+    clientStamm = stammdaten.find(s =>
+      (projekt.client_id && s.id === projekt.client_id) ||
+      (!projekt.client_id && projekt.client && s.name === projekt.client && s.typ === "auftraggeber")
+    );
+  } catch (e) {
+    firma = {};
+    clientStamm = null;
   }
 
-  // --- Farbige Kopfzeile (Absender klein) ---
-  const headerBarY = logoBottom - 2;
-  doc.setFillColor(...rgb);
-  doc.rect(0, headerBarY, W, 8, "F");
-  doc.setFontSize(7.5);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(255, 255, 255);
-  const absenderParts = [
-    firma?.name,
-    firma?.briefkopf_strasse,
-    `${firma?.briefkopf_plz || ""} ${firma?.briefkopf_stadt || ""}`.trim(),
-    firma?.briefkopf_telefon,
-    firma?.briefkopf_email,
-  ].filter(Boolean);
-  doc.text(absenderParts.join(" · "), M, headerBarY + 5.2);
-  doc.setTextColor(0, 0, 0);
+  const headerColor = firma.angebot_header_farbe ? hexToRgb(firma.angebot_header_farbe) : [70, 130, 180];
+  const stufenLabel = { 1: "1. Mahnung", 2: "2. Mahnung", 3: "Letzte Mahnung" }[mahnstufe];
 
-  // --- Empfänger (linke Spalte) ---
-  let adressY = headerBarY + 18;
-  doc.setFontSize(9);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(50);
-  // Kleine Absenderzeile über Adresse (DIN 5008)
+  // ─── HEADER (identisch zu Angebot/Rechnung) ───────────────────────────────
+  // Absenderzeile
   doc.setFontSize(7);
+  doc.setFont("helvetica", "normal");
   doc.setTextColor(120);
-  doc.text([firma?.name, firma?.briefkopf_strasse, `${firma?.briefkopf_plz || ""} ${firma?.briefkopf_stadt || ""}`.trim()].filter(Boolean).join(" · "), M, adressY);
-  doc.setDrawColor(180);
-  doc.setLineWidth(0.2);
-  doc.line(M, adressY + 1.5, M + 75, adressY + 1.5);
-  adressY += 6;
-  doc.setFontSize(10);
-  doc.setTextColor(20);
-  doc.setFont("helvetica", "normal");
-  const empfaengerLines = (projekt?.client || "Auftraggeber").split("\n");
-  empfaengerLines.forEach(line => { doc.text(line, M, adressY); adressY += 5.5; });
+  const absLine = [firma.name, firma.briefkopf_strasse,
+    `${firma.briefkopf_plz || ""} ${firma.briefkopf_stadt || ""}`.trim()
+  ].filter(Boolean).join(" | ");
+  doc.text(absLine, ML, MT);
 
-  // --- Ort + Datum (rechte Spalte) ---
-  const datumY = headerBarY + 18;
+  // Empfängeradresse links
+  let addrY = MT + 10;
   doc.setFontSize(9);
-  doc.setTextColor(60);
-  doc.text(`${firma?.briefkopf_stadt || ""}, ${format(new Date(), "dd.MM.yyyy")}`, W - MR, datumY + 10, { align: "right" });
-
-  // --- Betreff ---
-  const betreffY = adressY + 10;
-  const stufenLabel = STUFE_LABELS_SHORT[mahnstufe] || `${mahnstufe}. Mahnung`;
-  doc.setFontSize(13);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(...rgb);
-  doc.text(`${stufenLabel} – Rechnung ${rechnung.rechnungsnummer}`, M, betreffY);
   doc.setFont("helvetica", "normal");
-  doc.setTextColor(0, 0, 0);
+  doc.setTextColor(40);
+  if (clientStamm) {
+    doc.text(clientStamm.name || "", ML, addrY); addrY += 5;
+    if (clientStamm.adresse) {
+      clientStamm.adresse.split(", ").forEach(l => { doc.text(l, ML, addrY); addrY += 4; });
+    } else {
+      if (clientStamm.briefkopf_strasse) { doc.text(clientStamm.briefkopf_strasse, ML, addrY); addrY += 4; }
+      const plzStadt = `${clientStamm.briefkopf_plz || ""} ${clientStamm.briefkopf_stadt || ""}`.trim();
+      if (plzStadt) { doc.text(plzStadt, ML, addrY); addrY += 4; }
+    }
+  } else if (projekt.client) {
+    doc.text(projekt.client, ML, addrY); addrY += 5;
+    if (projekt.location) { doc.text(projekt.location, ML, addrY); addrY += 4; }
+  }
 
-  // --- Fließtext ---
+  // Rechts: Titel + Metadaten (wie Angebot/Rechnung)
+  const infoBoxX = PW / 2 + 10;
+  doc.setFontSize(14);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(40);
+  doc.text(stufenLabel, infoBoxX, MT + 12);
+
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(40);
+  let detailY = MT + 19;
+  const meta = [
+    ["Projekt-Nr.:", projekt.project_number || "–"],
+    ["Rechnung:", rechnung.rechnungsnummer || "–"],
+    ["Datum:", format(new Date(), "dd.MM.yyyy")],
+  ];
+  meta.forEach(([label, val]) => {
+    doc.text(label, infoBoxX, detailY);
+    doc.text(val, infoBoxX + 28, detailY);
+    detailY += 4;
+  });
+
+  // Projektname links
+  let projectY = Math.max(addrY, detailY) + 4;
   doc.setFontSize(10);
-  doc.setTextColor(30);
-  let y = betreffY + 10;
-  doc.text("Sehr geehrte Damen und Herren,", M, y);
-  y += 8;
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(40);
+  const projLines = doc.splitTextToSize(projekt.project_name || "", CW * 0.6);
+  projLines.forEach((l, i) => doc.text(l, ML, projectY + i * 5));
+  projectY += projLines.length * 5 + 3;
 
-  const bodyText = mahntext || STANDARD_TEXTE[mahnstufe]?.(rechnung) || "";
-  const bodyLines = doc.splitTextToSize(bodyText, W - M - MR);
-  doc.text(bodyLines, M, y);
-  y += bodyLines.length * 5 + 8;
+  // Trennlinie
+  doc.setDrawColor(180);
+  doc.line(ML, projectY, PW - MR, projectY);
+  doc.setDrawColor(0);
+  let y = projectY + 5;
 
-  // --- Tabelle ---
+  // ─── FLIESSTEXT ───────────────────────────────────────────────────────────
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.setTextColor(40);
+
+  const textLines = [
+    "Sehr geehrte Damen und Herren,",
+    "",
+    mahntext || STANDARD_TEXTE[mahnstufe]?.(rechnung) || "",
+  ];
+
+  textLines.forEach(line => {
+    if (line === "") {
+      y += 3;
+    } else {
+      const wrapped = doc.splitTextToSize(line, CW);
+      wrapped.forEach(l => { doc.text(l, ML, y); y += 4; });
+    }
+  });
+  y += 5;
+
+  // ─── TABELLE (Forderung) ──────────────────────────────────────────────────
+  doc.setFillColor(230, 240, 250);
+  doc.rect(ML, y - 2, CW, 8, "F");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.setTextColor(40);
+  doc.text("Position", ML + 2, y + 4);
+  doc.text("Betrag", PW - MR - 2, y + 4, { align: "right" });
+  y += 10;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+
   const offen = (rechnung.betrag_brutto || 0) - (rechnung.zahlungseingang || 0) - (rechnung.einbehalt || 0);
   const verzugszins = basiszins + VERZUGSZINS_AUFSCHLAG;
   const verzugtage = differenceInDays(new Date(), parseISO(rechnung.faellig_am || rechnung.rechnungsdatum));
   const zinsbetrag = verzugtage > 0 ? offen * (verzugszins / 100) * (verzugtage / 365) : 0;
 
-  // Tabellenheader
-  doc.setFillColor(240, 243, 248);
-  doc.rect(M, y, W - M - MR, 7, "F");
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
-  doc.setTextColor(40);
-  doc.text("Position", M + 3, y + 5);
-  doc.text("Betrag", W - MR - 3, y + 5, { align: "right" });
-  y += 8;
-  doc.setFont("helvetica", "normal");
-
   const rows = [
     [`Rechnungsbetrag (brutto) – ${rechnung.rechnungsnummer}`, fmt(rechnung.betrag_brutto)],
-    [`Bisherige Zahlungen`, rechnung.zahlungseingang > 0 ? `- ${fmt(rechnung.zahlungseingang)}` : "–"],
-  ];
-  if (rechnung.einbehalt > 0) rows.push([`Sicherheitseinbehalt`, `- ${fmt(rechnung.einbehalt)}`]);
+    rechnung.zahlungseingang > 0 ? [`Bisherige Zahlungen`, `- ${fmt(rechnung.zahlungseingang)}`] : null,
+  ].filter(Boolean);
+
   if (mahngebuehr > 0) rows.push([`Mahngebühr (${stufenLabel})`, fmt(mahngebuehr)]);
   if (verzugspauschale > 0) rows.push([`Verzugspauschale (§ 288 Abs. 5 BGB)`, fmt(verzugspauschale)]);
-  if (zinsbetrag > 0) rows.push([
-    `Verzugszinsen ${verzugszins.toFixed(2)} % p.a. (Basiszins ${basiszins.toFixed(2)} % + 9 PP)\nfür ${verzugtage} Tage seit ${fmtDate(rechnung.faellig_am)}`,
-    fmt(zinsbetrag),
-  ]);
+  if (zinsbetrag > 0) {
+    rows.push([
+      `Verzugszinsen ${verzugszins.toFixed(2)} % p.a. (Basiszins ${basiszins.toFixed(2)} % + 9 PP)\nfür ${verzugtage} Tage seit ${fmtDate(rechnung.faellig_am)}`,
+      fmt(zinsbetrag),
+    ]);
+  }
 
   const gesamtForderung = offen + (mahngebuehr || 0) + (verzugspauschale || 0) + zinsbetrag;
-  rows.push([`Gesamtforderung`, fmt(gesamtForderung)]);
 
   rows.forEach(([label, val], i) => {
-    const isLast = i === rows.length - 1;
-    if (isLast) {
-      doc.setDrawColor(150);
-      doc.setLineWidth(0.4);
-      doc.line(M, y - 1, W - MR, y - 1);
-      doc.setFont("helvetica", "bold");
-    }
-    // Mehrzeilige Labels (Zinszeile)
-    const labelLines = doc.splitTextToSize(label, W - M - MR - 40);
-    doc.text(labelLines, M + 3, y + 4.5);
-    doc.text(val, W - MR - 3, y + 4.5, { align: "right" });
-    y += Math.max(labelLines.length * 5, 7.5);
-    doc.setFont("helvetica", "normal");
-    doc.setLineWidth(0.1);
-    doc.setDrawColor(220);
-    doc.line(M, y, W - MR, y);
-    y += 1;
+    const textLines = doc.splitTextToSize(label, PW - ML - MR - 40);
+    doc.text(textLines, ML + 2, y);
+    doc.text(val, PW - MR - 2, y + (textLines.length > 1 ? 0 : 0), { align: "right" });
+    y += Math.max(textLines.length * 4, 6);
   });
 
-  y += 8;
-  doc.setFontSize(10);
+  // Gesamtforderung (fett, mit Trennlinie)
+  doc.setDrawColor(150);
+  doc.line(ML, y - 1, PW - MR, y - 1);
+  y += 3;
   doc.setFont("helvetica", "bold");
-  doc.setTextColor(30);
-  doc.text(`Bitte überweisen Sie den Gesamtbetrag von ${fmt(gesamtForderung)} bis spätestens ${fmtDate(zahlungsfrist)}.`, M, y, { maxWidth: W - M - MR });
+  doc.setFontSize(10);
+  doc.text("Gesamtforderung", ML + 2, y);
+  doc.text(fmt(gesamtForderung), PW - MR - 2, y, { align: "right" });
+  y += 8;
 
-  y += 16;
+  // ─── ZAHLUNGSAUFFORDERUNG ─────────────────────────────────────────────────
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.text(`Bitte überweisen Sie den Gesamtbetrag von ${fmt(gesamtForderung)} bis spätestens ${fmtDate(zahlungsfrist)}.`, ML, y);
+  y += 10;
+
+  // ─── SIGNATUR ──────────────────────────────────────────────────────────────
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
-  doc.text("Mit freundlichen Grüßen,", M, y);
+  doc.text("Mit freundlichen Grüßen,", ML, y);
   y += 6;
   doc.setFont("helvetica", "bold");
-  doc.text(firma?.name || "", M, y);
+  doc.text(firma.name || "", ML, y);
 
   // Footer
-  addFooterAllPages(doc, firma, W, 297, M, MR);
+  addFooterAllPages(doc, firma, PW, PH, ML, MR);
 
   doc.save(`Mahnung_${stufenLabel.replace(/\. /g, "_").replace(/ /g, "_")}_${rechnung.rechnungsnummer}.pdf`);
 }
@@ -188,7 +215,7 @@ export default function MahnungDialog({ rechnung, projekt, stammdaten, open, onC
   const currentStufe = rechnung?.mahnstufe || 0;
   const nextStufe = Math.min(currentStufe + 1, 3);
   const [mahngebuehr, setMahngebuehr] = useState(DEFAULT_GEBUEHREN[nextStufe] || 0);
-  const [verzugspauschale, setVerzugspauschale] = useState(40); // § 288 Abs. 5 BGB Pauschale
+  const [verzugspauschale, setVerzugspauschale] = useState(40);
   const [basiszins, setBasiszins] = useState(BASISZINS_AKTUELL);
   const [zahlungsfrist, setZahlungsfrist] = useState(format(addDays(new Date(), 14), "yyyy-MM-dd"));
   const [mahntext, setMahntext] = useState("");
@@ -217,8 +244,8 @@ export default function MahnungDialog({ rechnung, projekt, stammdaten, open, onC
     onClose();
   };
 
-  const handlePDF = () => {
-    exportMahnungPDF({ rechnung, projekt, stammdaten, mahnstufe: nextStufe, mahngebuehr, verzugspauschale, basiszins, zahlungsfrist, mahntext });
+  const handlePDF = async () => {
+    await exportMahnungPDF({ rechnung, projekt, mahnstufe: nextStufe, mahngebuehr, verzugspauschale, basiszins, zahlungsfrist, mahntext });
   };
 
   return (
@@ -268,30 +295,26 @@ export default function MahnungDialog({ rechnung, projekt, stammdaten, open, onC
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-xs font-medium text-muted-foreground block mb-1">
-                  Verzugspauschale (€)
-                  <span className="ml-1 text-muted-foreground font-normal">§ 288 Abs. 5 BGB</span>
+                  Verzugspauschale (€) <span className="font-normal">§ 288 Abs. 5</span>
                 </label>
                 <Input type="number" value={verzugspauschale} onChange={e => setVerzugspauschale(parseFloat(e.target.value) || 0)} className="h-8 text-xs" min={0} step={10} />
-                <p className="text-[10px] text-muted-foreground mt-0.5">Pauschal 40 € bei B2B-Forderungen</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">Pauschal 40 € bei B2B</p>
               </div>
               <div>
                 <label className="text-xs font-medium text-muted-foreground block mb-1">
-                  Basiszins (%)
-                  <span className="ml-1 text-muted-foreground font-normal">aktuell</span>
+                  Basiszins (%) <span className="font-normal">aktuell</span>
                 </label>
                 <Input type="number" value={basiszins} onChange={e => setBasiszins(parseFloat(e.target.value) || 0)} className="h-8 text-xs" min={-5} max={15} step={0.1} />
-                <p className="text-[10px] text-muted-foreground mt-0.5">Wird halbj. von der Bundesbank festgelegt</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">Bundesbank, halbj. Anpassung</p>
               </div>
             </div>
             <div className="bg-amber-50 border border-amber-200 rounded-md px-3 py-2 flex items-start gap-2">
               <Info className="w-3.5 h-3.5 text-amber-600 mt-0.5 shrink-0" />
               <div className="text-xs text-amber-800">
                 <span className="font-semibold">Verzugszins: {(basiszins + VERZUGSZINS_AUFSCHLAG).toFixed(2)} % p.a.</span>
-                {" "}(Basiszins {basiszins.toFixed(2)} % + 9 Prozentpunkte gem. § 288 Abs. 2 BGB)
+                {" "}(Basiszins {basiszins.toFixed(2)} % + 9 PP gem. § 288 Abs. 2 BGB)
                 {verzugtage > 0 && (
-                  <span className="block mt-0.5">
-                    Verzug seit {verzugtage} Tagen → Zinsbetrag ca. <strong>{fmt(zinsbetrag)}</strong>
-                  </span>
+                  <span className="block mt-0.5">Verzug seit {verzugtage} Tagen → ca. {fmt(zinsbetrag)}</span>
                 )}
               </div>
             </div>
@@ -300,10 +323,10 @@ export default function MahnungDialog({ rechnung, projekt, stammdaten, open, onC
           {/* Mahntext */}
           <div>
             <label className="text-xs font-medium text-muted-foreground block mb-1">
-              Mahntext (Standardtext vorausgefüllt – anpassbar)
+              Mahntext (Standardtext – anpassbar)
             </label>
             <textarea
-              className="w-full border border-input rounded-md px-3 py-2 text-xs bg-background resize-none h-28"
+              className="w-full border border-input rounded-md px-3 py-2 text-xs bg-background resize-none h-24"
               value={mahntext}
               onChange={e => setMahntext(e.target.value)}
             />
