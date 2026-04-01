@@ -105,11 +105,12 @@ export default function CompanyHeaderForm() {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="briefkopf" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="briefkopf">Briefkopf</TabsTrigger>
             <TabsTrigger value="angebot">Angebot</TabsTrigger>
             <TabsTrigger value="rechnung">Rechnung</TabsTrigger>
             <TabsTrigger value="footer">PDF-Footer</TabsTrigger>
+            <TabsTrigger value="email">E-Mail</TabsTrigger>
           </TabsList>
 
           <div className="mt-6">
@@ -127,6 +128,27 @@ export default function CompanyHeaderForm() {
 
             <TabsContent value="footer" className="space-y-4">
               <PdfFooterSettings form={form} setForm={setForm} />
+            </TabsContent>
+
+            <TabsContent value="email" className="space-y-4">
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs font-semibold text-foreground mb-1 block">E-Mail-Domain für Mitarbeiter</label>
+                  <p className="text-[11px] text-muted-foreground mb-2">
+                    Diese Domain wird beim Anlegen neuer Mitarbeiter als Vorschlag verwendet (z.B. <span className="font-mono">vorname.nachname@domain.de</span>)
+                  </p>
+                  <input
+                    value={form.email_domain || ""}
+                    onChange={e => setForm(f => ({ ...f, email_domain: e.target.value }))}
+                    placeholder="z.B. meinefirma.de"
+                    className="max-w-xs flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                  />
+                </div>
+                <div className="rounded-lg bg-muted/50 p-4 text-xs text-muted-foreground">
+                  <p className="font-medium text-foreground mb-1">Postfächer & E-Mail-Integration</p>
+                  <p>Für die Verbindung von Postfächern (Gmail, Outlook) gehen Sie zu <strong>Postfächer</strong> in der Navigation.</p>
+                </div>
+              </div>
             </TabsContent>
           </div>
         </Tabs>

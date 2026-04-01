@@ -1,18 +1,14 @@
 import jsPDF from "jspdf";
 import { base44 } from "@/api/base44Client";
+import { hexToRgb, addFooterAllPages, getPageBottom } from "@/utils/pdfBriefkopf";
 
 const MARGIN_TOP = 20;
 const MARGIN_LEFT = 20;
 const MARGIN_RIGHT = 20;
-const MARGIN_BOTTOM = 20;
 
 export async function generateKalkulationPDF(project, kalkulation, options = {}) {
   const { textMode = "short", vortext = "", schlusstext = "", unserZeichen = "" } = options;
-  const doc = new jsPDF({
-    orientation: "portrait",
-    unit: "mm",
-    format: "a4",
-  });
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
 
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -20,29 +16,22 @@ export async function generateKalkulationPDF(project, kalkulation, options = {})
 
   let company = null;
   let client = null;
-  let headerColor = [70, 130, 180]; // Default: Steel Blue
-  
+  let headerColor = [70, 130, 180];
+
   try {
     const companies = await base44.entities.Stammdatum.filter({ typ: "unternehmen", aktiv: true }, undefined, 1);
     if (companies?.length > 0) {
       company = companies[0];
-      // Parse Hex-Farbe zu RGB
-      if (company.angebot_header_farbe) {
-        headerColor = hexToRgb(company.angebot_header_farbe);
-      }
+      if (company.angebot_header_farbe) headerColor = hexToRgb(company.angebot_header_farbe);
     }
-    
-    // Lade Client-Stammdaten - erst by ID, dann by Name Fallback
     if (project.client_id) {
       try {
         client = await base44.entities.Stammdatum.read(project.client_id);
       } catch {
-        // Fallback: Suche nach Namen
         const clients = await base44.entities.Stammdatum.filter({ typ: "auftraggeber", name: project.client }, undefined, 1);
         client = clients?.length > 0 ? clients[0] : null;
       }
     } else if (project.client) {
-      // Fallback ohne client_id - suche by name
       const clients = await base44.entities.Stammdatum.filter({ typ: "auftraggeber", name: project.client }, undefined, 1);
       client = clients?.length > 0 ? clients[0] : null;
     }
@@ -50,38 +39,32 @@ export async function generateKalkulationPDF(project, kalkulation, options = {})
     console.error("Fehler beim Laden der Stammdaten:", e);
   }
 
-  // Erste Seite
-  addHeaderSection(doc, company, project, client, kalkulation, MARGIN_TOP, MARGIN_LEFT, pageWidth, unserZeichen);
-  
-  let yPos = MARGIN_TOP + 60;
-  const pageBottom = pageHeight - MARGIN_BOTTOM;
+  // Erste Seite – Header
+  const yAfterHeader = addHeaderSection(doc, company, project, client, kalkulation, MARGIN_TOP, MARGIN_LEFT, pageWidth, unserZeichen);
 
-  // Vortext hinzufügen
+  let yPos = yAfterHeader + 2;
+  const pageBottom = getPageBottom(pageHeight);
+
+  // Vortext
   if (vortext.trim()) {
-    doc.setFont(undefined, "normal");
+    doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
+    doc.setTextColor(40);
     const vortextLines = doc.splitTextToSize(vortext, contentWidth);
     vortextLines.forEach((line) => {
-      if (yPos > pageBottom - 15) {
-        doc.addPage();
-        yPos = MARGIN_TOP;
-      }
+      if (yPos > pageBottom - 15) { doc.addPage(); yPos = MARGIN_TOP; }
       doc.text(line, MARGIN_LEFT, yPos);
       yPos += 4;
     });
     yPos += 2;
   }
 
-  // Positionen mit Titel-Struktur
+  // Positionen
   const positionsByTitle = groupPositionsByTitle(project.lv_positions || [], kalkulation.positions || []);
-  
-  // Tabellenkopf auf der ersten Seite
   addTableHeader(doc, MARGIN_LEFT, yPos, contentWidth, headerColor);
   yPos += 10;
-  let firstPageDone = true;
 
   for (const titleGroup of positionsByTitle) {
-    // Prüfe, ob Titel auf aktuelle Seite passt
     if (yPos + 8 > pageBottom) {
       doc.addPage();
       yPos = MARGIN_TOP + 10;
@@ -89,29 +72,29 @@ export async function generateKalkulationPDF(project, kalkulation, options = {})
       yPos += 10;
     }
 
-    // Haupttitel
     if (titleGroup.title) {
-      doc.setFont(undefined, "bold");
+      doc.setFont("helvetica", "bold");
       doc.setFontSize(10);
       doc.setFillColor(230, 240, 250);
       doc.rect(MARGIN_LEFT, yPos - 2, contentWidth, 6, "F");
+      doc.setTextColor(40);
       doc.text((titleGroup.oz || "").toString(), MARGIN_LEFT + 1, yPos + 2);
       doc.text(titleGroup.title, MARGIN_LEFT + 27, yPos + 2);
       yPos += 8;
     }
 
-    // Positionen dieser Gruppe
     for (const pos of titleGroup.positions) {
-      // Tabellenkopf bei neuer Seite
-      if (yPos < MARGIN_TOP + 15) {
+      if (yPos > pageBottom - 10) {
+        doc.addPage();
+        yPos = MARGIN_TOP + 10;
         addTableHeader(doc, MARGIN_LEFT, yPos, contentWidth, headerColor);
-        yPos += 6;
+        yPos += 10;
       }
 
-      // Kurze Zeile (Pos + Kurztext + Menge + EP + GP)
-      doc.setFont(undefined, "normal");
+      doc.setFont("helvetica", "normal");
       doc.setFontSize(9);
-      
+      doc.setTextColor(40);
+
       if (pos.posIndex % 2 === 1) {
         doc.setFillColor(248, 248, 248);
         doc.rect(MARGIN_LEFT, yPos - 2.5, contentWidth, 7, "F");
@@ -121,285 +104,187 @@ export async function generateKalkulationPDF(project, kalkulation, options = {})
       const ep = Number(pos.ep) || 0;
       const gp = Number(pos.gp) || 0;
 
-      // Pos-Nummer (links)
       doc.text((pos.oz || "").toString(), MARGIN_LEFT + 1, yPos + 1);
 
-      // Kurztext (Spalte 2) – mit Umbruch bei Bedarf
       const shortText = (pos.short_text || "").split("\n")[0];
-      const shortTextWidth = 53; // Begrenzte Breite für Kurztext-Spalte
-      const shortTextLines = doc.splitTextToSize(shortText, shortTextWidth);
+      const shortTextLines = doc.splitTextToSize(shortText, 53);
       const shortTextHeight = shortTextLines.length * 3.5;
-      
-      shortTextLines.forEach((line, idx) => {
-        doc.text(line, MARGIN_LEFT + 27, yPos + 1 + (idx * 3.5));
-      });
-      
-      // Menge (Spalte 3, rechtsausgerichtet - nur Zahl)
-      const mengeNumText = menge.toLocaleString("de-DE", { minimumFractionDigits: 2 });
-      doc.text(mengeNumText, MARGIN_LEFT + 94, yPos + 1, { align: "right" });
+      shortTextLines.forEach((line, idx) => { doc.text(line, MARGIN_LEFT + 27, yPos + 1 + idx * 3.5); });
 
-      // ME (Spalte 4, linksausgerichtet - nur Einheit)
+      doc.text(menge.toLocaleString("de-DE", { minimumFractionDigits: 2 }), MARGIN_LEFT + 94, yPos + 1, { align: "right" });
       doc.text(pos.einheit || "", MARGIN_LEFT + 97, yPos + 1);
-      
-      // EP (Spalte 5, rechtsausgerichtet)
-      const epText = `${ep.toLocaleString("de-DE", { minimumFractionDigits: 2 })} €`;
-      doc.text(epText, MARGIN_LEFT + 128, yPos + 1, { align: "right" });
-      
-      // GP (Spalte 6, rechtsausgerichtet, bold)
-      doc.setFont(undefined, "bold");
-      const gpText = `${gp.toLocaleString("de-DE", { minimumFractionDigits: 2 })} €`;
-      doc.text(gpText, MARGIN_LEFT + 148, yPos + 1, { align: "right" });
-      doc.setFont(undefined, "normal");
+      doc.text(`${ep.toLocaleString("de-DE", { minimumFractionDigits: 2 })} €`, MARGIN_LEFT + 128, yPos + 1, { align: "right" });
+      doc.setFont("helvetica", "bold");
+      doc.text(`${gp.toLocaleString("de-DE", { minimumFractionDigits: 2 })} €`, MARGIN_LEFT + 148, yPos + 1, { align: "right" });
+      doc.setFont("helvetica", "normal");
 
-      yPos += Math.max(7, shortTextHeight) + 2; // +2 für Abstand zwischen Positionen
+      yPos += Math.max(7, shortTextHeight) + 2;
 
-      // Langtext (falls vorhanden und im textMode "both") – unter Position
       if (pos.long_text && textMode === "both") {
         doc.setFontSize(8);
         doc.setTextColor(80, 80, 80);
-        
-        // Bereinige Langtext: Kurztext entfernen + Whitespace normalisieren
         let cleanedLongText = pos.long_text.trim();
-        if (shortText && cleanedLongText.startsWith(shortText)) {
-          cleanedLongText = cleanedLongText.substring(shortText.length).trim();
-        }
-        if (shortText && cleanedLongText.endsWith(shortText)) {
-          cleanedLongText = cleanedLongText.substring(0, cleanedLongText.length - shortText.length).trim();
-        }
-        
-        // Zeilen bereinigen: Leerzeilen entfernen, Einrückungen normalisieren
-        const cleanedLines = cleanedLongText
-          .split("\n")
-          .map(l => l.trim())
-          .filter(l => l.length > 0);
-        
-        // Absätze zusammenführen (Zeilen die nicht mit Satzzeichen enden, gehören zum nächsten Satz)
+        if (shortText && cleanedLongText.startsWith(shortText)) cleanedLongText = cleanedLongText.substring(shortText.length).trim();
+        const cleanedLines = cleanedLongText.split("\n").map(l => l.trim()).filter(l => l.length > 0);
         const paragraphs = [];
         let current = "";
         cleanedLines.forEach(line => {
-          if (current) {
-            current += " " + line;
-          } else {
-            current = line;
-          }
-          // Absatz-Ende: Zeile endet mit Punkt, Ausrufezeichen, Fragezeichen oder ist kurz
-          if (/[.!?]$/.test(line) || line.length < 30) {
-            paragraphs.push(current);
-            current = "";
-          }
+          current = current ? current + " " + line : line;
+          if (/[.!?]$/.test(line) || line.length < 30) { paragraphs.push(current); current = ""; }
         });
         if (current) paragraphs.push(current);
-        
         paragraphs.forEach(para => {
-          const wrappedLines = doc.splitTextToSize(para, contentWidth - 4);
-          wrappedLines.forEach(line => {
-            if (yPos > pageBottom - 10) {
-              doc.addPage();
-              yPos = MARGIN_TOP;
-              addTableHeader(doc, MARGIN_LEFT, yPos, contentWidth, headerColor);
-              yPos += 10;
-              }
-                    doc.text(line, MARGIN_LEFT + 2, yPos);
+          doc.splitTextToSize(para, contentWidth - 4).forEach(line => {
+            if (yPos > pageBottom - 10) { doc.addPage(); yPos = MARGIN_TOP; addTableHeader(doc, MARGIN_LEFT, yPos, contentWidth, headerColor); yPos += 10; }
+            doc.text(line, MARGIN_LEFT + 2, yPos);
             yPos += 3.5;
           });
-          yPos += 1; // kleiner Abstand zwischen Absätzen
+          yPos += 1;
         });
-        
         doc.setTextColor(0, 0, 0);
         doc.setFontSize(9);
         yPos += 2;
       }
-
-      // Pagebreak-Check
-      if (yPos > pageBottom - 10) {
-        doc.addPage();
-        yPos = MARGIN_TOP;
-        firstPageDone = false;
-      }
     }
 
-    // Summe pro Titel
     if (titleGroup.positions.length > 0) {
-      doc.setFont(undefined, "bold");
+      doc.setFont("helvetica", "bold");
       doc.setFontSize(9);
+      doc.setTextColor(40);
       const titleSum = titleGroup.positions.reduce((s, p) => s + (Number(p.gp) || 0), 0);
       doc.text("Summe Titel", MARGIN_LEFT + 86, yPos + 2);
       doc.text(`${titleSum.toLocaleString("de-DE", { minimumFractionDigits: 2 })} €`, pageWidth - MARGIN_RIGHT - 2, yPos + 2, { align: "right" });
       yPos += 6;
-      
-      if (yPos > pageBottom - 15) {
-        doc.addPage();
-        yPos = MARGIN_TOP;
-        firstPageDone = false;
-      }
+      if (yPos > pageBottom - 15) { doc.addPage(); yPos = MARGIN_TOP; }
     }
   }
 
-  // Abschlusseite mit Summen - genug Platz für Zusammenfassung + Footer benötigt
-  if (yPos > pageBottom - 50) {
-    doc.addPage();
-    yPos = MARGIN_TOP;
-  }
-
+  // Zusammenfassung
+  if (yPos > pageBottom - 50) { doc.addPage(); yPos = MARGIN_TOP; }
   yPos += 5;
-  doc.setFont(undefined, "bold");
+  doc.setFont("helvetica", "bold");
   doc.setFontSize(11);
+  doc.setTextColor(40);
   doc.text("Zusammenfassung", MARGIN_LEFT, yPos);
   yPos += 10;
 
   const totalNetto = (kalkulation.positions || []).reduce((sum, p) => sum + (Number(p.gp) || 0), 0);
   const mwst = totalNetto * 0.19;
   const totalBrutto = totalNetto + mwst;
-
-  doc.setFont(undefined, "normal");
-  doc.setFontSize(10);
-  const summaryLabelX = MARGIN_LEFT;
   const summaryValueX = pageWidth - MARGIN_RIGHT - 30;
-  
-  doc.text("Summe-Netto:", summaryLabelX, yPos);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.text("Summe-Netto:", MARGIN_LEFT, yPos);
   doc.text(`${totalNetto.toLocaleString("de-DE", { minimumFractionDigits: 2 })} €`, summaryValueX, yPos, { align: "right" });
   yPos += 7;
-  
-  doc.text("19,00 % MwSt.:", summaryLabelX, yPos);
+  doc.text("19,00 % MwSt.:", MARGIN_LEFT, yPos);
   doc.text(`${mwst.toLocaleString("de-DE", { minimumFractionDigits: 2 })} €`, summaryValueX, yPos, { align: "right" });
   yPos += 7;
-  
-  doc.setFont(undefined, "bold");
-  doc.text("Summe-Brutto:", summaryLabelX, yPos);
+  doc.setFont("helvetica", "bold");
+  doc.text("Summe-Brutto:", MARGIN_LEFT, yPos);
   doc.text(`${totalBrutto.toLocaleString("de-DE", { minimumFractionDigits: 2 })} €`, summaryValueX, yPos, { align: "right" });
-  
-  // Schlusstext hinzufügen
+
   if (schlusstext.trim()) {
     yPos += 10;
-    if (yPos > pageBottom - 20) {
-      doc.addPage();
-      yPos = MARGIN_TOP;
-    }
-    doc.setFont(undefined, "normal");
+    if (yPos > pageBottom - 20) { doc.addPage(); yPos = MARGIN_TOP; }
+    doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
-    const schlusstextLines = doc.splitTextToSize(schlusstext, contentWidth);
-    schlusstextLines.forEach((line) => {
-      if (yPos > pageBottom - 5) {
-        doc.addPage();
-        yPos = MARGIN_TOP;
-      }
+    doc.splitTextToSize(schlusstext, contentWidth).forEach((line) => {
+      if (yPos > pageBottom - 5) { doc.addPage(); yPos = MARGIN_TOP; }
       doc.text(line, MARGIN_LEFT, yPos);
       yPos += 4;
     });
   }
 
-  // Footer und Seitenzahlen hinzufügen
-  const totalPages = doc.internal.getNumberOfPages();
-  for (let i = 1; i <= totalPages; i++) {
-    doc.setPage(i);
-    addFooter(doc, company, pageWidth, pageHeight, MARGIN_LEFT, MARGIN_RIGHT, totalPages, i);
-  }
+  // Gemeinsamer Footer
+  addFooterAllPages(doc, company, pageWidth, pageHeight, MARGIN_LEFT, MARGIN_RIGHT);
 
-  const filename = `Angebot_${project.project_number}_${new Date().toISOString().split("T")[0]}.pdf`;
-  doc.save(filename);
+  doc.save(`Angebot_${project.project_number}_${new Date().toISOString().split("T")[0]}.pdf`);
 }
 
+// ===================== HEADER – identisch zur Rechnung =====================
 function addHeaderSection(doc, company, project, client, kalkulation, topMargin, leftMargin, pageWidth, unserZeichen = "") {
   const rightMargin = MARGIN_RIGHT;
   const contentWidth = pageWidth - leftMargin - rightMargin;
-  
-  // 1. Kopfzeile: Kurze Adresse links + Logo Beschreibung rechts
+
+  // 1. Absenderzeile oben links (klein, grau)
   if (company) {
-    doc.setFontSize(9);
-    doc.setFont(undefined, "normal");
-    const headerLine = `${company.name} | ${company.briefkopf_strasse || ""} | ${company.briefkopf_plz || ""} ${company.briefkopf_stadt || ""}`;
-    doc.text(headerLine, leftMargin, topMargin + 3);
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(120);
+    const absLine = [company.name, company.briefkopf_strasse, `${company.briefkopf_plz || ""} ${company.briefkopf_stadt || ""}`.trim()].filter(Boolean).join(" | ");
+    doc.text(absLine, leftMargin, topMargin);
   }
-  
 
-  
-  // 2. Empfängeradresse links (aus Stammdaten)
-  let addrY = topMargin + 16;
+  // 2. Empfängeradresse links
+  let addrY = topMargin + 10;
   doc.setFontSize(9);
-  doc.setFont(undefined, "normal");
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(40);
   if (client) {
-    doc.text(client.name || "", leftMargin, addrY);
-    addrY += 4;
-    
-    // Versuche adresse Feld zuerst
+    doc.text(client.name || "", leftMargin, addrY); addrY += 5;
     if (client.adresse) {
-      const addressLines = client.adresse.split(", ");
-      addressLines.forEach((line, idx) => {
-        doc.text(line, leftMargin, addrY);
-        addrY += 4;
-      });
-    } else if (client.briefkopf_strasse || client.briefkopf_plz || client.briefkopf_stadt) {
-      // Fallback zu briefkopf Feldern
-      if (client.briefkopf_strasse) {
-        doc.text(client.briefkopf_strasse, leftMargin, addrY);
-        addrY += 4;
-      }
+      client.adresse.split(", ").forEach(l => { doc.text(l, leftMargin, addrY); addrY += 4; });
+    } else {
+      if (client.briefkopf_strasse) { doc.text(client.briefkopf_strasse, leftMargin, addrY); addrY += 4; }
       const plzStadt = `${client.briefkopf_plz || ""} ${client.briefkopf_stadt || ""}`.trim();
-      if (plzStadt) {
-        doc.text(plzStadt, leftMargin, addrY);
-        addrY += 4;
-      }
+      if (plzStadt) { doc.text(plzStadt, leftMargin, addrY); addrY += 4; }
     }
-  } else {
-    doc.text(project.client || "", leftMargin, addrY);
-    addrY += 4;
-  }
-  
-  // 3. Rechts: Titel "Angebot" + Projekt-Details
-  const titleX = pageWidth - rightMargin - 40;
-  doc.setFontSize(14);
-  doc.setFont(undefined, "bold");
-  doc.text("Angebot", titleX, topMargin + 18);
-  
-  doc.setFontSize(9);
-  doc.setFont(undefined, "normal");
-  let detailY = topMargin + 28;
-  doc.text(`Projekt-Nr.: ${project.project_number || ""}`, titleX, detailY);
-  detailY += 4;
-  doc.text(`Angebots-Nr.: ${kalkulation.angebot_nummer || ""}`, titleX, detailY);
-  detailY += 4;
-  doc.text(`Datum: ${new Date().toLocaleDateString("de-DE")}`, titleX, detailY);
-  
-  // Kundennummer (falls vorhanden)
-  if (client?.kundennummer) {
-    detailY += 4;
-    doc.text(`Kunden-Nr.: ${client.kundennummer}`, titleX, detailY);
+  } else if (project.client) {
+    doc.text(project.client, leftMargin, addrY); addrY += 5;
   }
 
-  // Unser Zeichen (falls vorhanden)
-  if (unserZeichen) {
+  // 3. Rechts: "Angebot" groß + Metadaten (identisch zu Rechnung)
+  const infoBoxX = pageWidth / 2 + 10;
+  doc.setFontSize(14);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(40);
+  doc.text("Angebot", infoBoxX, topMargin + 12);
+
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(40);
+  let detailY = topMargin + 19;
+  const meta = [
+    ["Projekt-Nr.:", project.project_number || ""],
+    ["Angebots-Nr.:", kalkulation.angebot_nummer || ""],
+    ["Datum:", new Date().toLocaleDateString("de-DE")],
+    ...(client?.kundennummer ? [["Kunden-Nr.:", client.kundennummer]] : []),
+    ...(unserZeichen ? [["Unser Zeichen:", unserZeichen]] : []),
+  ];
+  meta.forEach(([label, val]) => {
+    doc.text(label, infoBoxX, detailY);
+    doc.text(val, infoBoxX + 28, detailY);
     detailY += 4;
-    doc.text(`Unser Zeichen: ${unserZeichen}`, titleX, detailY);
-  }
-  
-  // 4. Projektname mit Umbruch
-  let projectY = addrY + 8;
-  doc.setFontSize(10);
-  doc.setFont(undefined, "bold");
-  const projectNameLines = doc.splitTextToSize(project.project_name || "", contentWidth * 0.6);
-  projectNameLines.forEach((line, idx) => {
-    doc.text(line, leftMargin, projectY + (idx * 5));
   });
+
+  // 4. Projektname fett links
+  let projectY = Math.max(addrY, detailY) + 4;
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(40);
+  const projectNameLines = doc.splitTextToSize(project.project_name || "", contentWidth * 0.6);
+  projectNameLines.forEach((line, idx) => { doc.text(line, leftMargin, projectY + idx * 5); });
   projectY += projectNameLines.length * 5;
-  
+
   // Trennlinie
   projectY += 3;
-  doc.setDrawColor(150, 150, 150);
+  doc.setDrawColor(180);
   doc.line(leftMargin, projectY, pageWidth - rightMargin, projectY);
+  doc.setDrawColor(0);
+
+  return projectY + 2;
 }
 
 function addTableHeader(doc, x, y, width, colorRGB = [70, 130, 180]) {
-  doc.setFont(undefined, "bold");
+  doc.setFont("helvetica", "bold");
   doc.setFontSize(8);
   doc.setFillColor(...colorRGB);
   doc.setTextColor(255, 255, 255);
-  
-  // Hintergrund-Rechteck
   doc.rect(x, y - 2, width, 6, "F");
-  
   const headers = ["Pos.", "Bezeichnung", "Menge", "ME", "EP", "GP"];
   const colWidths = [15, 65, 16, 13, 21, 20];
-  
   let xPos = x;
   headers.forEach((h, i) => {
     const align = i >= 2 ? "right" : "left";
@@ -407,94 +292,18 @@ function addTableHeader(doc, x, y, width, colorRGB = [70, 130, 180]) {
     doc.text(h, textX, y + 2, { align });
     xPos += colWidths[i];
   });
-  
   doc.setTextColor(0, 0, 0);
-  doc.setFont(undefined, "normal");
-}
-
-function hexToRgb(hex) {
-  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return result ? [
-    parseInt(result[1], 16),
-    parseInt(result[2], 16),
-    parseInt(result[3], 16)
-  ] : [70, 130, 180]; // Default fallback
-}
-
-function addFooter(doc, company, pageWidth, pageHeight, marginLeft, marginRight, totalPages, currentPage) {
-  // DIN 676 Vorlage-Markierungen
-  doc.setDrawColor(0);
-  doc.setLineWidth(0.1);
-  
-  // Falzmarke 1 (105 mm)
-  doc.line(0, 105, 3, 105);
-  
-  // Falzmarke 2 (210 mm = Seitenmitte)
-  doc.line(0, 210, 3, 210);
-  
-  // Footer mit DIN 676-Abstand
-  const footerBgY = pageHeight - 24;
-  
-  // Footer-Hintergrund (volle Breite, bis zum Seitenrand)
-  const footerColor = company?.pdf_footer_farbe || "#666666";
-  const rgb = hexToRgb(footerColor);
-  doc.setFillColor(...rgb);
-  doc.rect(0, footerBgY, pageWidth, pageHeight - footerBgY, "F");
-  
-  // Text-Farbe für Footer
-  doc.setTextColor(255, 255, 255);
-  doc.setFont(undefined, "normal");
-  doc.setFontSize(7);
-  
-  if (company) {
-    const contentWidth = pageWidth - marginLeft - marginRight;
-    const col1X = marginLeft;
-    const col2X = marginLeft + contentWidth / 3;
-    const col3X = marginLeft + (2 * contentWidth) / 3;
-    
-    // Footer-Text splitten (nach Zeilenumbruch)
-    const footerLeft = (company.pdf_footer_links || "").split("\n");
-    const footerMitte = (company.pdf_footer_mitte || "").split("\n");
-    const footerRechts = (company.pdf_footer_rechts || "").split("\n");
-    
-    let currentY = footerBgY + 4;
-    const maxLines = Math.max(footerLeft.length, footerMitte.length, footerRechts.length);
-    
-    for (let j = 0; j < maxLines; j++) {
-      if (footerLeft[j]) doc.text(footerLeft[j], col1X, currentY);
-      if (footerMitte[j]) doc.text(footerMitte[j], col2X, currentY);
-      if (footerRechts[j]) doc.text(footerRechts[j], col3X, currentY);
-      currentY += 3;
-    }
-  }
-  
-  // Seitenzahl rechts über dem Footer
-  doc.setTextColor(120, 120, 120);
-  doc.setFontSize(7);
-  doc.text(`Seite ${currentPage}/${totalPages}`, pageWidth - marginRight - 1, footerBgY - 2, { align: "right" });
-  doc.setTextColor(0, 0, 0);
+  doc.setFont("helvetica", "normal");
 }
 
 function groupPositionsByTitle(lvPositions, kalkulationen) {
-  const isTitle = (pos) => {
-    if (pos.type === "title") return true;
-    const hasNoQty = !pos.quantity || pos.quantity === "0" || pos.quantity === "";
-    return hasNoQty;
-  };
-
+  const isTitle = (pos) => !pos.quantity || pos.quantity === "0" || pos.quantity === "";
   const result = [];
   let currentTitle = null;
-
   lvPositions.forEach((lvPos) => {
     if (isTitle(lvPos)) {
-      if (currentTitle) {
-        result.push(currentTitle);
-      }
-      currentTitle = {
-        title: lvPos.short_text,
-        oz: lvPos.oz,
-        positions: []
-      };
+      if (currentTitle) result.push(currentTitle);
+      currentTitle = { title: lvPos.short_text, oz: lvPos.oz, positions: [] };
     } else {
       const kalkPos = kalkulationen.find((p) => p.oz === lvPos.oz && p.short_text === lvPos.short_text);
       if (currentTitle) {
@@ -506,15 +315,11 @@ function groupPositionsByTitle(lvPositions, kalkulationen) {
           einheit: lvPos.unit || "",
           ep: kalkPos?.ep || 0,
           gp: kalkPos?.gp || 0,
-          posIndex: currentTitle.positions.length
+          posIndex: currentTitle.positions.length,
         });
       }
     }
   });
-
-  if (currentTitle) {
-    result.push(currentTitle);
-  }
-
+  if (currentTitle) result.push(currentTitle);
   return result;
 }

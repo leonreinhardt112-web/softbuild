@@ -1,4 +1,5 @@
 import { jsPDF } from "jspdf";
+import { addFooterAllPages, getPageBottom } from "@/utils/pdfBriefkopf";
 
 /**
  * Erstellt ein professionelles PDF einer Abschlagsrechnung
@@ -18,46 +19,9 @@ export function exportRechnungPDF({ aufmass, project, stammdaten }) {
   // Unternehmensdaten aus Stammdaten
   const firma = (stammdaten || []).find(s => s.typ === "unternehmen" && s.aktiv) || {};
 
-  const FOOTER_H = 20; // Fußzeile reserviert
-  const PAGE_BOTTOM = H - FOOTER_H - 5;
+  const PAGE_BOTTOM = getPageBottom(H);
 
-  let currentPage = 1;
-  let totalPages = 1; // wird am Ende gesetzt
 
-  const addFooter = () => {
-    const pg = doc.internal.getNumberOfPages();
-    for (let i = 1; i <= pg; i++) {
-      doc.setPage(i);
-      // Fußzeilen-Hintergrund
-      const footerY = H - FOOTER_H;
-      doc.setFillColor(245, 245, 245);
-      doc.rect(0, footerY, W, FOOTER_H, "F");
-      doc.setDrawColor(200);
-      doc.line(0, footerY, W, footerY);
-
-      doc.setFontSize(7);
-      doc.setTextColor(100);
-      doc.setFont("helvetica", "normal");
-
-      const col = W / 3;
-      const lines1 = (firma.pdf_footer_links || `${firma.name || ""}\n${firma.briefkopf_strasse || ""}\n${firma.briefkopf_plz || ""} ${firma.briefkopf_stadt || ""}\nT: ${firma.briefkopf_telefon || ""}\nE: ${firma.briefkopf_email || ""}`).split("\n");
-      const lines2 = (firma.pdf_footer_mitte || "").split("\n");
-      const lines3 = (firma.pdf_footer_rechts || "").split("\n");
-
-      let fy = footerY + 4;
-      lines1.forEach(l => { doc.text(l.trim(), margin, fy); fy += 3.2; });
-
-      fy = footerY + 4;
-      lines2.forEach(l => { doc.text(l.trim(), W / 2, fy, { align: "center" }); fy += 3.2; });
-
-      fy = footerY + 4;
-      lines3.forEach(l => { doc.text(l.trim(), W - margin, fy, { align: "right" }); fy += 3.2; });
-
-      // Seitenzahl
-      doc.setFont("helvetica", "bold");
-      doc.text(`Seite ${i} von ${pg}`, W - margin, H - 4, { align: "right" });
-    }
-  };
 
   const drawPageHeader = (y) => {
     // Absenderzeile oben (klein, grau)
@@ -332,7 +296,7 @@ export function exportRechnungPDF({ aufmass, project, stammdaten }) {
   doc.text(schlussLines, margin, y);
 
   // === FOOTER auf allen Seiten ===
-  addFooter();
+  addFooterAllPages(doc, firma, W, H, margin, margin);
 
   // === SPEICHERN ===
   const prefix = isStorno ? "STORNO" : aufmass.rechnungsnummer || "Rechnung";

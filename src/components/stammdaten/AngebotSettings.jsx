@@ -11,7 +11,7 @@ export default function AngebotSettings({ form, setForm, newZeichen, setNewZeich
         <div className="sm:col-span-2">
           <label className="text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-2 block">
             <Palette className="w-3.5 h-3.5" />
-            Angebots-Header-Farbe
+            Tabellen-Header-Farbe (gilt für Angebote und alle Dokumente)
           </label>
           <div className="flex gap-3 items-center">
             <Input
