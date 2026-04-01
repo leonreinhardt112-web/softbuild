@@ -21,9 +21,7 @@ Deno.serve(async (req) => {
     // 1. Neue Eingangsrechnung mit Status "eingegangen" → Aufgabe anlegen
     if (event.type === 'create' && status === 'eingegangen' && projectId) {
       const project = await base44.asServiceRole.entities.Project.get(projectId);
-      if (!project || !project.site_manager) {
-        return Response.json({ success: true, message: 'No site manager assigned' });
-      }
+      const assignee = project?.site_manager || user.email;
 
       const aufgabe = await base44.asServiceRole.entities.Aufgabe.create({
         project_id: projectId,
@@ -33,7 +31,7 @@ Deno.serve(async (req) => {
         beschreibung: `Die Eingangsrechnung von ${data.kreditor_name} muss geprüft und genehmigt werden.`,
         faellig_am: new Date().toISOString().split('T')[0],
         prioritaet: 'hoch',
-        zugewiesen_an: project.site_manager,
+        zugewiesen_an: assignee,
         manuelle_bestaetigung_erforderlich: true,
       });
 
