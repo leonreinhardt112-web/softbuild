@@ -109,6 +109,11 @@ export default function Projects() {
     queryFn: () => base44.entities.Project.list("-created_date", 100),
   });
 
+  const { data: allAufmasse = [] } = useQuery({
+    queryKey: ["aufmasse_all"],
+    queryFn: () => base44.entities.Aufmass.list(),
+  });
+
   const createMutation = useMutation({
     mutationFn: (data) => base44.entities.Project.create(data),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["projects"] }); setShowForm(false); },
@@ -240,13 +245,17 @@ export default function Projects() {
           <AlertDialogHeader>
             <AlertDialogTitle>Projekt löschen?</AlertDialogTitle>
             <AlertDialogDescription>
-              Dieses Projekt und alle zugehörigen Prüfdaten werden unwiderruflich gelöscht.
+              {allAufmasse.some(a => a.project_id === deleteId)
+                ? "⚠️ Dieses Projekt kann nicht gelöscht werden, da bereits Abschlagsrechnungen oder Aufmaße vorhanden sind. Bitte zuerst alle ARs löschen/stornieren."
+                : "Dieses Projekt und alle zugehörigen Prüfdaten werden unwiderruflich gelöscht. Diese Aktion kann nicht rückgängig gemacht werden."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-            <AlertDialogAction className="bg-destructive hover:bg-destructive/90"
-              onClick={() => deleteMutation.mutate(deleteId)}>Löschen</AlertDialogAction>
+            {!allAufmasse.some(a => a.project_id === deleteId) && (
+              <AlertDialogAction className="bg-destructive hover:bg-destructive/90"
+                onClick={() => deleteMutation.mutate(deleteId)}>Löschen</AlertDialogAction>
+            )}
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

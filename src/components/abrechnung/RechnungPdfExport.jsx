@@ -38,14 +38,14 @@ export function exportRechnungPDF({ aufmass, project, stammdaten }) {
   const empfLines = [project.client || "–", project.location || ""].filter(Boolean);
   empfLines.forEach(line => { doc.text(line, margin, addrY); addrY += 5; });
 
-  // 3. Rechts: Dokumenttitel + Metadaten
+  // 3. Rechts: Dokumenttitel + Metadaten – exakt wie Angebot-Layout
   const infoBoxX = W / 2 + 10;
-  // Titel: "X. Abschlagsrechnung" mit Nummer
-  doc.setFontSize(14);
+  // Titel groß, rechtsbündig
+  doc.setFontSize(22);
   doc.setFont("helvetica", "bold");
-  doc.setTextColor(isStorno ? 150 : 40);
+  doc.setTextColor(isStorno ? 120 : 30);
   const titelText = isStorno ? "Stornorechnung" : `${aufmass.ar_nummer || ""}. Abschlagsrechnung`;
-  doc.text(titelText, infoBoxX, y + 12);
+  doc.text(titelText, W - margin, y + 14, { align: "right" });
 
   // Kundennummer aus Stammdaten holen
   const clientStamm = (stammdaten || []).find(s => s.id === project.client_id || s.name === project.client);
@@ -53,8 +53,8 @@ export function exportRechnungPDF({ aufmass, project, stammdaten }) {
 
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
-  doc.setTextColor(40);
-  let detailY = y + 19;
+  doc.setTextColor(60);
+  let detailY = y + 20;
   const metaData = [
     ["Projekt-Nr.:", project.project_number || "–"],
     ["ABR-Nr.:", aufmass.rechnungsnummer || "–"],
@@ -63,9 +63,10 @@ export function exportRechnungPDF({ aufmass, project, stammdaten }) {
   ];
   metaData.forEach(([label, val]) => {
     doc.setFont("helvetica", label === "ABR-Nr.:" ? "bold" : "normal");
+    doc.setTextColor(label === "ABR-Nr.:" ? 30 : 60);
     doc.text(label, infoBoxX, detailY);
     doc.text(val, infoBoxX + 28, detailY);
-    detailY += 4;
+    detailY += 4.5;
   });
 
   // 4. Projektname fett

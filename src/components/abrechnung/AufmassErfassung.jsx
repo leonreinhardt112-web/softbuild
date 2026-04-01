@@ -320,124 +320,153 @@ export default function AufmassErfassung({ aufmass, project, vorherigeAufmasse, 
         </div>
       </div>
 
-      {/* Positionstabelle – nach Titeln gruppiert */}
+      {/* Positionstabelle – nach Haupttiteln (2-stellig) und Untertiteln (4-stellig) gruppiert */}
       <div className="space-y-4">
         {(() => {
-          // Positionen nach Titeln gruppieren (OZ ohne letzten Abschnitt, z.B. "01.01" aus "01.01.0001")
-          const groups = [];
-          let currentGroup = null;
+          // Struktur aufbauen: Haupttitel (01) > Untertitel (01.01) > Positionen (01.01.0001)
+          const mainGroups = [];
+          let currentMain = null;
+          let currentSub = null;
+
           positionen.forEach((pos, pi) => {
             const ozParts = (pos.oz || "").split(".");
-            // Titelzeilen haben nur 1-2 Teile (z.B. "01" oder "01.01"), echte Positionen haben 3 Teile
-            const isTitle = ozParts.length <= 2;
-            if (isTitle) {
-              currentGroup = { title: pos.short_text, oz: pos.oz, positions: [] };
-              groups.push(currentGroup);
+            if (ozParts.length === 1) {
+              // Haupttitel (z.B. "01")
+              currentMain = { title: pos.short_text, oz: pos.oz, subGroups: [] };
+              mainGroups.push(currentMain);
+              currentSub = null;
+            } else if (ozParts.length === 2) {
+              // Untertitel (z.B. "01.01")
+              if (!currentMain) { currentMain = { title: "", oz: "", subGroups: [] }; mainGroups.push(currentMain); }
+              currentSub = { title: pos.short_text, oz: pos.oz, positions: [] };
+              currentMain.subGroups.push(currentSub);
             } else {
-              if (!currentGroup) {
-                currentGroup = { title: "Allgemein", oz: "", positions: [] };
-                groups.push(currentGroup);
-              }
-              currentGroup.positions.push({ ...pos, _pi: pi });
+              // Echte Position
+              if (!currentMain) { currentMain = { title: "Allgemein", oz: "", subGroups: [] }; mainGroups.push(currentMain); }
+              if (!currentSub) { currentSub = { title: "Allgemein", oz: "", positions: [] }; currentMain.subGroups.push(currentSub); }
+              currentSub.positions.push({ ...pos, _pi: pi });
             }
           });
-          return groups.map((group, gi) => {
-            const isCollapsed = collapsedTitles[gi];
-            const groupSum = group.positions.reduce((s, p) => s + (p.gp_kumuliert || 0), 0);
+
+          return mainGroups.map((main, mi) => {
+            const mainKey = `m${mi}`;
+            const isMainCollapsed = collapsedTitles[mainKey];
+            const mainSum = main.subGroups.flatMap(s => s.positions).reduce((s, p) => s + (p.gp_kumuliert || 0), 0);
             return (
-              <div key={gi}>
-                {/* Titel-Header */}
+              <div key={mi} className="border border-border rounded-lg overflow-hidden">
+                {/* Haupttitel */}
                 <button
-                  className="w-full flex items-center gap-2 px-3 py-2 bg-muted/50 hover:bg-muted/80 rounded-lg border border-border text-left transition-colors"
-                  onClick={() => setCollapsedTitles(prev => ({ ...prev, [gi]: !prev[gi] }))}
+                  className="w-full flex items-center gap-2 px-4 py-2.5 bg-primary/10 hover:bg-primary/15 text-left transition-colors"
+                  onClick={() => setCollapsedTitles(prev => ({ ...prev, [mainKey]: !prev[mainKey] }))}
                 >
-                  {isCollapsed ? <ChevronRight className="w-4 h-4 shrink-0 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 shrink-0 text-muted-foreground" />}
-                  <span className="font-mono text-xs font-bold text-primary w-14 shrink-0">{group.oz}</span>
-                  <span className="text-sm font-semibold flex-1">{group.title}</span>
-                  <span className="text-xs font-semibold text-primary ml-auto">{fmtEur(groupSum)}</span>
+                  {isMainCollapsed ? <ChevronRight className="w-4 h-4 shrink-0 text-primary" /> : <ChevronDown className="w-4 h-4 shrink-0 text-primary" />}
+                  <span className="font-mono text-xs font-bold text-primary w-8 shrink-0">{main.oz}</span>
+                  <span className="text-sm font-bold text-foreground uppercase flex-1">{main.title}</span>
+                  <span className="text-sm font-bold text-primary">{fmtEur(mainSum)}</span>
                 </button>
-                {/* Positionen */}
-                {!isCollapsed && group.positions.map((pos) => {
-                  const pi = pos._pi;
+
+                {!isMainCollapsed && main.subGroups.map((sub, si) => {
+                  const subKey = `m${mi}_s${si}`;
+                  const isSubCollapsed = collapsedTitles[subKey];
+                  const subSum = sub.positions.reduce((s, p) => s + (p.gp_kumuliert || 0), 0);
                   return (
-                    <Card key={pi} className="overflow-hidden mt-2 ml-4">
-                      <CardHeader className="py-2 px-4 bg-muted/30 border-b border-border">
-                        <div className="flex items-center gap-3">
-                          <span className="font-mono text-xs font-semibold text-primary w-16 shrink-0">{pos.oz}</span>
-                          <span className="text-sm font-medium flex-1 truncate">{pos.short_text}</span>
-                          <div className="flex items-center gap-3 text-xs text-muted-foreground shrink-0">
-                            <span className="flex items-center gap-1">
-                              <Lock className="w-3 h-3" /> EP: <strong className="text-foreground">{fmt(pos.ep)} €/{pos.einheit}</strong>
-                            </span>
-                            <span>LV: {fmt(pos.menge_lv)} {pos.einheit}</span>
-                          </div>
-                        </div>
-                      </CardHeader>
-                      <CardContent className="p-0">
-                        <table className="w-full text-xs">
-                          <thead>
-                            <tr className="border-b border-border/60 bg-muted/10">
-                              <th className="text-left px-4 py-1.5 font-medium text-muted-foreground">Beschreibung / Formel</th>
-                              <th className="text-right px-4 py-1.5 font-medium text-muted-foreground w-24">Menge</th>
-                              <th className="text-left px-4 py-1.5 font-medium text-muted-foreground w-10">{pos.einheit}</th>
-                              <th className="w-8" />
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {pos.menge_vorperioden > 0 && (
-                              <tr className="border-b border-border/40 bg-muted/20">
-                                <td className="px-4 py-1.5 text-muted-foreground italic">Vorperioden (kumuliert)</td>
-                                <td className="px-4 py-1.5 text-right font-medium text-muted-foreground">{fmt(pos.menge_vorperioden)}</td>
-                                <td className="px-4 py-1.5 text-muted-foreground">{pos.einheit}</td>
-                                <td />
-                              </tr>
-                            )}
-                            {(pos.aufmass_zeilen || []).map((z, zi) => (
-                              <tr key={zi} className={`border-b border-border/40 ${!isFreigegeben ? "hover:bg-accent/10" : "bg-muted/5"}`}>
-                                <td className="px-4 py-1">
-                                  <Input value={z.beschreibung} onChange={e => updateZeile(pi, zi, "beschreibung", e.target.value)}
-                                    placeholder="z.B. 179,07m + 53,76m oder Bauteil A..." disabled={isFreigegeben}
-                                    className="h-7 text-xs border-0 bg-transparent shadow-none focus-visible:ring-0 px-0" />
-                                </td>
-                                <td className="px-4 py-1">
-                                  <Input type="number" value={z.menge || ""} onChange={e => updateZeile(pi, zi, "menge", e.target.value)}
-                                    disabled={isFreigegeben} className="h-7 text-xs text-right w-20 ml-auto" />
-                                </td>
-                                <td className="px-4 py-1.5 text-muted-foreground">{pos.einheit}</td>
-                                <td className="px-2 py-1">
-                                  {!isFreigegeben && (
-                                    <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={() => removeZeile(pi, zi)}>
-                                      <Trash2 className="w-3 h-3" />
-                                    </Button>
+                    <div key={si} className="border-t border-border">
+                      {/* Untertitel */}
+                      <button
+                        className="w-full flex items-center gap-2 px-4 py-2 bg-muted/40 hover:bg-muted/60 text-left transition-colors"
+                        onClick={() => setCollapsedTitles(prev => ({ ...prev, [subKey]: !prev[subKey] }))}
+                      >
+                        {isSubCollapsed ? <ChevronRight className="w-3.5 h-3.5 shrink-0 text-muted-foreground" /> : <ChevronDown className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />}
+                        <span className="font-mono text-xs font-semibold text-primary w-10 shrink-0">{sub.oz}</span>
+                        <span className="text-xs font-semibold text-foreground flex-1">{sub.title}</span>
+                        <span className="text-xs font-semibold text-primary">{fmtEur(subSum)}</span>
+                      </button>
+
+                      {/* Positionen */}
+                      {!isSubCollapsed && sub.positions.map((pos) => {
+                        const pi = pos._pi;
+                        return (
+                          <Card key={pi} className="overflow-hidden rounded-none border-0 border-t border-border/50">
+                            <CardHeader className="py-2 px-4 bg-muted/30 border-b border-border">
+                              <div className="flex items-center gap-3">
+                                <span className="font-mono text-xs font-semibold text-primary w-16 shrink-0">{pos.oz}</span>
+                                <span className="text-sm font-medium flex-1 truncate">{pos.short_text}</span>
+                                <div className="flex items-center gap-3 text-xs text-muted-foreground shrink-0">
+                                  <span className="flex items-center gap-1">
+                                    <Lock className="w-3 h-3" /> EP: <strong className="text-foreground">{fmt(pos.ep)} €/{pos.einheit}</strong>
+                                  </span>
+                                  <span>LV: {fmt(pos.menge_lv)} {pos.einheit}</span>
+                                </div>
+                              </div>
+                            </CardHeader>
+                            <CardContent className="p-0">
+                              <table className="w-full text-xs">
+                                <thead>
+                                  <tr className="border-b border-border/60 bg-muted/10">
+                                    <th className="text-left px-4 py-1.5 font-medium text-muted-foreground">Beschreibung / Formel</th>
+                                    <th className="text-right px-4 py-1.5 font-medium text-muted-foreground w-24">Menge</th>
+                                    <th className="text-left px-4 py-1.5 font-medium text-muted-foreground w-10">{pos.einheit}</th>
+                                    <th className="w-8" />
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {pos.menge_vorperioden > 0 && (
+                                    <tr className="border-b border-border/40 bg-muted/20">
+                                      <td className="px-4 py-1.5 text-muted-foreground italic">Vorperioden (kumuliert)</td>
+                                      <td className="px-4 py-1.5 text-right font-medium text-muted-foreground">{fmt(pos.menge_vorperioden)}</td>
+                                      <td className="px-4 py-1.5 text-muted-foreground">{pos.einheit}</td>
+                                      <td />
+                                    </tr>
                                   )}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                          <tfoot>
-                            <tr className="bg-muted/20 border-t border-border">
-                              <td className="px-4 py-1.5">
-                                {!isFreigegeben && (
-                                  <Button variant="ghost" size="sm" className="h-6 text-xs gap-1 text-muted-foreground hover:text-primary" onClick={() => addZeile(pi)}>
-                                    <Plus className="w-3 h-3" /> Zeile
-                                  </Button>
-                                )}
-                              </td>
-                              <td className="px-4 py-1.5 text-right">
-                                <span className="font-semibold">{fmt(pos.menge_aktuell)}</span>
-                                <span className="text-muted-foreground ml-1">| kum: {fmt(pos.menge_kumuliert)}</span>
-                              </td>
-                              <td className="px-4 py-1.5 text-muted-foreground">{pos.einheit}</td>
-                              <td className="px-4 py-1.5 text-right font-semibold text-primary">{fmtEur(pos.gp_kumuliert)}</td>
-                            </tr>
-                          </tfoot>
-                        </table>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            );
+                                  {(pos.aufmass_zeilen || []).map((z, zi) => (
+                                    <tr key={zi} className={`border-b border-border/40 ${!isFreigegeben ? "hover:bg-accent/10" : "bg-muted/5"}`}>
+                                      <td className="px-4 py-1">
+                                        <Input value={z.beschreibung} onChange={e => updateZeile(pi, zi, "beschreibung", e.target.value)}
+                                          placeholder="z.B. 179,07m + 53,76m oder Bauteil A..." disabled={isFreigegeben}
+                                          className="h-7 text-xs border-0 bg-transparent shadow-none focus-visible:ring-0 px-0" />
+                                      </td>
+                                      <td className="px-4 py-1">
+                                        <Input type="number" value={z.menge || ""} onChange={e => updateZeile(pi, zi, "menge", e.target.value)}
+                                          disabled={isFreigegeben} className="h-7 text-xs text-right w-20 ml-auto" />
+                                      </td>
+                                      <td className="px-4 py-1.5 text-muted-foreground">{pos.einheit}</td>
+                                      <td className="px-2 py-1">
+                                        {!isFreigegeben && (
+                                          <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={() => removeZeile(pi, zi)}>
+                                            <Trash2 className="w-3 h-3" />
+                                          </Button>
+                                        )}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                                <tfoot>
+                                  <tr className="bg-muted/20 border-t border-border">
+                                    <td className="px-4 py-1.5">
+                                      {!isFreigegeben && (
+                                        <Button variant="ghost" size="sm" className="h-6 text-xs gap-1 text-muted-foreground hover:text-primary" onClick={() => addZeile(pi)}>
+                                          <Plus className="w-3 h-3" /> Zeile
+                                        </Button>
+                                      )}
+                                    </td>
+                                    <td className="px-4 py-1.5 text-right">
+                                      <span className="font-semibold">{fmt(pos.menge_aktuell)}</span>
+                                      <span className="text-muted-foreground ml-1">| kum: {fmt(pos.menge_kumuliert)}</span>
+                                    </td>
+                                    <td className="px-4 py-1.5 text-muted-foreground">{pos.einheit}</td>
+                                    <td className="px-4 py-1.5 text-right font-semibold text-primary">{fmtEur(pos.gp_kumuliert)}</td>
+                                  </tr>
+                                </tfoot>
+                              </table>
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                      </div>
+                      );
+                      })}
+                      </div>
+                      );
           });
         })()}
       </div>

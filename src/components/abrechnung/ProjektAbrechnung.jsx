@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,9 @@ export default function ProjektAbrechnung({ project, kalkulationen, stammdaten }
   const [showNeu, setShowNeu] = useState(false);
   const [editAufmass, setEditAufmass] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
+
+  useEffect(() => { base44.auth.me().then(u => setCurrentUser(u)).catch(() => {}); }, []);
 
   // Beauftragte Kalkulation (eingefroren)
   const beauftragt = kalkulationen.find(k => k.status === "beauftragt");
@@ -100,7 +103,8 @@ export default function ProjektAbrechnung({ project, kalkulationen, stammdaten }
           <AlertDialogHeader>
             <AlertDialogTitle>Abschlagsrechnung löschen?</AlertDialogTitle>
             <AlertDialogDescription>
-              „{deleteConfirm?.bezeichnung}" wird unwiderruflich gelöscht. Nur Entwürfe können gelöscht werden.
+              „{deleteConfirm?.bezeichnung}" wird unwiderruflich gelöscht.
+              {deleteConfirm?.status !== "entwurf" && " ⚠️ Diese AR ist bereits freigegeben – nur im Admin-Modus löschbar."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -174,7 +178,7 @@ export default function ProjektAbrechnung({ project, kalkulationen, stammdaten }
                  </p>
                 </div>
                 <div className="flex items-center gap-1">
-                  {a.status === "entwurf" && (
+                  {(a.status === "entwurf" || currentUser?.role === "admin") && (
                     <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={(e) => { e.stopPropagation(); setDeleteConfirm(a); }}>
                       <Trash2 className="w-3.5 h-3.5" />
                     </Button>
