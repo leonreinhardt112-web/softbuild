@@ -259,14 +259,19 @@ function addHeaderSection(doc, company, project, client, kalkulation, topMargin,
     detailY += 4;
   });
 
-  // 4. Projektname fett links
+  // 4. Projektbezeichnungen fett links (mehrzeilig)
   let projectY = Math.max(addrY, detailY) + 4;
   doc.setFontSize(10);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(40);
-  const projectNameLines = doc.splitTextToSize(project.project_name || "", contentWidth * 0.6);
-  projectNameLines.forEach((line, idx) => { doc.text(line, leftMargin, projectY + idx * 5); });
-  projectY += projectNameLines.length * 5;
+  const nameLines = [
+    project.project_name,
+    project.project_name_2,
+    project.project_name_3,
+    project.project_name_4,
+  ].filter(Boolean);
+  nameLines.forEach((line, idx) => { doc.text(line, leftMargin, projectY + idx * 5); });
+  projectY += nameLines.length * 5;
 
   // Trennlinie
   projectY += 3;

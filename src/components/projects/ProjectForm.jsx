@@ -14,9 +14,9 @@ import {
 import { Plus, AlertTriangle, Info } from "lucide-react";
 
 const EMPTY_FORM = {
-  project_name: "", client: "", client_id: "", project_number: "",
+  project_name: "", project_name_2: "", project_name_3: "", project_name_4: "",
+  client: "", client_id: "", project_number: "",
   location: "", project_start: "", project_end: "", submission_date: "",
-  review_date: new Date().toISOString().split("T")[0],
   reviewer: "", selected_trades: ["allgemein"], status: "entwurf",
 };
 
@@ -133,15 +133,33 @@ export default function ProjectForm({ open, onOpenChange, onSave, initialData })
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 mt-2">
-          {/* Projektname + Nummer */}
+          {/* Projektbezeichnungen + Nummer */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="project_name">Projektname *</Label>
+            <div className="sm:col-span-2 space-y-1.5">
+              <Label htmlFor="project_name">Projektbezeichnung 1 *</Label>
               <Input id="project_name" value={form.project_name}
                 onChange={e => handleChange("project_name", e.target.value)}
                 placeholder="z.B. Kanalsanierung Hauptstraße" required />
             </div>
+            <div className="sm:col-span-2 space-y-1.5">
+              <Label htmlFor="project_name_2">Projektbezeichnung 2 <span className="text-muted-foreground font-normal text-xs">(optional)</span></Label>
+              <Input id="project_name_2" value={form.project_name_2 || ""}
+                onChange={e => handleChange("project_name_2", e.target.value)}
+                placeholder="z.B. Los 1 – Kanalrohrarbeiten" />
+            </div>
             <div className="space-y-1.5">
+              <Label htmlFor="project_name_3">Projektbezeichnung 3 <span className="text-muted-foreground font-normal text-xs">(optional)</span></Label>
+              <Input id="project_name_3" value={form.project_name_3 || ""}
+                onChange={e => handleChange("project_name_3", e.target.value)}
+                placeholder="z.B. Abschnitt A" />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="project_name_4">Projektbezeichnung 4 <span className="text-muted-foreground font-normal text-xs">(optional)</span></Label>
+              <Input id="project_name_4" value={form.project_name_4 || ""}
+                onChange={e => handleChange("project_name_4", e.target.value)}
+                placeholder="z.B. Baulos 2026" />
+            </div>
+            <div className="sm:col-span-2 space-y-1.5">
               <Label htmlFor="project_number">Projektnummer</Label>
               <Input id="project_number" value={form.project_number}
                 onChange={e => handleChange("project_number", e.target.value)}
@@ -329,13 +347,6 @@ export default function ProjectForm({ open, onOpenChange, onSave, initialData })
                 <p className="text-[10px] text-muted-foreground mt-0.5">VOB/B § 16 Abs. 3 = 30 Tage</p>
               </div>
             </div>
-          </div>
-
-          {/* Prüfdatum AFU */}
-          <div className="space-y-1.5">
-            <Label htmlFor="review_date">Prüfdatum AFU</Label>
-            <Input id="review_date" type="date" value={form.review_date || ""}
-              onChange={e => handleChange("review_date", e.target.value)} />
           </div>
 
           {/* Bearbeiter – auto aus Login */}

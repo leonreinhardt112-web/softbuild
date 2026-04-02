@@ -49,7 +49,12 @@ function ProjectCard({ project, onEdit, onDelete }) {
                 <FileText className="w-5 h-5 text-primary" />
               </div>
               <div className="min-w-0">
-                <h3 className="font-semibold text-sm text-foreground truncate">{project.project_name}</h3>
+                <h3 className="font-semibold text-sm text-foreground">
+                  {project.project_name}
+                  {project.project_name_2 && <span className="block font-normal text-xs text-muted-foreground">{project.project_name_2}</span>}
+                  {project.project_name_3 && <span className="block font-normal text-xs text-muted-foreground">{project.project_name_3}</span>}
+                  {project.project_name_4 && <span className="block font-normal text-xs text-muted-foreground">{project.project_name_4}</span>}
+                </h3>
                 <p className="text-xs text-muted-foreground mt-0.5">
                   {project.project_number}
                   {project.auftragssumme_netto ? <span className="ml-2 font-medium text-foreground">{project.auftragssumme_netto.toLocaleString("de-DE", { style: "currency", currency: "EUR" })}</span> : project.auftragssumme ? <span className="ml-2 font-medium text-foreground">{project.auftragssumme.toLocaleString("de-DE", { style: "currency", currency: "EUR" })}</span> : null}
@@ -141,11 +146,16 @@ export default function Projects() {
   const activeProjects = projects.filter(p => !p.archiviert && p.status !== "verloren");
   const archivProjects = projects.filter(p => p.archiviert || p.status === "verloren");
 
-  const searchFiltered = (showArchiv ? archivProjects : activeProjects).filter(p =>
-    p.project_name?.toLowerCase().includes(search.toLowerCase()) ||
-    p.project_number?.toLowerCase().includes(search.toLowerCase()) ||
-    p.client?.toLowerCase().includes(search.toLowerCase())
-  );
+  const searchFiltered = (showArchiv ? archivProjects : activeProjects).filter(p => {
+    const q = search.toLowerCase();
+    return !q ||
+      p.project_name?.toLowerCase().includes(q) ||
+      p.project_name_2?.toLowerCase().includes(q) ||
+      p.project_name_3?.toLowerCase().includes(q) ||
+      p.project_name_4?.toLowerCase().includes(q) ||
+      p.project_number?.toLowerCase().includes(q) ||
+      p.client?.toLowerCase().includes(q);
+  });
 
   const getGroupProjects = (groupKey) => {
     if (groupKey === "alle") return searchFiltered;

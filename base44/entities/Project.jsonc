@@ -4,7 +4,19 @@
   "properties": {
     "project_name": {
       "type": "string",
-      "description": "Projektname"
+      "description": "Projektbezeichnung Zeile 1 (Hauptbezeichnung)"
+    },
+    "project_name_2": {
+      "type": "string",
+      "description": "Projektbezeichnung Zeile 2"
+    },
+    "project_name_3": {
+      "type": "string",
+      "description": "Projektbezeichnung Zeile 3"
+    },
+    "project_name_4": {
+      "type": "string",
+      "description": "Projektbezeichnung Zeile 4"
     },
     "client": {
       "type": "string",

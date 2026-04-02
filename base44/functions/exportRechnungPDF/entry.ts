@@ -70,7 +70,8 @@ Deno.serve(async (req) => {
     yPos += 6;
     doc.text(`Datum: ${rechnung.rechnungsdatum ? new Date(rechnung.rechnungsdatum).toLocaleDateString('de-DE') : '–'}`, 10, yPos);
     yPos += 6;
-    doc.text(`Projekt: ${projekt?.project_name || '–'} (${projekt?.project_number || '–'})`, 10, yPos);
+    const projektBez = [projekt?.project_name, projekt?.project_name_2, projekt?.project_name_3, projekt?.project_name_4].filter(Boolean).join(" / ");
+    doc.text(`Projekt: ${projektBez || '–'} (${projekt?.project_number || '–'})`, 10, yPos);
     
     yPos += 12;
 

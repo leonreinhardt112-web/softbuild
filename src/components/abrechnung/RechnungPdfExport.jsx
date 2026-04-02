@@ -82,12 +82,17 @@ export function exportRechnungPDF({ aufmass, project, stammdaten }) {
     detailY += 4;
   });
 
-  // Projektname links
+  // Projektbezeichnungen links (mehrzeilig)
   let projectY = Math.max(addrY, detailY) + 4;
   doc.setFontSize(10);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(40);
-  const projLines = doc.splitTextToSize(project.project_name || "", CW * 0.6);
+  const projLines = [
+    project.project_name,
+    project.project_name_2,
+    project.project_name_3,
+    project.project_name_4,
+  ].filter(Boolean);
   projLines.forEach((l, i) => doc.text(l, ML, projectY + i * 5));
   projectY += projLines.length * 5 + 3;
 
