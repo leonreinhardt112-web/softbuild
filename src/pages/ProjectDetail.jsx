@@ -39,7 +39,15 @@ import ProjektAbrechnung from "@/components/abrechnung/ProjektAbrechnung";
 import ProjektStatusChanger from "@/components/projects/ProjektStatusChanger";
 import KalkulationTabContent from "@/components/kalkulation/KalkulationTabContent";
 import EingangsrechnungenTab from "@/components/projektakte/EingangsrechnungenTab";
-import { format } from "date-fns";
+import { format, isValid } from "date-fns";
+
+const safeFormat = (dateStr, fmt) => {
+  if (!dateStr) return "–";
+  try {
+    const d = typeof dateStr === "string" ? parseISO(dateStr) : new Date(dateStr);
+    return isValid(d) ? format(d, fmt) : "–";
+  } catch { return "–"; }
+};
 
 const POST_AWARD_STATUSES = ["beauftragt", "in_ausfuehrung", "abgeschlossen"];
 
@@ -318,7 +326,7 @@ export default function ProjectDetail() {
             {project.client && <span className="flex items-center gap-1"><Building2 className="w-3 h-3" />{project.client}</span>}
             {project.location && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{project.location}</span>}
             {project.reviewer && <span className="flex items-center gap-1"><User className="w-3 h-3" />{project.reviewer}</span>}
-            {project.review_date && <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{format(new Date(project.review_date), "dd.MM.yyyy")}</span>}
+            {project.review_date && <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{safeFormat(project.review_date, "dd.MM.yyyy")}</span>}
           </div>
         </div>
       </div>
@@ -539,7 +547,7 @@ export default function ProjectDetail() {
                         <div key={label} className="flex justify-between gap-4">
                           <span className="text-muted-foreground shrink-0">{label}</span>
                           <span className={`font-medium ${!value ? "text-muted-foreground" : ""}`}>
-                            {value ? format(new Date(value), "dd.MM.yyyy") : "–"}
+                            {safeFormat(value, "dd.MM.yyyy")}
                           </span>
                         </div>
                       ))}
@@ -618,7 +626,7 @@ export default function ProjectDetail() {
                     <div className="flex justify-between"><span className="text-muted-foreground">Vertragsart</span><span className="font-medium">{project.contract_type || "–"}</span></div>
                     <div className="flex justify-between"><span className="text-muted-foreground">VOB/B</span><span className="font-medium">{project.vob_agreed ? "Ja" : "Nein"}</span></div>
                     <div className="flex justify-between"><span className="text-muted-foreground">Planungsbüro</span><span className="font-medium">{project.planning_office || "–"}</span></div>
-                    <div className="flex justify-between"><span className="text-muted-foreground">Projektstart</span><span className="font-medium">{project.project_start ? format(new Date(project.project_start), "dd.MM.yyyy") : "–"}</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Projektstart</span><span className="font-medium">{safeFormat(project.project_start, "dd.MM.yyyy")}</span></div>
                   </CardContent>
                 </Card>
                 <Button className="w-full gap-2" onClick={handleStartReview}>
