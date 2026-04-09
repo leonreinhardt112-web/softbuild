@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
+import ErrorBoundary from "@/components/common/ErrorBoundary";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "react-router-dom";
@@ -290,6 +291,7 @@ export default function ProjectDetail() {
   const totalRechnungen = rechnungen.reduce((s, r) => s + (r.betrag_netto || 0), 0);
 
   return (
+    <ErrorBoundary message="Das Projekt konnte nicht geladen werden. Bei sehr großen LV-Dateien kann es zu Problemen kommen.">
     <div className="max-w-6xl mx-auto space-y-6 animate-fade-in">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
@@ -571,6 +573,7 @@ export default function ProjectDetail() {
 
         {/* KALKULATION */}
         <TabsContent value="kalkulation" className="mt-6">
+          <ErrorBoundary message="Die Kalkulation konnte nicht geladen werden. Das LV könnte zu groß sein.">
           <KalkulationTabContent
             project={project}
             projectId={projectId}
@@ -579,6 +582,7 @@ export default function ProjectDetail() {
             handleTradesDetected={handleTradesDetected}
             queryClient={queryClient}
           />
+          </ErrorBoundary>
         </TabsContent>
 
         {/* AFU-PRÜFUNG */}
@@ -705,5 +709,6 @@ export default function ProjectDetail() {
         </TabsContent>
       </Tabs>
     </div>
+    </ErrorBoundary>
   );
 }
