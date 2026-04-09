@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ChevronDown, ChevronRight, Sparkles, CheckCircle2, Lock } from "lucide-react";
-import LVUploader from "@/components/lv/LVUploader";
+import { FileText } from "lucide-react";
 import LVAnalyseErgebnisse from "@/components/lv/LVAnalyseErgebnisse";
 import LVKalkulationView from "./LVKalkulationView";
 
@@ -28,32 +28,39 @@ export default function KalkulationTabContent({
 
   const kalk = kalkulationen[0];
   const isBeauftragt = kalk?.status === "beauftragt";
+  const hasLV = project?.lv_positions?.length > 0;
 
   return (
     <div className="space-y-4">
-      {/* KI-Bereich – zusammenfaltbar, standardmäßig zugeklappt */}
-      <div className="border border-border rounded-xl overflow-hidden">
-        <button
-          type="button"
-          onClick={() => setKiExpanded(v => !v)}
-          className="w-full flex items-center justify-between px-4 py-3 bg-muted/30 hover:bg-muted/50 transition-colors text-left"
-        >
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-primary" />
-            <span className="text-sm font-medium">LV-Upload & KI-Analyse</span>
+      {/* LV-Status + KI-Analyse */}
+      {!hasLV ? (
+        <div className="flex items-center gap-3 p-4 rounded-xl border border-dashed border-border bg-muted/30">
+          <FileText className="w-5 h-5 text-muted-foreground shrink-0" />
+          <div>
+            <p className="text-sm font-medium text-muted-foreground">Kein GAEB-Leistungsverzeichnis geladen</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Lade die GAEB-Datei im Reiter <strong>Dokumente</strong> hoch — sie wird automatisch erkannt und hier verfügbar.</p>
           </div>
-          {kiExpanded
-            ? <ChevronDown className="w-4 h-4 text-muted-foreground" />
-            : <ChevronRight className="w-4 h-4 text-muted-foreground" />
-          }
-        </button>
-
-        {kiExpanded && (
-          <div className="p-4 grid grid-cols-1 lg:grid-cols-3 gap-6 border-t border-border">
-            <div className="lg:col-span-1">
-              <LVUploader project={project} onUpdate={handleLVUpdate} onTradesDetected={handleTradesDetected} />
+        </div>
+      ) : (
+        <div className="border border-border rounded-xl overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setKiExpanded(v => !v)}
+            className="w-full flex items-center justify-between px-4 py-3 bg-muted/30 hover:bg-muted/50 transition-colors text-left"
+          >
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-primary" />
+              <span className="text-sm font-medium">KI-Analyse & Bieterfragen</span>
+              <span className="text-xs text-muted-foreground">({project.lv_positions.length} Positionen)</span>
             </div>
-            <div className="lg:col-span-2">
+            {kiExpanded
+              ? <ChevronDown className="w-4 h-4 text-muted-foreground" />
+              : <ChevronRight className="w-4 h-4 text-muted-foreground" />
+            }
+          </button>
+
+          {kiExpanded && (
+            <div className="p-4 border-t border-border">
               <LVAnalyseErgebnisse
                 project={project}
                 onUpdate={handleLVUpdate}
@@ -78,9 +85,9 @@ export default function KalkulationTabContent({
                 }}
               />
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
       {/* Beauftragt-Banner oder Button */}
       {kalk && (

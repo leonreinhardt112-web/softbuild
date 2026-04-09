@@ -10,10 +10,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import {
-  Plus, Upload, Star, FileText, ExternalLink, FolderOpen, Folder,
-  ChevronRight, ChevronDown, Sparkles, Loader2, X
+  Plus, Upload, Star, FileText, ExternalLink, FolderOpen,
+  ChevronRight, ChevronDown, Sparkles, Loader2, X, CheckCircle2
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
+import { parseX83, detectTradesFromPositions, isGaebFile, isUnterlagFile } from "@/utils/gaebParser";
 
 const KAT_LABELS = {
   vertragsunterlagen: "Vertragsunterlagen",
@@ -50,7 +51,7 @@ const EMPTY = {
   versionsstand: "", dokumentdatum: "", bemerkung: "", wichtig: false
 };
 
-async function detectCategory(filename, fileContent) {
+async function detectCategory(filename) {
   const result = await base44.integrations.Core.InvokeLLM({
     prompt: `Du bist ein Assistent für Bauunternehmen. Klassifiziere dieses Dokument in eine der folgenden Kategorien basierend auf dem Dateinamen.
 
@@ -58,7 +59,7 @@ Dateiname: "${filename}"
 
 Kategorien:
 - vertragsunterlagen: Verträge, VOB, AGBs, Auftragsschreiben
-- angebotsunterlagen: Ausschreibungsunterlagen, Bieterbedingungen, Bewerbungsunterlagen
+- angebotsunterlagen: Ausschreibungsunterlagen, Bieterbedingungen, Bewerbungsunterlagen, Baubeschreibung
 - lv_unterlagen: Leistungsverzeichnisse, GAEB-Dateien, LV-Positionen
 - plaene: Baupläne, Lageplan, Schnitte, Grundrisse, DWG, PDF-Pläne
 - schriftverkehr: Briefe, E-Mails, Fax
@@ -79,7 +80,7 @@ Antworte NUR mit dem Kategorie-Schlüssel (z.B. "lv_unterlagen"), nichts weiter.
   return result?.kategorie || "sonstiges";
 }
 
-export default function DokumenteTab({ projectId, dokumente }) {
+export default function DokumenteTab({ projectId, dokumente, project, onProjectUpdate }) {
   const qc = useQueryClient();
   const [openFolders, setOpenFolders] = useState(new Set(["angebotsunterlagen", "lv_unterlagen"]));
   const [showDialog, setShowDialog] = useState(false);
@@ -88,7 +89,6 @@ export default function DokumenteTab({ projectId, dokumente }) {
   const [uploading, setUploading] = useState(false);
   const [aiDetecting, setAiDetecting] = useState(false);
   const [file, setFile] = useState(null);
-  const [bulkFiles, setBulkFiles] = useState([]);
   const [bulkUploading, setBulkUploading] = useState(false);
   const [bulkProgress, setBulkProgress] = useState(null);
 
@@ -124,7 +124,6 @@ export default function DokumenteTab({ projectId, dokumente }) {
   const handleFileSelect = async (selectedFile) => {
     setFile(selectedFile);
     if (!selectedFile) return;
-    // Auto-detect category from filename
     setAiDetecting(true);
     const kat = await detectCategory(selectedFile.name);
     setForm(prev => ({
@@ -152,6 +151,53 @@ export default function DokumenteTab({ projectId, dokumente }) {
     setShowDialog(false);
   };
 
+  /**
+   * Handles a single file: upload to storage, save ProjektDokument,
+   * and if GAEB → also parse & save to project.lv_positions.
+   * If Baubeschreibung/PDF → also add to project.projekt_unterlagen.
+   */
+  const processFile = async (f) => {
+    const { file_url } = await base44.integrations.Core.UploadFile({ file: f });
+    const kat = isGaebFile(f.name) ? "lv_unterlagen" : await detectCategory(f.name);
+
+    await base44.entities.ProjektDokument.create({
+      project_id: projectId,
+      titel: f.name.replace(/\.[^/.]+$/, ""),
+      kategorie: kat,
+      datei: file_url,
+      dateiname: f.name,
+      dokumentdatum: new Date().toISOString().split("T")[0],
+    });
+
+    if (isGaebFile(f.name) && onProjectUpdate) {
+      // Parse GAEB and save to project
+      const text = await f.text();
+      const positions = parseX83(text);
+      if (positions.length > 0) {
+        const detectedTrades = detectTradesFromPositions(positions);
+        const currentTrades = project?.selected_trades || ["allgemein"];
+        const mergedTrades = [...new Set([...currentTrades, ...detectedTrades])];
+        await onProjectUpdate({
+          lv_file_url: file_url,
+          lv_file_name: f.name,
+          lv_positions: positions,
+          lv_analysis_findings: [],
+          baulv_conflict_findings: [],
+          selected_trades: mergedTrades,
+        });
+      }
+    } else if (isUnterlagFile(f.name) && onProjectUpdate) {
+      // Also add to projekt_unterlagen for KI conflict analysis
+      const existing = project?.projekt_unterlagen || [];
+      // Avoid duplicates
+      if (!existing.some(u => u.name === f.name)) {
+        await onProjectUpdate({
+          projekt_unterlagen: [...existing, { name: f.name, url: file_url }],
+        });
+      }
+    }
+  };
+
   const handleBulkUpload = async (files) => {
     if (!files.length) return;
     setBulkUploading(true);
@@ -161,25 +207,13 @@ export default function DokumenteTab({ projectId, dokumente }) {
     for (let i = 0; i < fileArr.length; i++) {
       const f = fileArr[i];
       setBulkProgress({ current: i + 1, total: fileArr.length, currentName: f.name });
-      const [uploadRes, kat] = await Promise.all([
-        base44.integrations.Core.UploadFile({ file: f }),
-        detectCategory(f.name),
-      ]);
-      await base44.entities.ProjektDokument.create({
-        project_id: projectId,
-        titel: f.name.replace(/\.[^/.]+$/, ""),
-        kategorie: kat,
-        datei: uploadRes.file_url,
-        dateiname: f.name,
-        dokumentdatum: new Date().toISOString().split("T")[0],
-      });
+      await processFile(f);
     }
 
     qc.invalidateQueries(["dokumente", projectId]);
+    qc.invalidateQueries(["project", projectId]);
     setBulkUploading(false);
     setBulkProgress(null);
-    setBulkFiles([]);
-    // Auto-open all folders that got new files
     setOpenFolders(prev => new Set([...prev, ...Object.keys(KAT_LABELS)]));
   };
 
@@ -194,15 +228,31 @@ export default function DokumenteTab({ projectId, dokumente }) {
   const sortedKats = Object.keys(KAT_LABELS).filter(k => grouped[k]?.length > 0);
   const totalCount = dokumente.length;
 
+  const hasLV = project?.lv_positions?.length > 0;
+
   return (
     <div className="space-y-4">
+      {/* Info-Banner wenn GAEB vorhanden */}
+      {hasLV && (
+        <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-lg bg-green-50 border border-green-200 text-xs text-green-800">
+          <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" />
+          <span>
+            <strong>{project.lv_file_name}</strong> ist als GAEB geladen — {project.lv_positions.length} Positionen. Der Kalkulations-Tab greift auf diese Datei zu.
+          </span>
+        </div>
+      )}
+
       {/* Header actions */}
       <div className="flex flex-wrap gap-2 items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground">{totalCount} Dokument{totalCount !== 1 ? "e" : ""}</span>
+          {!hasLV && (
+            <span className="text-xs text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
+              Noch keine GAEB-Datei — beim Upload automatisch erkannt
+            </span>
+          )}
         </div>
         <div className="flex gap-2">
-          {/* Bulk Upload */}
           <label className="cursor-pointer">
             <Button variant="outline" size="sm" className="gap-1.5" asChild>
               <span>
@@ -230,7 +280,7 @@ export default function DokumenteTab({ projectId, dokumente }) {
             <Loader2 className="w-4 h-4 animate-spin text-primary shrink-0" />
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between text-xs mb-1.5">
-                <span className="font-medium">KI kategorisiert & lädt hoch...</span>
+                <span className="font-medium">KI kategorisiert & verarbeitet...</span>
                 <span className="text-muted-foreground">{bulkProgress.current}/{bulkProgress.total}</span>
               </div>
               <div className="h-1.5 bg-muted rounded-full overflow-hidden">
@@ -251,7 +301,10 @@ export default function DokumenteTab({ projectId, dokumente }) {
           <CardContent className="py-16 text-center">
             <FolderOpen className="w-12 h-12 text-muted-foreground/40 mx-auto mb-3" />
             <p className="text-sm font-medium text-muted-foreground">Noch keine Dokumente</p>
-            <p className="text-xs text-muted-foreground mt-1 mb-4">Lade Ausschreibungsunterlagen, Pläne und mehr hoch. Die KI kategorisiert automatisch.</p>
+            <p className="text-xs text-muted-foreground mt-1 mb-4">
+              Lade alle Unterlagen hoch — GAEB, Baubeschreibung, Pläne etc.<br />
+              GAEB-Dateien werden automatisch geparst und für die Kalkulation bereitgestellt.
+            </p>
             <label className="cursor-pointer">
               <Button variant="outline" className="gap-2" asChild>
                 <span><Sparkles className="w-4 h-4 text-violet-500" />Unterlagen hochladen (KI-Kategorisierung)</span>
@@ -270,7 +323,6 @@ export default function DokumenteTab({ projectId, dokumente }) {
             const isOpen = openFolders.has(kat);
             return (
               <div key={kat} className="rounded-xl border border-border overflow-hidden">
-                {/* Folder header */}
                 <button
                   className="w-full flex items-center gap-2.5 px-4 py-3 bg-muted/40 hover:bg-muted/60 transition-colors text-left"
                   onClick={() => toggleFolder(kat)}
@@ -281,10 +333,12 @@ export default function DokumenteTab({ projectId, dokumente }) {
                   }
                   <span className="text-base">{KAT_ICONS[kat]}</span>
                   <span className="font-medium text-sm">{KAT_LABELS[kat]}</span>
+                  {kat === "lv_unterlagen" && hasLV && (
+                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-green-100 text-green-700 border-green-200">GAEB aktiv</Badge>
+                  )}
                   <Badge variant="secondary" className="ml-auto text-[10px] px-1.5 py-0">{items.length}</Badge>
                 </button>
 
-                {/* Folder contents */}
                 {isOpen && (
                   <div className="divide-y divide-border">
                     {items.map(d => (

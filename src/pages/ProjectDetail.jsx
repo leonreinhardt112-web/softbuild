@@ -561,7 +561,12 @@ export default function ProjectDetail() {
 
         {/* DOKUMENTE */}
         <TabsContent value="dokumente" className="mt-6">
-          <DokumenteTab projectId={projectId} dokumente={dokumente} />
+          <DokumenteTab
+            projectId={projectId}
+            dokumente={dokumente}
+            project={project}
+            onProjectUpdate={handleLVUpdate}
+          />
         </TabsContent>
 
         {/* FRISTEN */}
