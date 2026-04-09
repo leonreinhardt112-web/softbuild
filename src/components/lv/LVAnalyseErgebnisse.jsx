@@ -91,22 +91,36 @@ function BieterfragenList({ fragen }) {
     <div className="text-center py-8 text-muted-foreground text-sm">Keine Bieterfragen generiert.</div>
   );
   return (
-    <div className="space-y-2">
-      {fragen.map((f, i) => (
-        <div key={i} className="flex items-start gap-3 p-3 rounded-lg bg-violet-50 border border-violet-100">
-          <span className="w-5 h-5 rounded-full bg-violet-100 text-violet-700 font-bold text-[10px] flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
-          <p className="text-xs leading-relaxed text-violet-900">{f}</p>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6 shrink-0 text-violet-400 hover:text-violet-700"
-            onClick={() => navigator.clipboard?.writeText(f)}
-            title="Kopieren"
-          >
-            <ChevronRight className="w-3 h-3" />
-          </Button>
-        </div>
-      ))}
+    <div className="space-y-3">
+      {fragen.map((f, i) => {
+        const frage = typeof f === "string" ? f : f.frage;
+        const begruendung = typeof f === "object" ? f.begruendung : null;
+        return (
+          <div key={i} className="rounded-lg border border-violet-200 bg-violet-50 overflow-hidden">
+            <div className="flex items-start gap-3 p-3">
+              <span className="w-5 h-5 rounded-full bg-violet-200 text-violet-700 font-bold text-[10px] flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium leading-relaxed text-violet-900">{frage}</p>
+                {begruendung && (
+                  <div className="mt-2 flex items-start gap-1.5">
+                    <Info className="w-3 h-3 text-violet-400 shrink-0 mt-0.5" />
+                    <p className="text-[11px] text-violet-600 leading-relaxed italic">{begruendung}</p>
+                  </div>
+                )}
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 shrink-0 text-violet-400 hover:text-violet-700"
+                onClick={() => navigator.clipboard?.writeText(frage)}
+                title="Kopieren"
+              >
+                <ChevronRight className="w-3 h-3" />
+              </Button>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -192,9 +206,18 @@ Führe folgende Analysen durch:
 
 1. LV-BEFUNDE: Prüfe auf Vollständigkeit und Schlüssigkeit (fehlende Positionen, unvollständige Beschreibungen, fehlende Mengenangaben, VOB/C-Nebenleistungen, Entsorgung, nicht VOB-konforme Formulierungen).
 
-2. AUSFÜHRUNGSFRISTEN: Extrahiere alle Fristen und Termine aus den LV-Positionen (z.B. Bauzeit, Ausführungszeitraum, Meilensteine). Falls keine Fristen im LV vorhanden sind, gib ein leeres Array zurück.
+2. AUSFÜHRUNGSFRISTEN: Extrahiere alle Fristen und Termine aus den LV-Positionen.
 
-3. BIETERFRAGEN: Formuliere präzise Bieterfragen für alle Unklarheiten, Lücken, fehlenden Ausführungsfristen oder Risiken. Bieterfragen sollen kurz, klar und professionell formuliert sein.`,
+3. BIETERFRAGEN: Generiere MINDESTENS 8-15 präzise Bieterfragen. Bieterfragen sind notwendig, wenn:
+   - Kalkulationsannahmen getroffen werden müssen (z.B. Bodenverhältnisse, Materialqualität, Verbautiefe)
+   - Ausführungsrandbedingungen unklar sind (z.B. Verkehrsführung, Arbeitszeiten, Zugangsbeschränkungen)
+   - Mengen oder Massen nicht eindeutig bestimmbar sind
+   - Technische Ausführungsdetails fehlen (z.B. Verdichtungsgrad, Korngrößen, Gütekriterien)
+   - Entsorgungswege oder Materialherkunft nicht geregelt sind
+   - Schnittstellenklärungen zu anderen Gewerken fehlen
+   - Fristen oder Bauzeitanforderungen nicht definiert sind
+   - Boden- oder Grundwasserverhältnisse relevant aber unbekannt sind
+   Jede Frage MUSS eine kurze Begründung enthalten, warum diese Frage für die Kalkulation oder Ausführung wichtig ist.`,
       response_json_schema: {
         type: "object",
         properties: {
@@ -206,7 +229,16 @@ Führe folgende Analysen durch:
             type: "array",
             items: { type: "object", properties: { titel: { type: "string" }, datum: { type: "string" }, typ: { type: "string", enum: ["vertragsbeginn", "vertragsende", "abnahmefrist", "sonstiges"] } } }
           },
-          bieterfragen: { type: "array", items: { type: "string" } },
+          bieterfragen: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                frage: { type: "string", description: "Die konkrete Bieterfrage" },
+                begruendung: { type: "string", description: "Kurze Begründung, warum diese Frage für Kalkulation oder Ausführung wichtig ist" }
+              }
+            }
+          },
           fristen_fehlen: { type: "boolean" }
         }
       }
