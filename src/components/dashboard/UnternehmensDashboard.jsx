@@ -236,14 +236,15 @@ export default function UnternehmensDashboard({ projects, rechnungen, fristen, s
                   {offeneAufgaben.slice(0, 5).map(a => {
                     const proj = projects.find(p => p.id === a.project_id);
                     const isOverdue = a.faellig_am && isPast(parseISO(a.faellig_am));
+                    const href = proj ? createPageUrl(`ProjectDetail?id=${proj.id}`) : createPageUrl("Projects");
                     return (
-                      <div key={a.id} className={`text-xs p-2 rounded-lg ${isOverdue ? "bg-red-50" : "bg-muted/30"}`}>
+                      <Link key={a.id} to={href} className={`block text-xs p-2 rounded-lg hover:opacity-80 transition-opacity cursor-pointer ${isOverdue ? "bg-red-50" : "bg-muted/30"}`}>
                         <p className={`font-medium truncate ${isOverdue ? "text-red-700" : ""}`}>{a.titel}</p>
                         <p className="text-muted-foreground mt-0.5">
                           {proj?.project_name || "Allgemein"}
                           {a.faellig_am && <span className={isOverdue ? "text-red-600 ml-1" : "ml-1"}>· {format(parseISO(a.faellig_am), "dd.MM.")}</span>}
                         </p>
-                      </div>
+                      </Link>
                     );
                   })}
                 </div>
