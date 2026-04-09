@@ -52,6 +52,18 @@ export default function ProjectForm({ open, onOpenChange, onSave, initialData })
     }
   }, [open]);
 
+  const generateProjektNummer = async (commit = false) => {
+    const companies = await base44.entities.Stammdatum.filter({ typ: 'unternehmen', aktiv: true }, undefined, 1);
+    if (!companies || companies.length === 0) return null;
+    const company = companies[0];
+    const currentYear = new Date().getFullYear() % 100;
+    const nextNummer = (company.projekt_nummer_laufend || 0) + 1;
+    if (commit) {
+      await base44.entities.Stammdatum.update(company.id, { projekt_nummer_laufend: nextNummer });
+    }
+    return `${currentYear}-${String(nextNummer).padStart(5, '0')}`;
+  };
+
   useEffect(() => {
     if (initialData) {
       setForm(initialData);
@@ -59,8 +71,8 @@ export default function ProjectForm({ open, onOpenChange, onSave, initialData })
       setForm(EMPTY_FORM);
       if (open) {
         setProjektNummerLoading(true);
-        base44.functions.invoke('generateProjeknummer', { preview: true })
-          .then(response => setForm(f => ({ ...f, project_number: response.data.projektNummer })))
+        generateProjektNummer(false)
+          .then(nr => { if (nr) setForm(f => ({ ...f, project_number: nr })); })
           .catch(() => {})
           .finally(() => setProjektNummerLoading(false));
       }
@@ -108,15 +120,10 @@ export default function ProjectForm({ open, onOpenChange, onSave, initialData })
     e.preventDefault();
     if (!form.client_id) return;
     
-    // Nummer erst beim echten Speichern festschreiben
     let submitForm = { ...form };
     if (!initialData) {
-      try {
-        const response = await base44.functions.invoke('generateProjeknummer', { preview: false });
-        submitForm.project_number = response.data.projektNummer;
-      } catch (error) {
-        console.error('Fehler bei Projektnummernvergabe:', error);
-      }
+      const nr = await generateProjektNummer(true).catch(() => null);
+      if (nr) submitForm.project_number = nr;
     }
     onSave(submitForm);
   };
