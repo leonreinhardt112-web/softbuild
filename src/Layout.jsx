@@ -44,6 +44,14 @@ const ALWAYS_VISIBLE = ["Dashboard", "Projects", "Postfaecher", "Benutzerverwalt
 
 function LayoutContent({ children, currentPageName }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => localStorage.getItem("sidebar_collapsed") === "true");
+
+  const toggleCollapsed = () => {
+    setCollapsed(v => {
+      localStorage.setItem("sidebar_collapsed", String(!v));
+      return !v;
+    });
+  };
   const [currentUser, setCurrentUser] = useState(null);
   const [navRechte, setNavRechte] = useState({});
   const [openGroups, setOpenGroups] = useState(["Stammdaten"]);
@@ -126,27 +134,35 @@ function LayoutContent({ children, currentPageName }) {
 
         <aside
           className={cn(
-            "fixed lg:sticky top-0 left-0 z-50 h-screen w-60 bg-card border-r border-border flex flex-col transition-transform duration-300",
+            "fixed lg:sticky top-0 left-0 z-50 h-screen bg-card border-r border-border flex flex-col transition-all duration-300",
+            collapsed ? "w-16" : "w-60",
             sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
           )}
         >
           {/* Logo */}
-          <div className="p-4 border-b border-border">
-            <div className="flex items-center gap-2.5">
+          <div className={cn("border-b border-border flex items-center", collapsed ? "p-2 justify-center" : "p-4")}>
+            <div className="flex items-center gap-2.5 flex-1 min-w-0">
               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shrink-0">
                 <Building2 className="w-4 h-4 text-primary-foreground" />
               </div>
-              <div>
-                <h1 className="font-bold text-sm text-foreground leading-tight">BauManager</h1>
-                <p className="text-[10px] text-muted-foreground">Tiefbau Projektsteuerung</p>
-              </div>
+              {!collapsed && (
+                <div className="min-w-0">
+                  <h1 className="font-bold text-sm text-foreground leading-tight">BauManager</h1>
+                  <p className="text-[10px] text-muted-foreground">Tiefbau Projektsteuerung</p>
+                </div>
+              )}
             </div>
+            <button
+              onClick={toggleCollapsed}
+              className="hidden lg:flex items-center justify-center w-6 h-6 rounded hover:bg-accent text-muted-foreground shrink-0"
+            >
+              {collapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5 rotate-180" />}
+            </button>
           </div>
 
           {/* Nav */}
           <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto">
             {NAV_ITEMS.map((item) => {
-              // --- Group item ---
               if (item.group) {
                 const isGroupOpen = openGroups.includes(item.name);
                 const GroupIcon = item.icon;
@@ -160,22 +176,29 @@ function LayoutContent({ children, currentPageName }) {
                 });
                 if (visibleChildren.length === 0) return null;
                 const isChildActive = visibleChildren.some(c => c.page === currentPageName);
+                if (collapsed) {
+                  return visibleChildren.map(child => {
+                    const isActive = currentPageName === child.page;
+                    const CIcon = child.icon;
+                    return (
+                      <button key={child.page} onClick={(e) => handleNavigation(e, child.page)}
+                        title={child.name}
+                        className={cn("w-full flex items-center justify-center p-2.5 rounded-lg transition-all",
+                          isActive ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-accent")}>
+                        <CIcon className="w-4 h-4 shrink-0" />
+                      </button>
+                    );
+                  });
+                }
                 return (
                   <div key={item.name}>
                     <button
                       onClick={() => setOpenGroups(g => g.includes(item.name) ? g.filter(x => x !== item.name) : [...g, item.name])}
-                      className={cn(
-                        "w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all",
-                        isChildActive
-                          ? "text-foreground bg-accent"
-                          : "text-muted-foreground hover:text-foreground hover:bg-accent"
-                      )}
-                    >
+                      className={cn("w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all",
+                        isChildActive ? "text-foreground bg-accent" : "text-muted-foreground hover:text-foreground hover:bg-accent")}>
                       <GroupIcon className="w-4 h-4 shrink-0" />
                       <span className="flex-1 truncate text-left">{item.name}</span>
-                      {isGroupOpen
-                        ? <ChevronDown className="w-3 h-3 opacity-60" />
-                        : <ChevronRight className="w-3 h-3 opacity-60" />}
+                      {isGroupOpen ? <ChevronDown className="w-3 h-3 opacity-60" /> : <ChevronRight className="w-3 h-3 opacity-60" />}
                     </button>
                     {isGroupOpen && (
                       <div className="ml-3 mt-0.5 pl-3 border-l border-border space-y-0.5">
@@ -183,16 +206,9 @@ function LayoutContent({ children, currentPageName }) {
                           const isActive = currentPageName === child.page;
                           const CIcon = child.icon;
                           return (
-                            <button
-                              key={child.page}
-                              onClick={(e) => handleNavigation(e, child.page)}
-                              className={cn(
-                                "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all",
-                                isActive
-                                  ? "bg-primary text-primary-foreground shadow-sm"
-                                  : "text-muted-foreground hover:text-foreground hover:bg-accent"
-                              )}
-                            >
+                            <button key={child.page} onClick={(e) => handleNavigation(e, child.page)}
+                              className={cn("w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all",
+                                isActive ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-accent")}>
                               <CIcon className="w-3.5 h-3.5 shrink-0" />
                               <span className="flex-1 truncate text-left">{child.name}</span>
                             </button>
@@ -204,7 +220,6 @@ function LayoutContent({ children, currentPageName }) {
                 );
               }
 
-              // --- Regular item ---
               if (item.adminOnly && currentUser?.role !== "admin") return null;
               if (!item.adminOnly && currentUser?.role !== "admin") {
                 if (!ALWAYS_VISIBLE.includes(item.page)) {
@@ -214,17 +229,20 @@ function LayoutContent({ children, currentPageName }) {
               }
               const isActive = currentPageName === item.page;
               const Icon = item.icon;
+              if (collapsed) {
+                return (
+                  <button key={item.page} onClick={(e) => handleNavigation(e, item.page)}
+                    title={item.name}
+                    className={cn("w-full flex items-center justify-center p-2.5 rounded-lg transition-all",
+                      isActive ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-accent")}>
+                    <Icon className="w-4 h-4 shrink-0" />
+                  </button>
+                );
+              }
               return (
-                <button
-                  key={item.page}
-                  onClick={(e) => handleNavigation(e, item.page)}
-                  className={cn(
-                    "w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all group",
-                    isActive
-                      ? "bg-primary text-primary-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground hover:bg-accent"
-                  )}
-                >
+                <button key={item.page} onClick={(e) => handleNavigation(e, item.page)}
+                  className={cn("w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all group",
+                    isActive ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-accent")}>
                   <Icon className="w-4 h-4 shrink-0" />
                   <span className="flex-1 truncate text-left">{item.name}</span>
                   {isActive && <ChevronRight className="w-3 h-3 opacity-60" />}
@@ -234,12 +252,14 @@ function LayoutContent({ children, currentPageName }) {
           </nav>
 
           {/* Footer */}
+          {!collapsed && (
           <div className="p-3 border-t border-border">
             <div className="text-[10px] text-muted-foreground text-center leading-relaxed">
               VOB/A · VOB/B · VOB/C<br />
               DIN 4124 · DIN EN 1610 · HOAI
             </div>
           </div>
+          )}
         </aside>
 
         {/* Main */}
