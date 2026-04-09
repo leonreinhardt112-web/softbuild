@@ -141,17 +141,17 @@ function LayoutContent({ children, currentPageName }) {
         >
           {/* Logo */}
           <div className={cn("border-b border-border flex items-center", collapsed ? "p-2 justify-center" : "p-4")}>
-            <div className="flex items-center gap-2.5 flex-1 min-w-0">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shrink-0">
-                <Building2 className="w-4 h-4 text-primary-foreground" />
-              </div>
-              {!collapsed && (
+            {!collapsed && (
+              <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shrink-0">
+                  <Building2 className="w-4 h-4 text-primary-foreground" />
+                </div>
                 <div className="min-w-0">
                   <h1 className="font-bold text-sm text-foreground leading-tight">BauManager</h1>
                   <p className="text-[10px] text-muted-foreground">Tiefbau Projektsteuerung</p>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
             <button
               onClick={toggleCollapsed}
               className="hidden lg:flex items-center justify-center w-6 h-6 rounded hover:bg-accent text-muted-foreground shrink-0"
