@@ -86,6 +86,15 @@ function FindingsGroup({ findings, onToggle, onToggleAll }) {
   );
 }
 
+function parseBieterfrage(f) {
+  if (typeof f === "object" && f !== null) return f;
+  if (typeof f === "string" && f.includes("||BEGRUENDUNG||")) {
+    const [frage, begruendung] = f.split("||BEGRUENDUNG||");
+    return { frage: frage.trim(), begruendung: begruendung?.trim() };
+  }
+  return { frage: f, begruendung: null };
+}
+
 function BieterfragenList({ fragen }) {
   if (!fragen?.length) return (
     <div className="text-center py-8 text-muted-foreground text-sm">Keine Bieterfragen generiert.</div>
@@ -93,8 +102,7 @@ function BieterfragenList({ fragen }) {
   return (
     <div className="space-y-3">
       {fragen.map((f, i) => {
-        const frage = typeof f === "string" ? f : f.frage;
-        const begruendung = typeof f === "object" ? f.begruendung : null;
+        const { frage, begruendung } = parseBieterfrage(f);
         return (
           <div key={i} className="rounded-lg border border-violet-200 bg-violet-50 overflow-hidden">
             <div className="flex items-start gap-3 p-3">
@@ -247,9 +255,15 @@ Führe folgende Analysen durch:
       id: `lv_${Date.now()}_${i}`, text: f.text,
       severity: f.severity || "wichtig", category: f.category || "Vollständigkeit", include_in_report: true,
     }));
-    const bieterfragenResult = result.bieterfragen || [];
+    // Convert bieterfragen objects to strings for storage (entity requires string[])
+    const bieterfragenRaw = result.bieterfragen || [];
+    const bieterfragenResult = bieterfragenRaw.map(f => {
+      if (typeof f === "string") return f;
+      const begruendung = f.begruendung ? `||BEGRUENDUNG||${f.begruendung}` : "";
+      return `${f.frage}${begruendung}`;
+    });
     if (result.fristen_fehlen && !bieterfragenResult.some(f => f.toLowerCase().includes("frist"))) {
-      bieterfragenResult.push("Bitte teilen Sie uns die geplante Ausführungszeit und die verbindlichen Fristen für Baubeginn und Fertigstellung mit.");
+      bieterfragenResult.push("Bitte teilen Sie uns die geplante Ausführungszeit und die verbindlichen Fristen für Baubeginn und Fertigstellung mit.||BEGRUENDUNG||Ohne definierte Ausführungsfristen können keine realistischen Bauablaufpläne erstellt und Terminrisiken nicht kalkuliert werden.");
     }
     await onUpdate({ lv_analysis_findings: findings, ki_bieterfragen: bieterfragenResult, ki_gefundene_fristen: result.fristen || [] });
     // Fristen automatisch übernehmen
